@@ -5,12 +5,12 @@ import { hace, nombreCategoria } from '../services/reportes'
 export default function ListaReportes({ datos, onVer, onReportar }) {
   const { reportes, error, nPendientes } = datos
   return (
-    <section aria-labelledby="t-reportes" className="rounded-2xl border-2 border-borde bg-superficie px-4 py-4">
+    <section aria-labelledby="t-reportes" className="tarjeta">
       <div className="mb-2 flex items-center gap-3">
         <h2 id="t-reportes" className="flex-1 text-[19px] font-bold">
           Reportes de vecinos
         </h2>
-        <button type="button" onClick={onReportar} className="min-h-11 rounded-lg bg-senal px-4 text-[15px] font-bold text-sobre-senal">
+        <button type="button" onClick={onReportar} className="min-h-11 rounded-full bg-senal px-5 text-[15px] font-bold text-sobre-senal">
           Reportar
         </button>
       </div>
@@ -40,6 +40,11 @@ export default function ListaReportes({ datos, onVer, onReportar }) {
                     {r.confirmaciones > 0 && ` · ${r.confirmaciones} ${r.confirmaciones === 1 ? 'confirma' : 'confirman'}`}
                   </span>
                 </span>
+                {r.foto_id && (
+                  <span className="rounded-full bg-superficie-2 px-2 py-0.5 text-[12px] font-bold" aria-label="Con foto">
+                    Foto
+                  </span>
+                )}
                 <span className="text-[14px] font-bold text-senal-texto">Ver</span>
               </button>
             </li>

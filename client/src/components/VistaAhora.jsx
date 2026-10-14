@@ -15,8 +15,8 @@ function nombreDia(f, i) {
 
 function Bloque({ titulo, children, id }) {
   return (
-    <section aria-labelledby={id} className="rounded-2xl border-2 border-borde bg-superficie px-4 py-4">
-      <h2 id={id} className="mb-3 text-[19px] font-bold text-balance">
+    <section aria-labelledby={id} className="tarjeta">
+      <h2 id={id} className="titulo-tarjeta text-balance">
         {titulo}
       </h2>
       {children}
@@ -48,7 +48,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, reportes = null, obs = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, resumen = null, reportes = null, camaras = null, obs = null }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -71,7 +71,9 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null, ob
     return (
       <div className="space-y-3 px-4 py-4">
         {estado}
+        {resumen}
         {reportes}
+        {camaras}
       </div>
     )
   }
@@ -88,6 +90,8 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null, ob
 
   return (
     <div className="space-y-3 px-4 pt-4 pb-6">
+      {resumen}
+
       {/* Ahora */}
       <section aria-label="Condiciones actuales" className="px-1 pb-1">
         <div className="flex items-center gap-4">
@@ -144,6 +148,8 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null, ob
       </section>
 
       {reportes}
+
+      {camaras}
 
       <Bloque titulo="Lluvia en las próximas 12 horas" id="t-lluvia">
         <p className={hayLluvia ? 'mb-2 text-[16px]' : 'text-[16px]'}>{resumenLluvia(prox12)}</p>

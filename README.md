@@ -6,13 +6,18 @@ App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de 
 
 ## Qué hace hoy
 
+- **En resumen:** arriba de la pestaña Ahora, cuatro frases simples con lo esencial: alertas, cómo está el tiempo ahora, si va a llover y qué reportan los vecinos.
 - Pestaña **Ahora**: cuando hay una estación meteorológica a menos de 40 km con datos de la última hora y media, muestra **lo medido** (temperatura, humedad, viento, lluvia), indicando la estación, la distancia y la hora; si no, la estimación del modelo, dicho así. Además: temperatura, sensación térmica, viento y ráfagas, lluvia de la última hora, gráfico de lluvia de las próximas 12 horas con un resumen en palabras, pronóstico hora a hora y de 7 días.
 - Pestaña **Radar**: mapa con radar de lluvia y leyenda de intensidad.
+- **Fotos en los reportes:** quien reporta puede sacar o elegir una foto. Se achica en el celular, se le borran los datos ocultos (incluida la ubicación GPS de la cámara) y se guarda en la base de datos. Con 2 denuncias de vecinos se oculta hasta que un administrador la revise en el panel.
+- **Ver la calle en Google Maps:** cada reporte tiene un botón que abre Street View en ese punto (imágenes de archivo de Google, no en vivo; la app lo aclara).
+- **Cámaras cercanas:** cámaras públicas de Windy Webcams a menos de 30 km, en la pestaña Ahora y como pines en el mapa, con crédito y enlace a Windy. Se activa al cargar `WINDY_API_KEY` en el servidor (registro gratuito en api.windy.com).
+- **Aviso de alertas:** cuando llega o sube una alerta oficial, aviso a pantalla completa y vibración (en Android; el iPhone no permite que una página vibre). Funciona con la app abierta; con la app cerrada llegará como notificación (Fase 4).
 - **Reportes vecinales:** anegamientos, desbordes, caminos cortados, cortes de luz y árboles caídos, con ubicación en el mapa. Aparecen al instante para los vecinos de la comuna, que pueden confirmarlos o avisar que ya no están (3 desmentidos netos los ocultan). Máximo 5 reportes por hora por persona, vencen solos y se guardan en cola si no hay señal.
 - Elegir comuna escribiendo su nombre, por región o con la ubicación del celular (346 comunas con su código CUT).
 - Mapa con el contorno de la comuna y radar de lluvia de las últimas 2 horas, animado y pausable.
 - Abre sin conexión y avisa desde qué hora son los datos que muestra.
-- Tema oscuro (por defecto) y claro, modo ahorro manual o automático con batería baja.
+- Tema automático (sigue al teléfono), claro u oscuro, modo ahorro manual o automático con batería baja.
 - Instalable en Android y iPhone.
 - **Alertas oficiales:** la banda superior toma el color del nivel vigente (Preventiva, Amarilla, Roja, Evacuación) con su fuente y hora de verificación, y una ficha con qué hacer y el enlace a la publicación oficial. Si nadie confirma una alerta en 12 horas, se muestra como «sin confirmar». Si no hay alertas cargadas, lo dice así y deriva a senapred.cl: nunca da a entender que no hay alertas.
 - **Panel de alertas** en `…/#admin`: cargar, confirmar, corregir y cancelar alertas copiadas de SENAPRED u otra fuente oficial (solo enlaces https de gob.cl o senapred.cl), con bitácora. Se entra con la clave `ADMIN_TOKEN` del servidor (en Render: servicio *alertaclima-api → Environment*).

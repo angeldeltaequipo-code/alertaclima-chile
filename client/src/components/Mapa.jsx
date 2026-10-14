@@ -36,6 +36,13 @@ function iconoPin(categoria, seleccionado) {
   return iconos.get(clave)
 }
 
+const ICONO_CAMARA = L.divIcon({
+  className: '',
+  html: '<div class="pin-camara"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h12v10H3z"/><path d="M15 10l6-3v10l-6-3z"/></svg></div>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+})
+
 /** Al elegir un reporte desde la lista, el mapa lo trae a la vista. */
 function EnfocarReporte({ reporte, visible }) {
   const map = useMap()
@@ -107,6 +114,8 @@ export default function Mapa({
   reportes = [],
   seleccionado = null,
   onSeleccionar = () => {},
+  camaras = [],
+  onCamara = () => {},
 }) {
   const [limite, setLimite] = useState(null)
 
@@ -151,6 +160,17 @@ export default function Mapa({
           pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f80ff', fillOpacity: 1 }}
         />
       )}
+      {camaras.map((c) => (
+        <Marker
+          key={`cam-${c.id}`}
+          position={[c.lat, c.lng]}
+          icon={ICONO_CAMARA}
+          title={`Cámara: ${c.titulo}`}
+          alt={`Cámara pública: ${c.titulo}`}
+          keyboard
+          eventHandlers={{ click: () => onCamara(c) }}
+        />
+      ))}
       {reportes.map((r) => (
         <Marker
           key={r.id}

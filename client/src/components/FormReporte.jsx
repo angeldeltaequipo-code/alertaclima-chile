@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import Hoja from './Hoja'
 import IconoReporte from './IconoReporte'
 import { CATEGORIAS } from '../services/reportes'
+import { comprimirFoto } from '../services/fotos'
 
 const BASE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const ATRIB =
@@ -41,6 +42,30 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
   const [error, setError] = useState(null)
   const [gps, setGps] = useState(inicio.esGps ? 'listo' : 'sin')
   const [recentrar, setRecentrar] = useState(0)
+  const [foto, setFoto] = useState(null) // { blob, url }
+  const [procesandoFoto, setProcesandoFoto] = useState(false)
+  const [errorFoto, setErrorFoto] = useState(null)
+
+  const elegirFoto = async (e) => {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivo) return
+    setErrorFoto(null)
+    setProcesandoFoto(true)
+    try {
+      const blob = await comprimirFoto(archivo)
+      if (foto) URL.revokeObjectURL(foto.url)
+      setFoto({ blob, url: URL.createObjectURL(blob) })
+    } catch (err) {
+      setErrorFoto(err.message)
+    } finally {
+      setProcesandoFoto(false)
+    }
+  }
+  const quitarFoto = () => {
+    if (foto) URL.revokeObjectURL(foto.url)
+    setFoto(null)
+  }
   const ubicacionPedida = useRef(false)
 
   const usarGps = () => {
@@ -72,7 +97,7 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
     setEnviando(true)
     setError(null)
     try {
-      await onEnviar({ categoria, titulo: titulo || undefined, descripcion: descripcion || undefined, ...punto })
+      await onEnviar({ categoria, titulo: titulo || undefined, descripcion: descripcion || undefined, ...punto }, foto?.blob ?? null)
     } catch (err) {
       setError(err.message)
       setEnviando(false)
@@ -142,6 +167,47 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
           </button>
           {gps === 'error' && (
             <p className="mt-1 text-[14px] text-senal-texto">No se pudo usar tu ubicación. Ubica el problema moviendo el mapa.</p>
+          )}
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1 text-[18px] font-bold">
+            Foto <span className="font-normal text-texto-2">(opcional, muy útil)</span>
+          </legend>
+          <p className="mb-2 text-[15px] text-texto-2">
+            Muestra a tus vecinos cómo está el lugar ahora. No fotografíes personas ni patentes.
+          </p>
+          {foto ? (
+            <div className="space-y-2">
+              <img src={foto.url} alt="Foto que se enviará con el reporte" className="max-h-64 w-full rounded-2xl object-cover" />
+              <button type="button" onClick={quitarFoto} className="min-h-11 rounded-xl border border-borde px-4 text-[15px] font-bold">
+                Quitar foto
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-superficie-2 px-3 text-[16px] font-bold">
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+                {procesandoFoto ? 'Preparando…' : 'Tomar foto'}
+                <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={elegirFoto} />
+              </label>
+              <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-superficie-2 px-3 text-[16px] font-bold">
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 16l5-5 4 4 3-3 6 6" />
+                </svg>
+                Desde la galería
+                <input type="file" accept="image/*" className="sr-only" onChange={elegirFoto} />
+              </label>
+            </div>
+          )}
+          {errorFoto && (
+            <p role="alert" className="mt-1 text-[14px] font-bold text-peligro">
+              {errorFoto}
+            </p>
           )}
         </fieldset>
 

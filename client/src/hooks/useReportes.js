@@ -9,6 +9,7 @@ import {
   revivir,
   votarReporte,
 } from '../services/reportes'
+import { subirFoto } from '../services/fotos'
 import { alCambiarConexion, escuchar, seguirComuna } from '../services/tiempoReal'
 
 const POLLING = 60 * 1000
@@ -79,23 +80,33 @@ export function useReportes({ comuna, enLinea }) {
     return () => clearInterval(id)
   }, [])
 
-  const reportar = async (datos) => {
+  /** Crea el reporte y, si viene, le sube la foto. Sin señal, el reporte queda en cola (sin la foto). */
+  const reportar = async (datos, foto = null) => {
     if (!enLinea) {
       encolar(datos)
       setNPendientes(pendientes().length)
-      return { enCola: true }
+      return { enCola: true, fotoDescartada: Boolean(foto) }
     }
+    let creado
     try {
-      const r = await crearReporte(datos)
-      aplicar(r)
-      return { reporte: r }
+      creado = await crearReporte(datos)
     } catch (e) {
       if (e.estado === 0) {
         encolar(datos)
         setNPendientes(pendientes().length)
-        return { enCola: true }
+        return { enCola: true, fotoDescartada: Boolean(foto) }
       }
       throw e
+    }
+    aplicar(creado.reporte)
+    if (!foto) return { reporte: creado.reporte }
+    try {
+      const conFoto = revivir(await subirFoto(creado.reporte.id, creado.clave, foto))
+      aplicar(conFoto)
+      return { reporte: conFoto }
+    } catch (e) {
+      // El reporte ya quedó publicado; solo falló la foto.
+      return { reporte: creado.reporte, errorFoto: e.message }
     }
   }
 

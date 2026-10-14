@@ -56,8 +56,8 @@ export async function listarReportes(cut, { signal } = {}) {
 }
 
 export async function crearReporte(datos) {
-  const { reporte } = await pedir('/api/reportes', { method: 'POST', body: JSON.stringify(datos) })
-  return revivir(reporte)
+  const { reporte, clave_edicion } = await pedir('/api/reportes', { method: 'POST', body: JSON.stringify(datos) })
+  return { reporte: revivir(reporte), clave: clave_edicion }
 }
 
 export async function votarReporte(id, voto) {

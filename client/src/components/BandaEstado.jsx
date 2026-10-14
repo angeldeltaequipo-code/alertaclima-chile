@@ -85,7 +85,7 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
 
   return (
     <header
-      className="safe-top border-b-2 border-borde"
+      className="safe-top border-b border-linea"
       style={{ background: `var(--nivel-${clave}-fondo)`, color: `var(--nivel-${clave}-texto)` }}
     >
       <div className="mx-auto flex max-w-xl items-center gap-3 px-4 pt-3 pb-3">

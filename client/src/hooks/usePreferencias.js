@@ -1,21 +1,35 @@
 import { useEffect, useState } from 'react'
 import { guardar, guardarTexto, leer } from '../services/almacen'
 
-/** Tema claro/oscuro. Oscuro por defecto. */
+const oscuroDelSistema = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+
+/**
+ * Tema: "auto" (sigue al teléfono, por defecto), "claro" u "oscuro".
+ * Devuelve [tema elegido, cambiar, tema que se está viendo].
+ */
 export function useTema() {
   const [tema, setTema] = useState(() => {
     try {
-      return localStorage.getItem('ac:tema') === 'claro' ? 'claro' : 'oscuro'
+      const t = localStorage.getItem('ac:tema')
+      return t === 'claro' || t === 'oscuro' ? t : 'auto'
     } catch {
-      return 'oscuro'
+      return 'auto'
     }
   })
+  const [sistemaOscuro, setSistemaOscuro] = useState(oscuroDelSistema)
   useEffect(() => {
-    document.documentElement.dataset.tema = tema
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)')
+    const cambio = () => setSistemaOscuro(mq.matches)
+    mq?.addEventListener?.('change', cambio)
+    return () => mq?.removeEventListener?.('change', cambio)
+  }, [])
+  const resuelto = tema === 'auto' ? (sistemaOscuro ? 'oscuro' : 'claro') : tema
+  useEffect(() => {
+    document.documentElement.dataset.tema = resuelto
     guardarTexto('tema', tema)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', tema === 'claro' ? '#ffffff' : '#0E1A24')
-  }, [tema])
-  return [tema, setTema]
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resuelto === 'claro' ? '#f3f6f9' : '#0f1b26')
+  }, [tema, resuelto])
+  return [tema, setTema, resuelto]
 }
 
 /**

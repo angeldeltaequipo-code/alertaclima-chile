@@ -9,6 +9,8 @@ import {
   horasSinConfirmar,
   listarAlertasAdmin,
 } from '../services/alertas.js'
+import { fotosPorRevisar, leerFotoAdmin, revisarFoto } from '../services/fotos.js'
+import { reportePorId } from '../services/reportes.js'
 
 /** Lectura pública: alertas vigentes de una comuna. */
 export function alertasRouter() {
@@ -25,7 +27,7 @@ export function alertasRouter() {
 }
 
 /** Administración: crear, confirmar, editar y cancelar alertas. Todo queda en la bitácora. */
-export function adminRouter({ avisarComunas = () => {} } = {}) {
+export function adminRouter({ avisarComunas = () => {}, emitir = () => {} } = {}) {
   const r = Router()
   r.use(exigirAdmin)
 
@@ -54,6 +56,35 @@ export function adminRouter({ avisarComunas = () => {} } = {}) {
       const { alerta, comunasAfectadas } = await actualizarAlerta(pool, req.params.id, req.body)
       avisarComunas(comunasAfectadas)
       res.json({ alerta })
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  // Fotos ocultas por denuncias: el administrador las ve y decide si restaurarlas o eliminarlas.
+  r.get('/fotos', async (req, res, next) => {
+    try {
+      res.json({ fotos: await fotosPorRevisar(pool) })
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  r.get('/fotos/:id/imagen', async (req, res, next) => {
+    try {
+      const f = await leerFotoAdmin(pool, req.params.id)
+      res.set({ 'Content-Type': f.mime, 'Cache-Control': 'no-store' }).send(f.datos)
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  r.patch('/fotos/:id', async (req, res, next) => {
+    try {
+      const reporteId = await revisarFoto(pool, req.params.id, req.body?.accion)
+      const reporte = await reportePorId(pool, reporteId)
+      if (reporte) emitir('reporte:actualizado', reporte)
+      res.json({ ok: true })
     } catch (e) {
       next(e)
     }

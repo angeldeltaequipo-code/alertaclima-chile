@@ -15,7 +15,9 @@
       // Aplica el tema guardado antes de pintar, para evitar un destello claro.
       try {
         var t = localStorage.getItem('ac:tema')
-        if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.tema = t
+        if (t !== 'claro' && t !== 'oscuro')
+          t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro'
+        document.documentElement.dataset.tema = t
       } catch (e) {}
     </script>
   </head>

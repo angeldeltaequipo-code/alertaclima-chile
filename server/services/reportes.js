@@ -32,7 +32,8 @@ const CAMPOS = `
   r.id, r.category AS categoria, r.title AS titulo, r.description AS descripcion,
   ST_Y(r.geom) AS lat, ST_X(r.geom) AS lng, r.comuna_cut, r.status AS estado,
   r.confirmations AS confirmaciones, r.flags AS desmentidos,
-  r.created_at AS creado, r.expires_at AS vence`
+  r.created_at AS creado, r.expires_at AS vence,
+  (SELECT p.id FROM report_photos p WHERE p.report_id = r.id AND p.estado = 'visible') AS foto_id`
 
 function limpiarTexto(v, max) {
   if (v === undefined || v === null) return null
@@ -62,6 +63,11 @@ export function validarNuevoReporte(cuerpo) {
   }
 }
 
+export async function reportePorId(db, id) {
+  const { rows } = await db.query(`SELECT ${CAMPOS} FROM emergency_reports r WHERE r.id = $1`, [id])
+  return rows[0] ?? null
+}
+
 export async function listarReportes(db, comunaCut) {
   if (!/^\d{5}$/.test(comunaCut ?? '')) throw new ErrorValidacion('Comuna inválida')
   const { rows } = await db.query(
@@ -73,7 +79,7 @@ export async function listarReportes(db, comunaCut) {
   return rows
 }
 
-export async function crearReporte(db, datos, reporterHash) {
+export async function crearReporte(db, datos, reporterHash, claveEdicionHash = null) {
   const v = validarNuevoReporte(datos)
   const cliente = await db.connect()
   try {
@@ -107,10 +113,10 @@ export async function crearReporte(db, datos, reporterHash) {
     if (!cut) throw new ErrorValidacion('La ubicación no está dentro de ninguna comuna de Chile', 422)
 
     const { rows } = await cliente.query(
-      `INSERT INTO emergency_reports (title, category, comuna_cut, geom, description, reporter_hash, expires_at)
-       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326), $6, $7, now() + make_interval(hours => $8))
+      `INSERT INTO emergency_reports (title, category, comuna_cut, geom, description, reporter_hash, expires_at, clave_edicion_hash)
+       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326), $6, $7, now() + make_interval(hours => $8), $9)
        RETURNING id`,
-      [v.titulo, v.categoria, cut, v.lng, v.lat, v.descripcion, reporterHash, REGLAS.duracionInicialHoras],
+      [v.titulo, v.categoria, cut, v.lng, v.lat, v.descripcion, reporterHash, REGLAS.duracionInicialHoras, claveEdicionHash],
     )
     const { rows: final } = await cliente.query(`SELECT ${CAMPOS} FROM emergency_reports r WHERE r.id = $1`, [
       rows[0].id,

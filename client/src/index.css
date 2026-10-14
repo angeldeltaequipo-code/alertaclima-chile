@@ -8,10 +8,12 @@
   Todas las combinaciones texto/fondo cumplen WCAG AA, y las críticas AAA.
 */
 :root {
-  --fondo: #0e1a24;
-  --superficie: #172a3a;
-  --superficie-2: #20384c;
-  --borde: #4a6478;
+  --fondo: #0f1b26;
+  --superficie: #182a3a;
+  --superficie-2: #22384b;
+  --linea: #2b4255;          /* bordes suaves de tarjetas */
+  --borde: #5b7488;          /* bordes de controles (contraste ≥ 3:1) */
+  --sombra: 0 1px 0 rgb(255 255 255 / 0.03);
   --texto: #f2f6f9;
   --texto-2: #b9c8d5;
   --senal: #ffc93c;          /* ámbar de señalética: acciones principales */
@@ -44,19 +46,21 @@
 }
 
 :root[data-tema='claro'] {
-  --fondo: #ffffff;
-  --superficie: #eef3f7;
-  --superficie-2: #dde7ef;
-  --borde: #7d93a6;
-  --texto: #0e1a24;
-  --texto-2: #34495c;
+  --fondo: #f3f6f9;
+  --superficie: #ffffff;
+  --superficie-2: #e8eef4;
+  --linea: #dbe3ea;
+  --borde: #7b8fa1;
+  --sombra: 0 1px 2px rgb(16 32 46 / 0.06), 0 6px 18px rgb(16 32 46 / 0.06);
+  --texto: #10202e;
+  --texto-2: #3d5164;
   --senal: #ffc93c;
   --senal-texto: #6e4300;
   --sobre-senal: #0e1a24;
   --peligro: #b3001b;
   --ok: #0f6b3a;
-  --nivel-sin-fondo: #eef3f7;
-  --nivel-sin-texto: #0e1a24;
+  --nivel-sin-fondo: #ffffff;
+  --nivel-sin-texto: #10202e;
   --lluvia: #0565a8;
   --lluvia-texto: #0565a8;
   --sol: #e8a200;
@@ -70,6 +74,7 @@
   --color-superficie: var(--superficie);
   --color-superficie-2: var(--superficie-2);
   --color-borde: var(--borde);
+  --color-linea: var(--linea);
   --color-texto: var(--texto);
   --color-texto-2: var(--texto-2);
   --color-senal: var(--senal);
@@ -127,6 +132,43 @@ body {
    solo la capa base (el radar y el contorno conservan sus colores reales). */
 :root:not([data-tema='claro']) .capa-base {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+
+/* Tarjetas: superficie clara, borde suave y sombra leve (solo en tema claro). */
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: var(--sombra);
+}
+.titulo-tarjeta {
+  margin-bottom: 10px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Pines de cámaras públicas: redondos y oscuros, distintos de los reportes. */
+.pin-camara {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #10202e;
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+/* Aviso de alerta: un pulso para llamar la atención (se apaga con movimiento reducido y modo ahorro). */
+@keyframes pulso {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.aviso-pulso {
+  animation: pulso 1.2s ease-in-out infinite;
 }
 
 /* Pines de reportes vecinales: blancos con borde oscuro, para que no se confundan

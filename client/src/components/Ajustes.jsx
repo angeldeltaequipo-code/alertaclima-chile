@@ -1,4 +1,49 @@
+import { useState } from 'react'
 import { useInstalar } from '../hooks/useInstalar'
+import { setVibrarActivado, vibracionSoportada, vibrar, vibrarActivado } from '../services/aviso'
+
+function AjusteVibracion() {
+  const [activo, setActivo] = useState(vibrarActivado)
+  const soportada = vibracionSoportada()
+  const cambiar = (v) => {
+    setActivo(v)
+    setVibrarActivado(v)
+  }
+  return (
+    <>
+      <p className="mb-2 text-[16px]">
+        Cuando llega una alerta oficial nueva o sube de nivel, la app muestra un aviso a pantalla completa
+        {soportada ? ' y hace vibrar el teléfono.' : '.'}
+      </p>
+      {soportada ? (
+        <>
+          <Opciones
+            nombre="Vibrar con alertas"
+            valor={activo}
+            onCambiar={cambiar}
+            opciones={[
+              { valor: true, etiqueta: 'Vibrar' },
+              { valor: false, etiqueta: 'No vibrar' },
+            ]}
+          />
+          <button
+            type="button"
+            onClick={() => vibrar('roja')}
+            disabled={!activo}
+            className="mt-2 min-h-12 w-full rounded-xl bg-superficie-2 text-[16px] font-bold disabled:opacity-50"
+          >
+            Probar vibración
+          </button>
+        </>
+      ) : (
+        <p className="text-[15px] text-texto-2">Este teléfono o navegador no permite que una página web lo haga vibrar (por ejemplo, el iPhone).</p>
+      )}
+      <p className="mt-2 text-[14px] text-texto-2">
+        Por ahora el aviso funciona con la app abierta. Pronto llegará también como notificación con la app cerrada.
+      </p>
+    </>
+  )
+}
 
 function Seccion({ titulo, children }) {
   return (
@@ -45,11 +90,18 @@ export default function Ajustes({ tema, setTema, ahorro }) {
           valor={tema}
           onCambiar={setTema}
           opciones={[
-            { valor: 'oscuro', etiqueta: 'Oscuro' },
+            { valor: 'auto', etiqueta: 'Automático' },
             { valor: 'claro', etiqueta: 'Claro' },
+            { valor: 'oscuro', etiqueta: 'Oscuro' },
           ]}
         />
-        <p className="mt-2 text-[15px] text-texto-2">El tema oscuro gasta menos batería. El claro se lee mejor a pleno sol.</p>
+        <p className="mt-2 text-[15px] text-texto-2">
+          Automático sigue la configuración de tu teléfono. El claro se lee mejor a pleno sol; el oscuro gasta menos batería.
+        </p>
+      </Seccion>
+
+      <Seccion titulo="Avisos de alertas">
+        <AjusteVibracion />
       </Seccion>
 
       <Seccion titulo="Modo ahorro">

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
 import SelectorComuna from './components/SelectorComuna'
@@ -14,6 +14,12 @@ import { useClima } from './hooks/useClima'
 import { useReportes } from './hooks/useReportes'
 import { useAlertas } from './hooks/useAlertas'
 import { useObservacion } from './hooks/useObservacion'
+import { useCamaras } from './hooks/useCamaras'
+import CamarasCercanas, { FichaCamara } from './components/Camaras'
+import AvisoAlerta from './components/AvisoAlerta'
+import Resumen from './components/Resumen'
+import { alertaPrincipal } from './services/alertas'
+import { marcarVista, vibrar, yaVista } from './services/aviso'
 import { condicionesActuales } from './services/clima'
 import DetalleAlertas from './components/DetalleAlertas'
 import { comunaPorCut } from './services/comunas'
@@ -25,7 +31,7 @@ const Mapa = lazy(() => import('./components/Mapa'))
 const FormReporte = lazy(() => import('./components/FormReporte'))
 
 export default function App() {
-  const [tema, setTema] = useTema()
+  const [tema, setTema, temaVisible] = useTema()
   const ahorro = useAhorro()
   const enLinea = useConexion()
   const [cut, setCut] = useComunaGuardada()
@@ -35,6 +41,21 @@ export default function App() {
   const rep = useReportes({ comuna, enLinea })
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
+  const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
+  const [camaraSel, setCamaraSel] = useState(null)
+
+  // Alerta nueva (o que subió de nivel) que esta persona todavía no ha visto: aviso grande y vibración.
+  const [, setVistas] = useState(0)
+  const principal = alertaPrincipal(alertas.estado?.alertas ?? [])
+  const avisoPendiente = principal && !yaVista(principal) ? principal : null
+  useEffect(() => {
+    if (avisoPendiente) vibrar(avisoPendiente.nivel)
+  }, [avisoPendiente?.id, avisoPendiente?.nivel]) // eslint-disable-line react-hooks/exhaustive-deps
+  const cerrarAviso = (verDetalle) => {
+    marcarVista(avisoPendiente)
+    setVistas((n) => n + 1)
+    if (verDetalle) setVerAlertas(true)
+  }
   const [verAlertas, setVerAlertas] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
   const [formulario, setFormulario] = useState(null)
@@ -67,12 +88,17 @@ export default function App() {
     setFormulario({ punto: { lat: punto.lat, lng: punto.lng }, esGps: Boolean(ubicacion) })
   }
 
-  const enviarReporte = async (datos) => {
-    const res = await rep.reportar(datos)
+  const enviarReporte = async (datos, foto) => {
+    const res = await rep.reportar(datos, foto)
     setFormulario(null)
-    if (res.enCola) setAviso('Sin señal: tu reporte se enviará apenas vuelva la conexión.')
+    if (res.enCola)
+      setAviso(
+        res.fotoDescartada
+          ? 'Sin señal: tu reporte se enviará apenas vuelva la conexión (sin la foto, que no se puede guardar).'
+          : 'Sin señal: tu reporte se enviará apenas vuelva la conexión.',
+      )
     else {
-      setAviso('Reporte enviado. Gracias por avisar a tus vecinos.')
+      setAviso(res.errorFoto ? `Reporte enviado, pero la foto no se pudo subir: ${res.errorFoto}` : 'Reporte enviado. Gracias por avisar a tus vecinos.')
       setSeleccionado(res.reporte)
       setVista('radar')
     }
@@ -131,7 +157,19 @@ export default function App() {
                 comuna={comuna}
                 enLinea={enLinea}
                 obs={obs}
+                resumen={
+                  <Resumen
+                    alertas={alertas.estado}
+                    ahora={condicionesActuales(clima.datos?.ahora, obs)}
+                    horas={clima.datos?.horas}
+                    reportes={rep.reportes}
+                    reportesDisponibles={rep.disponible}
+                    onVerAlertas={() => setVerAlertas(true)}
+                    onVerMapa={() => setVista('radar')}
+                  />
+                }
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
+                camaras={<CamarasCercanas datos={camaras} comuna={comuna} />}
               />
             )}
           </div>
@@ -142,7 +180,7 @@ export default function App() {
           {mapaMontado && (
             <Suspense fallback={<div className="grid h-full place-items-center text-texto-2">Cargando mapa…</div>}>
               <Mapa
-                tema={tema}
+                tema={temaVisible}
                 comuna={comuna}
                 cuadros={radar.cuadros}
                 indice={radar.indice}
@@ -151,7 +189,15 @@ export default function App() {
                 visible={vista === 'radar'}
                 reportes={rep.reportes}
                 seleccionado={fichaActual}
-                onSeleccionar={setSeleccionado}
+                onSeleccionar={(r) => {
+                  setCamaraSel(null)
+                  setSeleccionado(r)
+                }}
+                camaras={camaras.camaras}
+                onCamara={(c) => {
+                  setSeleccionado(null)
+                  setCamaraSel(c)
+                }}
               />
             </Suspense>
           )}
@@ -188,7 +234,9 @@ export default function App() {
                   {avisoUbicacion}
                 </p>
               )}
-              {fichaActual ? (
+              {camaraSel ? (
+                <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} />
+              ) : fichaActual ? (
                 <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={rep.votar} onCerrar={() => setSeleccionado(null)} />
               ) : (
                 <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
@@ -217,6 +265,15 @@ export default function App() {
         <Suspense fallback={null}>
           <FormReporte inicio={formulario} onEnviar={enviarReporte} onCerrar={() => setFormulario(null)} />
         </Suspense>
+      )}
+
+      {avisoPendiente && comuna && !verAlertas && (
+        <AvisoAlerta
+          alerta={avisoPendiente}
+          comuna={comuna}
+          onVerDetalle={() => cerrarAviso(true)}
+          onEntendido={() => cerrarAviso(false)}
+        />
       )}
 
       {verAlertas && comuna && (

@@ -32,7 +32,7 @@ const PESTANAS = [
 /** Barra inferior con tres destinos: al alcance del pulgar. */
 export default function Navegacion({ vista, onCambiar }) {
   return (
-    <nav className="safe-bottom border-t-2 border-borde bg-fondo" aria-label="Secciones">
+    <nav className="safe-bottom border-t border-linea bg-fondo" aria-label="Secciones">
       <ul className="mx-auto grid max-w-xl grid-cols-3">
         {PESTANAS.map((p) => {
           const activa = vista === p.id
