@@ -57,7 +57,7 @@ export default function Resumen({ alertas, ahora, horas, reportes, reportesDispo
     lineaLluvia(horas),
     (() => {
       const l = lineaVecinos(reportes, reportesDisponibles)
-      return l && { ...l, accion: reportes.length ? { texto: 'Mapa', fn: onVerMapa } : null }
+      return l && { ...l, accion: reportes.length ? { texto: 'Ver mapa', fn: onVerMapa } : null }
     })(),
   ].filter(Boolean)
 

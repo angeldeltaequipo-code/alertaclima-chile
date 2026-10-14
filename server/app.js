@@ -30,7 +30,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush } = {}) {
   app.use('/api/alertas', alertasRouter())
   app.use('/api/observacion', observacionRouter())
   app.use('/api/camaras', camarasRouter())
-  app.use('/api/push', pushRouter())
+  app.use('/api/push', pushRouter({ enviarPush }))
   app.use('/api/admin', adminRouter({ avisarComunas, emitir: emitirReporte, enviarPush }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))

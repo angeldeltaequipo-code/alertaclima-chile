@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { pool } from '../db/pool.js'
-import { borrarSuscripcion, clavesVapid, guardarSuscripcion } from '../services/notificaciones.js'
+import { borrarSuscripcion, clavesVapid, enviarPrueba, guardarSuscripcion, renovarSuscripcion } from '../services/notificaciones.js'
 
 /** Suscripciones a notificaciones de alertas oficiales. */
-export function pushRouter() {
+export function pushRouter({ enviarPush } = {}) {
   const r = Router()
 
   // Clave pública que el navegador necesita para suscribirse.
@@ -29,6 +29,23 @@ export function pushRouter() {
     try {
       await borrarSuscripcion(pool, req.body?.endpoint)
       res.json({ ok: true })
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  r.post('/prueba', async (req, res, next) => {
+    try {
+      await enviarPrueba(pool, req.body?.endpoint, enviarPush ? { enviar: enviarPush } : {})
+      res.json({ ok: true })
+    } catch (e) {
+      next(e)
+    }
+  })
+
+  r.post('/renovar', async (req, res, next) => {
+    try {
+      res.json(await renovarSuscripcion(pool, req.body?.anterior, req.body?.suscripcion))
     } catch (e) {
       next(e)
     }

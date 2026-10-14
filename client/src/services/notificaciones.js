@@ -4,20 +4,75 @@
 import { API_URL } from './reportes'
 import { guardar, leer } from './almacen'
 
-const esIOS = () =>
-  /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+const ua = () => navigator.userAgent
+const esIOS = () => /iphone|ipad|ipod/i.test(ua()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 const instalada = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
 
-/** 'ok' | 'ios-instalar' (iPhone: hay que agregarla a inicio) | 'no' (navegador sin soporte) | 'sin-servidor' */
+/**
+ * Dónde está abierta la app, para dar instrucciones que calcen con lo que la persona ve.
+ * navegador: chrome | edge | samsung | firefox | safari | brave | opera | integrado
+ * sistema: android | ios | mac | windows | otro
+ */
+export function entorno() {
+  const u = ua()
+  let navegador = 'chrome'
+  // Navegadores dentro de otras apps (WhatsApp, Instagram, Facebook, la app de Claude…): no permiten notificaciones.
+  if (/FBAN|FBAV|Instagram|Line\/|WhatsApp|Claude\/|Electron|; wv\)/i.test(u)) navegador = 'integrado'
+  else if (navigator.brave) navegador = 'brave'
+  else if (/SamsungBrowser/i.test(u)) navegador = 'samsung'
+  else if (/Edg(A|iOS)?\//.test(u)) navegador = 'edge'
+  else if (/OPR\/|Opera/.test(u)) navegador = 'opera'
+  else if (/Firefox|FxiOS/.test(u)) navegador = 'firefox'
+  else if (/Safari/.test(u) && !/Chrome|CriOS|Chromium/.test(u)) navegador = 'safari'
+  let sistema = 'otro'
+  if (/Android/i.test(u)) sistema = 'android'
+  else if (esIOS()) sistema = 'ios'
+  else if (/Mac OS X|Macintosh/.test(u)) sistema = 'mac'
+  else if (/Windows/.test(u)) sistema = 'windows'
+  return { navegador, sistema, instalada: instalada() }
+}
+
+/** 'ok' | 'ios-instalar' | 'integrado' (navegador dentro de otra app) | 'no' | 'sin-servidor' */
 export function soporte() {
   if (!API_URL) return 'sin-servidor'
+  if (entorno().navegador === 'integrado') return 'integrado'
   if (esIOS() && !instalada()) return 'ios-instalar'
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'no'
   return 'ok'
 }
 
+/** 'default' (aún no se ha preguntado) | 'granted' | 'denied' (bloqueadas en este navegador) */
 export const permiso = () => (typeof Notification === 'undefined' ? 'default' : Notification.permission)
 export const comunasSuscritas = () => leer('notif:comunas', [])
+
+/** Llama a `fn` cada vez que cambia el permiso (por ejemplo, si la persona lo habilita en el navegador). */
+export function vigilarPermiso(fn) {
+  let estado = null
+  let vivo = true
+  navigator.permissions
+    ?.query({ name: 'notifications' })
+    .then((s) => {
+      if (!vivo) return
+      estado = s
+      s.onchange = () => fn(permiso())
+    })
+    .catch(() => {})
+  // Respaldo (Safari y otros): revisar al volver a la app.
+  const alVolver = () => document.visibilityState === 'visible' && fn(permiso())
+  document.addEventListener('visibilitychange', alVolver)
+  return () => {
+    vivo = false
+    if (estado) estado.onchange = null
+    document.removeEventListener('visibilitychange', alVolver)
+  }
+}
+
+export class ErrorNotificacion extends Error {
+  constructor(mensaje, codigo) {
+    super(mensaje)
+    this.codigo = codigo
+  }
+}
 
 function aUint8(base64url) {
   const relleno = '='.repeat((4 - (base64url.length % 4)) % 4)
@@ -26,44 +81,76 @@ function aUint8(base64url) {
 }
 
 async function enviar(ruta, cuerpo) {
-  const r = await fetch(`${API_URL}/api/push${ruta}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(cuerpo),
-  })
+  let r
+  try {
+    r = await fetch(`${API_URL}/api/push${ruta}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+    })
+  } catch {
+    throw new ErrorNotificacion('No hay conexión con el servidor. Revisa tu señal y vuelve a intentar.', 'red')
+  }
   const d = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error(d.error ?? `El servidor respondió ${r.status}`)
+  if (!r.ok) throw new ErrorNotificacion(d.error ?? `El servidor respondió ${r.status}`, 'servidor')
   return d
 }
 
+/** El servidor gratuito se duerme tras un rato sin uso: la primera consulta puede tardar hasta un minuto. */
+async function claveDelServidor() {
+  for (let intento = 0; intento < 2; intento++) {
+    try {
+      const r = await fetch(`${API_URL}/api/push/clave`, { signal: AbortSignal.timeout(70000) })
+      if (r.ok) return (await r.json()).clave
+    } catch {
+      /* reintento */
+    }
+  }
+  throw new ErrorNotificacion('El servidor no respondió. Espera un minuto y vuelve a intentar.', 'servidor')
+}
+
 async function suscripcionActual(crear) {
-  const reg = await navigator.serviceWorker.ready
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, no) => setTimeout(() => no(new ErrorNotificacion('La app aún se está instalando. Recarga la página y vuelve a intentar.', 'sw')), 15000)),
+  ])
   let sub = await reg.pushManager.getSubscription()
   if (!sub && crear) {
-    const r = await fetch(`${API_URL}/api/push/clave`)
-    if (!r.ok) throw new Error('El servidor no respondió. Si estuvo inactivo, espera un minuto y vuelve a intentar.')
-    const { clave } = await r.json()
+    const clave = aUint8(await claveDelServidor())
     try {
-      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: aUint8(clave) })
-    } catch {
-      throw new Error(
-        'Este navegador no pudo registrarse para recibir notificaciones. Revisa que tenga permiso y conexión, o prueba con Chrome.',
-      )
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: clave })
+    } catch (e) {
+      // Una suscripción antigua con otra clave impide crear la nueva: se borra y se reintenta.
+      if (e.name === 'InvalidStateError') {
+        await (await reg.pushManager.getSubscription())?.unsubscribe()
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: clave }).catch(() => null)
+      }
+      if (!sub) {
+        if (permiso() === 'denied') throw bloqueadas()
+        if (entorno().navegador === 'brave')
+          throw new ErrorNotificacion(
+            'Brave trae apagado el servicio de notificaciones. Abre brave://settings/privacy, activa «Usar los servicios de Google para mensajería push», reinicia Brave y vuelve a intentar.',
+            'brave',
+          )
+        throw new ErrorNotificacion(
+          'Este navegador no pudo registrarse en su servicio de notificaciones. Revisa tu conexión o prueba con Chrome, Edge, Firefox o Safari.',
+          'suscribir',
+        )
+      }
     }
   }
   return sub
 }
 
-/** Pide permiso (debe llamarse desde un toque de la persona) y suscribe estas comunas. */
+const bloqueadas = () =>
+  new ErrorNotificacion('Las notificaciones están bloqueadas para esta página en este navegador.', 'bloqueadas')
+
+/** Pide permiso (debe llamarse directo desde un toque de la persona) y suscribe estas comunas. */
 export async function activar(comunas) {
+  if (permiso() === 'denied') throw bloqueadas()
   const p = await Notification.requestPermission()
-  if (p !== 'granted') {
-    throw new Error(
-      p === 'denied'
-        ? 'Las notificaciones están bloqueadas para esta app. Actívalas en la configuración del navegador o del teléfono.'
-        : 'No se activaron las notificaciones.',
-    )
-  }
+  if (p === 'denied') throw bloqueadas()
+  if (p !== 'granted') throw new ErrorNotificacion('Cerraste el aviso sin elegir. Toca «Activar» otra vez y elige «Permitir».', 'sin-respuesta')
   const sub = await suscripcionActual(true)
   await enviar('/suscripciones', { suscripcion: sub.toJSON(), comunas })
   guardar('notif:comunas', comunas)
@@ -79,7 +166,7 @@ export async function cambiarComunas(comunas) {
 }
 
 export async function desactivar() {
-  const sub = await suscripcionActual(false)
+  const sub = await suscripcionActual(false).catch(() => null)
   if (sub) {
     await enviar('/baja', { endpoint: sub.endpoint }).catch(() => {})
     await sub.unsubscribe().catch(() => {})
@@ -88,10 +175,20 @@ export async function desactivar() {
   return []
 }
 
+/** Pide al servidor una notificación de prueba a este dispositivo. */
+export async function probar() {
+  const sub = await suscripcionActual(false)
+  if (!sub) throw new ErrorNotificacion('Este dispositivo no está suscrito. Desactiva y vuelve a activar las notificaciones.', 'sin-suscripcion')
+  await enviar('/prueba', { endpoint: sub.endpoint })
+}
+
 /** Revisa que la suscripción guardada siga existiendo (el navegador puede borrarla) y la reenvía. */
 export async function revisar() {
   const comunas = comunasSuscritas()
-  if (!comunas.length || soporte() !== 'ok' || permiso() !== 'granted') return comunas
+  if (!comunas.length || soporte() !== 'ok') return comunas
+  // Si la persona bloqueó las notificaciones después de activarlas, se da de baja.
+  if (permiso() === 'denied') return desactivar()
+  if (permiso() !== 'granted') return comunas
   try {
     const sub = await suscripcionActual(true)
     await enviar('/suscripciones', { suscripcion: sub.toJSON(), comunas })

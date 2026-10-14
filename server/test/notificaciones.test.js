@@ -135,3 +135,27 @@ test('el panel puede publicar sin notificar', { skip: omitir }, async () => {
     body: JSON.stringify({ accion: 'cancelar', notificar: false }),
   })
 })
+
+test('notificación de prueba: solo a un dispositivo suscrito y una por minuto', { skip: omitir }, async () => {
+  const comuna = (await pool.query('SELECT cut FROM comunas LIMIT 1')).rows[0].cut.trim()
+  assert.equal((await post('/push/suscripciones', { suscripcion: sub('prueba-1'), comunas: [comuna] })).status, 201)
+  const antes = enviados.length
+  const r = await post('/push/prueba', { endpoint: sub('prueba-1').endpoint })
+  assert.equal(r.status, 200)
+  assert.equal(enviados.length, antes + 1)
+  assert.equal(enviados.at(-1).mensaje.tipo, 'prueba')
+  assert.equal((await post('/push/prueba', { endpoint: sub('prueba-1').endpoint })).status, 429)
+  assert.equal((await post('/push/prueba', { endpoint: 'https://push.prueba/no-existe' })).status, 404)
+})
+
+test('renovar cambia el endpoint y conserva las comunas', { skip: omitir }, async () => {
+  const comuna = (await pool.query('SELECT cut FROM comunas LIMIT 1')).rows[0].cut.trim()
+  await post('/push/suscripciones', { suscripcion: sub('renovar-viejo'), comunas: [comuna] })
+  const r = await post('/push/renovar', { anterior: sub('renovar-viejo').endpoint, suscripcion: sub('renovar-nuevo') })
+  assert.deepEqual(await r.json(), { actualizada: true })
+  const { rows } = await pool.query(
+    `SELECT count(*)::int AS n FROM push_subscriptions s JOIN push_subscription_comunas c ON c.subscription_id = s.id WHERE s.endpoint = $1`,
+    [sub('renovar-nuevo').endpoint],
+  )
+  assert.equal(rows[0].n, 1)
+})

@@ -101,9 +101,31 @@ self.addEventListener('notificationclick', (evento) => {
   )
 })
 
-// Si el servicio de notificaciones renueva la suscripción, se avisa a la app para que la vuelva a guardar.
+// Si el servicio de notificaciones renueva o cancela la suscripción (pasa de vez en cuando),
+// el service worker se vuelve a suscribir solo y avisa al servidor, aunque la app esté cerrada.
+const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+function aUint8(b64url) {
+  const b64 = (b64url + '='.repeat((4 - (b64url.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+}
 self.addEventListener('pushsubscriptionchange', (evento) => {
   evento.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((vs) => vs.forEach((v) => v.postMessage({ tipo: 'renovar-suscripcion' }))),
+    (async () => {
+      const anterior = evento.oldSubscription?.endpoint
+      let nueva = evento.newSubscription
+      if (!nueva && API) {
+        const { clave } = await fetch(`${API}/api/push/clave`).then((r) => r.json())
+        nueva = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: aUint8(clave) })
+      }
+      if (anterior && nueva && API) {
+        await fetch(`${API}/api/push/renovar`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ anterior, suscripcion: nueva.toJSON() }),
+        })
+      }
+      const ventanas = await self.clients.matchAll({ type: 'window' })
+      ventanas.forEach((v) => v.postMessage({ tipo: 'renovar-suscripcion' }))
+    })().catch(() => {}),
   )
 })

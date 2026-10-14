@@ -178,6 +178,59 @@ export async function notificarAlerta(pool, alerta, tipo, { enviar = webpush.sen
   return resumen
 }
 
+const ultimaPrueba = new Map() // endpoint -> hora de la última prueba
+
+/**
+ * Notificación de prueba a UN dispositivo ya suscrito (máximo una por minuto).
+ * Sirve para que la persona confirme que todo funciona sin esperar una alerta real.
+ */
+export async function enviarPrueba(pool, endpoint, { enviar = webpush.sendNotification, urlApp } = {}) {
+  if (typeof endpoint !== 'string' || endpoint.length > 1000) throw new ErrorValidacion('Suscripción inválida')
+  const antes = ultimaPrueba.get(endpoint)
+  if (antes && Date.now() - antes < 60_000) throw new ErrorValidacion('Espera un minuto antes de enviar otra prueba', 429)
+  await clavesVapid(pool)
+  const { rows } = await pool.query('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE endpoint = $1', [endpoint])
+  const s = rows[0]
+  if (!s) {
+    throw new ErrorValidacion('Este dispositivo no está suscrito. Desactiva y vuelve a activar las notificaciones.', 404)
+  }
+  ultimaPrueba.set(endpoint, Date.now())
+  if (ultimaPrueba.size > 5000) ultimaPrueba.delete(ultimaPrueba.keys().next().value)
+  const app = urlApp ?? process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
+  const mensaje = JSON.stringify({
+    titulo: 'Prueba de AlertaClima',
+    cuerpo: '¡Funciona! Así te llegarán las alertas oficiales de tus comunas.',
+    nivel: 'preventiva',
+    grave: false,
+    url: app,
+    etiqueta: 'prueba',
+    tipo: 'prueba',
+  })
+  try {
+    await enviar({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, mensaje, { TTL: 600, urgency: 'high' })
+    await pool.query('UPDATE push_subscriptions SET ultimo_ok = now(), fallos = 0 WHERE id = $1', [s.id])
+  } catch (e) {
+    if (e.statusCode === 404 || e.statusCode === 410) {
+      await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [s.id])
+      throw new ErrorValidacion('La suscripción de este dispositivo venció. Desactiva y vuelve a activar las notificaciones.', 410)
+    }
+    console.error('Prueba de notificación falló', e.statusCode, e.body)
+    throw new ErrorValidacion('El servicio de notificaciones del navegador rechazó el envío. Intenta de nuevo en un rato.', 502)
+  }
+}
+
+/** El navegador cambió la suscripción (lo avisa el service worker): se reemplaza conservando las comunas. */
+export async function renovarSuscripcion(pool, anterior, nueva) {
+  const s = validarSuscripcion(nueva)
+  if (typeof anterior !== 'string') throw new ErrorValidacion('Suscripción inválida')
+  const { rowCount } = await pool.query(
+    `UPDATE push_subscriptions SET endpoint = $2, p256dh = $3, auth = $4, fallos = 0
+     WHERE endpoint = $1 AND NOT EXISTS (SELECT 1 FROM push_subscriptions WHERE endpoint = $2)`,
+    [anterior, s.endpoint, s.p256dh, s.auth],
+  )
+  return { actualizada: rowCount > 0 }
+}
+
 export async function contarSuscritos(db, cuts) {
   const { rows } = await db.query(
     `SELECT count(DISTINCT subscription_id)::int AS n FROM push_subscription_comunas WHERE comuna_cut = ANY($1::char(5)[])`,
