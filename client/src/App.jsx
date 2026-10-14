@@ -30,6 +30,7 @@ import { leer, guardar } from './services/almacen'
 import { enlaceStreetView } from './services/fotos'
 import ControlesMapa from './components/ControlesMapa'
 import PanelRios from './components/PanelRios'
+import Resguardo from './components/Resguardo'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
@@ -210,6 +211,7 @@ export default function App() {
         {/* Radar: el mapa se queda montado al cambiar de pestaña para no recargarlo */}
         <div hidden={vista !== 'radar'} className="absolute inset-0">
           {mapaMontado && (
+            <Resguardo mensaje="El mapa tuvo un problema.">
             <Suspense fallback={<div className="grid h-full place-items-center text-texto-2">Cargando mapa…</div>}>
               <Mapa
                 comuna={comuna}
@@ -237,6 +239,7 @@ export default function App() {
                 rioEnfocado={rioEnfocado}
               />
             </Suspense>
+            </Resguardo>
           )}
           <ControlesMapa
             base={baseMapa}

@@ -26,6 +26,13 @@ const CHILE = [
 const AMBAR = '#ffc93c'
 const RIO = '#1a73e8'
 
+// Identificador corto y estable para cada cuadro de radar (las URL solo difieren en el medio).
+function idRadar(url) {
+  let h = 5381
+  for (let i = 0; i < url.length; i++) h = ((h * 33) ^ url.charCodeAt(i)) >>> 0
+  return `radar-${h.toString(36)}`
+}
+
 const aBounds = (bbox) => [
   [bbox[0][1], bbox[0][0]],
   [bbox[1][1], bbox[1][0]],
@@ -86,8 +93,15 @@ export default function Mapa({
   // Ejecuta cuando el estilo esté cargado.
   const cuandoListo = (fn) => {
     const r = ref.current
-    if (r.listo) fn(r.mapa)
-    else r.pendientes.push(fn)
+    const seguro = (m) => {
+      try {
+        fn(m)
+      } catch (e) {
+        console.error('Mapa:', e)
+      }
+    }
+    if (r.listo) seguro(r.mapa)
+    else r.pendientes.push(seguro)
   }
 
   // ---- Crear el mapa una sola vez ----
@@ -275,20 +289,20 @@ export default function Mapa({
       const vigentes = new Set(cuadros.map((c) => c.url))
       for (const url of [...r.radar]) {
         if (!vigentes.has(url)) {
-          const id = `radar-${btoa(url).slice(-24)}`
+          const id = idRadar(url)
           if (mapa.getLayer(id)) mapa.removeLayer(id)
           if (mapa.getSource(id)) mapa.removeSource(id)
           r.radar.delete(url)
         }
       }
       if (actual && !r.radar.has(actual)) {
-        const id = `radar-${btoa(actual).slice(-24)}`
-        mapa.addSource(id, { type: 'raster', tiles: [actual], tileSize: 256, maxzoom: radarInfo.zoomMaximo })
-        mapa.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': 0, 'raster-fade-duration': 0 } }, 'comuna-halo')
+        const id = idRadar(actual)
+        if (!mapa.getSource(id)) mapa.addSource(id, { type: 'raster', tiles: [actual], tileSize: 256, maxzoom: radarInfo.zoomMaximo })
+        if (!mapa.getLayer(id)) mapa.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': 0, 'raster-fade-duration': 0 } }, 'comuna-halo')
         r.radar.add(actual)
       }
       for (const url of r.radar) {
-        const id = `radar-${btoa(url).slice(-24)}`
+        const id = idRadar(url)
         if (mapa.getLayer(id)) mapa.setPaintProperty(id, 'raster-opacity', url === actual ? 0.75 : 0)
       }
     })
