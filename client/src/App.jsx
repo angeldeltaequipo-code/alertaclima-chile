@@ -27,6 +27,8 @@ import DetalleAlertas from './components/DetalleAlertas'
 import { comunaPorCut } from './services/comunas'
 import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
+import { enlaceStreetView } from './services/fotos'
+import ControlesMapa from './components/ControlesMapa'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
@@ -47,6 +49,16 @@ export default function App() {
   const notif = useNotificaciones({ enLinea })
   const [camaraSel, setCamaraSel] = useState(null)
   const [camaraVisor, setCamaraVisor] = useState(null)
+  const [baseMapa, setBaseMapaState] = useState(() => leer('mapa:base', 'mapa'))
+  const setBaseMapa = (b) => {
+    setBaseMapaState(b)
+    guardar('mapa:base', b)
+  }
+  const [modoCalle, setModoCalle] = useState(false)
+  const verCalle = ({ lat, lng }) => {
+    setModoCalle(false)
+    window.open(enlaceStreetView(lat, lng), '_blank', 'noopener')
+  }
 
   // Alerta nueva (o que subió de nivel) que esta persona todavía no ha visto: aviso grande y vibración.
   const [, setVistas] = useState(0)
@@ -203,9 +215,13 @@ export default function App() {
                   setSeleccionado(null)
                   setCamaraSel(c)
                 }}
+                base={baseMapa}
+                modoCalle={modoCalle}
+                onCalle={verCalle}
               />
             </Suspense>
           )}
+          <ControlesMapa base={baseMapa} onBase={setBaseMapa} modoCalle={modoCalle} onModoCalle={setModoCalle} />
           <button
             type="button"
             onClick={ubicarme}

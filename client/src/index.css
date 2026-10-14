@@ -298,3 +298,13 @@ body {
   from { transform: translateY(0); }
   to { transform: translateY(40px); }
 }
+
+/* Controles de zoom de Leaflet bajo los botones de ubicación y reporte */
+.leaflet-top.leaflet-right {
+  top: 7.6rem;
+}
+/* Modo «ver la calle»: cursor de mira */
+.modo-calle,
+.modo-calle .leaflet-interactive {
+  cursor: crosshair !important;
+}

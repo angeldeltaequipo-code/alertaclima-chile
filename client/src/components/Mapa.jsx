@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import L from 'leaflet'
-import { CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
+import { maplibreGL } from '@maplibre/maplibre-gl-leaflet'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import { CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet'
 import { svgReporte } from './iconosReporte'
 import { nombreCategoria } from '../services/reportes'
 import { limiteComuna } from '../services/comunas'
@@ -11,13 +13,52 @@ const CHILE = [
   [-17.4, -66.0],
 ]
 
-// Mapa base: OpenStreetMap, sin clave. Su política exige atribución visible, no
-// descargar en masa ni guardar teselas para uso sin conexión, así que el service
-// worker NO las guarda (solo la caché normal del navegador).
-// Para producción comercial conviene un proveedor propio (ver README).
-const BASE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-const ATRIB_BASE =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+// ---- Mapas base ----
+// «Mapa»: OpenFreeMap (datos de OpenStreetMap dibujados en vectores, con edificios, parques,
+// nombres de calles y números). Gratis, también para uso comercial, sin clave; exige atribución.
+const ESTILO = {
+  claro: 'https://tiles.openfreemap.org/styles/liberty',
+  oscuro: 'https://tiles.openfreemap.org/styles/dark',
+}
+const ATRIB_OFM =
+  '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+
+// «Satélite»: imágenes de Esri World Imagery, con calles y nombres encima.
+// Uso libre con atribución en etapa no comercial; para venderlo hay que usar una clave
+// gratuita de ArcGIS Location Platform (ver README).
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services'
+const SATELITE = `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`
+const CALLES = `${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`
+const NOMBRES = `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`
+const ATRIB_ESRI = 'Imágenes: Esri, Vantor, Earthstar Geographics'
+
+/** Capa vectorial de MapLibre dentro de Leaflet (cambia de estilo con el tema). */
+function MapaVectorial({ estilo }) {
+  const map = useMap()
+  useEffect(() => {
+    const capa = maplibreGL({ style: estilo, attributionControl: false, interactive: false })
+    capa.addTo(map)
+    map.attributionControl?.addAttribution(ATRIB_OFM)
+    return () => {
+      map.attributionControl?.removeAttribution(ATRIB_OFM)
+      capa.remove()
+    }
+  }, [estilo, map])
+  return null
+}
+
+/** Modo «ver la calle»: el siguiente toque en el mapa abre la vista a nivel de calle de ese punto. */
+function ToqueCalle({ activo, onElegir }) {
+  const map = useMapEvents({
+    click(e) {
+      if (activo) onElegir(e.latlng)
+    },
+  })
+  useEffect(() => {
+    map.getContainer().classList.toggle('modo-calle', activo)
+  }, [activo, map])
+  return null
+}
 
 const iconos = new Map()
 function iconoPin(categoria, seleccionado) {
@@ -116,6 +157,9 @@ export default function Mapa({
   onSeleccionar = () => {},
   camaras = [],
   onCamara = () => {},
+  base = 'mapa',
+  modoCalle = false,
+  onCalle = () => {},
 }) {
   const [limite, setLimite] = useState(null)
 
@@ -136,13 +180,23 @@ export default function Mapa({
     <MapContainer
       bounds={comuna?.bbox ?? CHILE}
       className="h-full w-full"
-      zoomControl
       attributionControl
       preferCanvas
       minZoom={4}
-      maxZoom={17}
+      maxZoom={19}
+      zoomControl={false}
     >
-      <TileLayer url={BASE_URL} attribution={ATRIB_BASE} maxZoom={19} className="capa-base" />
+      {base === 'satelite' ? (
+        <>
+          <TileLayer key="sat" url={SATELITE} attribution={ATRIB_ESRI} maxNativeZoom={18} maxZoom={19} />
+          <TileLayer key="calles" url={CALLES} maxNativeZoom={18} maxZoom={19} opacity={0.9} />
+          <TileLayer key="nombres" url={NOMBRES} maxNativeZoom={18} maxZoom={19} />
+        </>
+      ) : (
+        <MapaVectorial estilo={tema === 'claro' ? ESTILO.claro : ESTILO.oscuro} />
+      )}
+      <ZoomControl position="topright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
+      <ToqueCalle activo={modoCalle} onElegir={onCalle} />
       <CapasRadar cuadros={cuadros} indice={indice} opacidad={0.75} />
       {limite && (
         <GeoJSON
@@ -150,7 +204,7 @@ export default function Mapa({
           data={limite}
           interactive={false}
           // Ámbar sobre el mapa oscuro; ocre oscuro sobre el claro (contraste ≥ 4,5:1).
-          style={{ color: tema === 'claro' ? '#8a5600' : '#ffc93c', weight: 3, fill: false }}
+          style={{ color: base === 'satelite' || tema !== 'claro' ? '#ffc93c' : '#8a5600', weight: 3, fill: false, dashArray: '8 6' }}
         />
       )}
       {ubicacion && (
