@@ -25,7 +25,7 @@ const ICONOS = {
 
 const PESTANAS = [
   { id: 'ahora', etiqueta: 'Ahora' },
-  { id: 'radar', etiqueta: 'Radar' },
+  { id: 'radar', etiqueta: 'Mapa' },
   { id: 'ajustes', etiqueta: 'Ajustes' },
 ]
 

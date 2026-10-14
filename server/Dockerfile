@@ -11,4 +11,4 @@ WORKDIR /app/server
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:3000/api/salud || exit 1
-CMD ["sh", "-c", "node scripts/migrar.js && node index.js"]
+CMD ["sh", "-c", "node scripts/migrar.js && node scripts/sembrar-comunas.js --si-vacia && node index.js"]

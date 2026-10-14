@@ -5,10 +5,13 @@ import SelectorComuna from './components/SelectorComuna'
 import Ajustes from './components/Ajustes'
 import VistaAhora from './components/VistaAhora'
 import Navegacion from './components/Navegacion'
+import ListaReportes from './components/ListaReportes'
+import DetalleReporte from './components/DetalleReporte'
 import { useConexion } from './hooks/useConexion'
 import { useAhorro, useComunaGuardada, useTema } from './hooks/usePreferencias'
 import { useRadar } from './hooks/useRadar'
 import { useClima } from './hooks/useClima'
+import { useReportes } from './hooks/useReportes'
 import { comunaPorCut } from './services/comunas'
 import { estadoComuna } from './services/alertas'
 import { hhmm } from './services/formato'
@@ -16,6 +19,7 @@ import { leer, guardar } from './services/almacen'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
+const FormReporte = lazy(() => import('./components/FormReporte'))
 
 export default function App() {
   const [tema, setTema] = useTema()
@@ -25,6 +29,10 @@ export default function App() {
   const comuna = cut ? comunaPorCut(cut) : null
   const radar = useRadar({ ahorro: ahorro.activo, enLinea })
   const clima = useClima({ comuna, ahorro: ahorro.activo, enLinea })
+  const rep = useReportes({ comuna, enLinea })
+  const [seleccionado, setSeleccionado] = useState(null)
+  const [formulario, setFormulario] = useState(null)
+  const [aviso, setAviso] = useState(null)
 
   const [vista, setVistaState] = useState(() => leer('vista', 'ahora'))
   const [mapaMontado, setMapaMontado] = useState(vista === 'radar')
@@ -45,8 +53,34 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
+  // La ficha abierta se actualiza si llegan votos nuevos, y se cierra si el reporte se retira.
+  const fichaActual = seleccionado ? rep.reportes.find((r) => r.id === seleccionado.id) ?? null : null
+
+  const verReporte = (r) => {
+    setSeleccionado(r)
+    setVista('radar')
+  }
+
+  const abrirFormulario = () => {
+    const punto = ubicacion ?? (comuna ? clima.datos?.punto ?? { lat: comuna.centro[0], lng: comuna.centro[1] } : { lat: -33.45, lng: -70.66 })
+    setFormulario({ punto: { lat: punto.lat, lng: punto.lng }, esGps: Boolean(ubicacion) })
+  }
+
+  const enviarReporte = async (datos) => {
+    const res = await rep.reportar(datos)
+    setFormulario(null)
+    if (res.enCola) setAviso('Sin señal: tu reporte se enviará apenas vuelva la conexión.')
+    else {
+      setAviso('Reporte enviado. Gracias por avisar a tus vecinos.')
+      setSeleccionado(res.reporte)
+      setVista('radar')
+    }
+    setTimeout(() => setAviso(null), 6000)
+  }
+
   const elegirComuna = (nuevo, punto) => {
     setCut(nuevo)
+    setSeleccionado(null)
     document.getElementById('vista-ahora')?.scrollTo(0, 0)
     if (punto) setUbicacion(punto)
     setSelector(false)
@@ -84,7 +118,14 @@ export default function App() {
         {/* Ahora */}
         <div id="vista-ahora" hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-xl">
-            {comuna && <VistaAhora clima={clima} comuna={comuna} enLinea={enLinea} />}
+            {comuna && (
+              <VistaAhora
+                clima={clima}
+                comuna={comuna}
+                enLinea={enLinea}
+                reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
+              />
+            )}
           </div>
         </div>
 
@@ -100,6 +141,9 @@ export default function App() {
                 ubicacion={ubicacion}
                 centrarEn={centrarEn}
                 visible={vista === 'radar'}
+                reportes={rep.reportes}
+                seleccionado={fichaActual}
+                onSeleccionar={setSeleccionado}
               />
             </Suspense>
           )}
@@ -117,6 +161,18 @@ export default function App() {
               <circle cx="12" cy="12" r="2.4" fill="currentColor" />
             </svg>
           </button>
+          {rep.disponible && (
+            <button
+              type="button"
+              onClick={abrirFormulario}
+              className="absolute top-[4.25rem] right-3 z-[500] flex min-h-12 items-center gap-2 rounded-xl border-2 border-sobre-senal bg-senal px-3 text-[16px] font-bold text-sobre-senal"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+              </svg>
+              Reportar
+            </button>
+          )}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[500] p-3">
             <div className="pointer-events-auto mx-auto max-w-xl space-y-2">
               {avisoUbicacion && (
@@ -124,7 +180,11 @@ export default function App() {
                   {avisoUbicacion}
                 </p>
               )}
-              <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
+              {fichaActual ? (
+                <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={rep.votar} onCerrar={() => setSeleccionado(null)} />
+              ) : (
+                <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
+              )}
             </div>
           </div>
         </div>
@@ -136,6 +196,20 @@ export default function App() {
       </main>
 
       <Navegacion vista={vista} onCambiar={setVista} />
+
+      {aviso && (
+        <div role="status" className="pointer-events-none fixed inset-x-0 top-3 z-[1100] flex justify-center px-4">
+          <p className="max-w-md rounded-xl border-2 border-sobre-senal bg-senal px-4 py-3 text-[16px] font-bold text-sobre-senal shadow-lg">
+            {aviso}
+          </p>
+        </div>
+      )}
+
+      {formulario && (
+        <Suspense fallback={null}>
+          <FormReporte inicio={formulario} onEnviar={enviarReporte} onCerrar={() => setFormulario(null)} />
+        </Suspense>
+      )}
 
       {selector && <SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} />}
     </div>

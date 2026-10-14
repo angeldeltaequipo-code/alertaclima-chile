@@ -40,7 +40,7 @@ function resumenLluvia(horas) {
 
 function Cargando() {
   return (
-    <div className="space-y-3 px-4 py-4" role="status" aria-label="Cargando el clima">
+    <div className="space-y-3" role="status" aria-label="Cargando el clima">
       {[140, 220, 120].map((h) => (
         <div key={h} className="animate-pulse rounded-2xl bg-superficie" style={{ height: h }} />
       ))}
@@ -48,13 +48,15 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea }) {
+export default function VistaAhora({ clima, comuna, enLinea, reportes = null }) {
   const { datos, error, recargar } = clima
 
+  // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
   if (!datos) {
+    let estado
     if (error)
-      return (
-        <div className="px-4 py-6">
+      estado = (
+        <div className="py-2">
           <p className="text-[17px]">
             <strong>No se pudo cargar el clima.</strong> {error}.
           </p>
@@ -63,9 +65,15 @@ export default function VistaAhora({ clima, comuna, enLinea }) {
           </button>
         </div>
       )
-    if (!enLinea)
-      return <p className="px-4 py-6 text-[17px]">Sin señal. El clima de {comuna.nombre} se carga apenas vuelva la conexión.</p>
-    return <Cargando />
+    else if (!enLinea)
+      estado = <p className="py-2 text-[17px]">Sin señal. El clima de {comuna.nombre} se carga apenas vuelva la conexión.</p>
+    else estado = <Cargando />
+    return (
+      <div className="space-y-3 px-4 py-4">
+        {estado}
+        {reportes}
+      </div>
+    )
   }
 
   const { ahora, horas, dias } = datos
@@ -118,6 +126,8 @@ export default function VistaAhora({ clima, comuna, enLinea }) {
           Viento del {direccionViento(ahora.direccion)}. Humedad {ahora.humedad} %.
         </p>
       </section>
+
+      {reportes}
 
       <Bloque titulo="Lluvia en las próximas 12 horas" id="t-lluvia">
         <p className={hayLluvia ? 'mb-2 text-[16px]' : 'text-[16px]'}>{resumenLluvia(prox12)}</p>

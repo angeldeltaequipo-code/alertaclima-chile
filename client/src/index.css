@@ -129,6 +129,24 @@ body {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
 }
 
+/* Pines de reportes vecinales: blancos con borde oscuro, para que no se confundan
+   con los colores del radar ni con los avisos oficiales. */
+.pin-reporte {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px 10px 10px 2px;
+  background: #ffffff;
+  color: #0e1a24;
+  border: 3px solid #0e1a24;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+.pin-reporte.seleccionado {
+  background: #ffc93c;
+  transform: scale(1.15);
+}
+
 /* Leaflet adaptado a los tokens */
 .leaflet-container {
   background: var(--fondo);

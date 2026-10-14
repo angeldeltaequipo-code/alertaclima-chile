@@ -1,10 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { crearApp } from '../app.js'
+
+// Este archivo corre en su propio proceso: apuntamos a una base inexistente ANTES de importar la app.
+process.env.DATABASE_URL = 'postgres://nadie:nada@127.0.0.1:1/nada'
+const { crearApp } = await import('../app.js')
 
 // Sin base de datos disponible, /api/salud debe responder 503 "degradado" (no caerse).
 test('salud responde aunque la base de datos no esté', async () => {
-  process.env.DATABASE_URL = 'postgres://nadie:nada@127.0.0.1:1/nada'
   const app = crearApp()
   const srv = app.listen(0)
   try {

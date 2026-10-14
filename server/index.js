@@ -1,17 +1,19 @@
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
-import { crearApp } from './app.js'
+import { crearApp, origenesPermitidos } from './app.js'
 import { pool } from './db/pool.js'
+import { limpiarVencidos } from './services/reportes.js'
 
 const PUERTO = Number(process.env.PORT ?? 3000)
 
-const app = crearApp()
+let io
+const emitir = (evento, reporte) => io?.to(`comuna:${reporte.comuna_cut}`).emit(evento, reporte)
+
+const app = crearApp({ emitir })
 const http = createServer(app)
 
-// Tiempo real: una sala por comuna (CUT). Los eventos de reportes llegan en la Fase 2.
-const io = new Server(http, {
-  cors: { origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()) },
-})
+// Tiempo real: una sala por comuna (CUT). Cada cliente sigue una sola comuna a la vez.
+io = new Server(http, { cors: { origin: origenesPermitidos() } })
 io.on('connection', (socket) => {
   socket.on('seguir-comuna', (cut) => {
     if (typeof cut !== 'string' || !/^\d{5}$/.test(cut)) return
@@ -20,9 +22,16 @@ io.on('connection', (socket) => {
   })
 })
 
+// Limpieza periódica de reportes muy antiguos.
+const limpieza = setInterval(
+  () => limpiarVencidos(pool).catch((e) => console.error('Limpieza falló:', e.message)),
+  6 * 60 * 60 * 1000,
+)
+
 http.listen(PUERTO, () => console.log(`AlertaClima API escuchando en el puerto ${PUERTO}`))
 
 const cerrar = () => {
+  clearInterval(limpieza)
   io.close()
   http.close(() => pool.end().finally(() => process.exit(0)))
 }

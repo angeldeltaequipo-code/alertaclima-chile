@@ -11,6 +11,15 @@ const regiones = JSON.parse(await readFile(join(CLIENTE, 'src', 'data', 'comunas
 
 const cliente = await pool.connect()
 try {
+  // Con --si-vacia solo carga si la tabla no tiene datos (útil en cada arranque del servidor).
+  if (process.argv.includes('--si-vacia')) {
+    const { rows } = await cliente.query('SELECT count(*)::int AS n FROM comunas')
+    if (rows[0].n > 0) {
+      console.log(`Comunas ya cargadas (${rows[0].n}).`)
+      process.exitCode = 0
+      throw Object.assign(new Error('ya-cargadas'), { omitir: true })
+    }
+  }
   await cliente.query('BEGIN')
   let n = 0
   for (const r of regiones) {
@@ -32,8 +41,10 @@ try {
   await cliente.query('COMMIT')
   console.log(`${n} comunas cargadas.`)
 } catch (e) {
-  await cliente.query('ROLLBACK')
-  throw e
+  if (!e.omitir) {
+    await cliente.query('ROLLBACK')
+    throw e
+  }
 } finally {
   cliente.release()
   await pool.end()

@@ -2,12 +2,13 @@
 
 App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de tu comuna desde el celular, con mala señal y poca batería.
 
-**Estado:** fases 0 y 1 listas (base del proyecto y app ciudadana con mapa, comunas, radar y modo sin conexión). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
+**Estado:** fases 0, 1 y 2 listas: app ciudadana (clima, mapa, radar, modo sin conexión) y reportes vecinales en tiempo real. Los reportes se activan en la app publicada cuando el servidor está desplegado (ver «Desplegar el servidor»). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
 
 ## Qué hace hoy
 
 - Pestaña **Ahora**: temperatura, sensación térmica, viento y ráfagas, lluvia de la última hora, gráfico de lluvia de las próximas 12 horas con un resumen en palabras, pronóstico hora a hora y de 7 días.
 - Pestaña **Radar**: mapa con radar de lluvia y leyenda de intensidad.
+- **Reportes vecinales:** anegamientos, desbordes, caminos cortados, cortes de luz y árboles caídos, con ubicación en el mapa. Aparecen al instante para los vecinos de la comuna, que pueden confirmarlos o avisar que ya no están (3 desmentidos netos los ocultan). Máximo 5 reportes por hora por persona, vencen solos y se guardan en cola si no hay señal.
 - Elegir comuna escribiendo su nombre, por región o con la ubicación del celular (346 comunas con su código CUT).
 - Mapa con el contorno de la comuna y radar de lluvia de las últimas 2 horas, animado y pausable.
 - Abre sin conexión y avisa desde qué hora son los datos que muestra.
@@ -49,7 +50,7 @@ docker compose exec api node scripts/sembrar-comunas.js
 curl http://localhost:3000/api/salud
 ```
 
-Pruebas del servidor: `cd server && npm test`.
+Pruebas del servidor: `cd server && npm test`. Las pruebas de reportes necesitan una base con PostGIS: `TEST_DATABASE_URL=postgres://... npm test`.
 
 ## Publicarlo en internet
 
@@ -60,6 +61,16 @@ La app ciudadana es un sitio estático: no necesita servidor para funcionar en e
 **Alternativas:** Cloudflare Pages o Netlify. Comando de construcción `npm run build`, carpeta `client`, salida `client/dist`.
 
 La app necesita HTTPS para instalarse y para usar la ubicación; todos estos servicios lo entregan gratis.
+
+## Desplegar el servidor
+
+Los reportes necesitan el servidor (API + base de datos). La app publicada funciona sin él, pero no muestra reportes.
+
+1. **Base de datos en [Neon](https://neon.com)** (plan gratuito, incluye PostGIS): crea un proyecto en la región AWS US East (Virginia), la misma del servidor y copia la *connection string* (`postgresql://...?sslmode=require`).
+2. **Servidor en [Render](https://render.com):** *New → Blueprint*, elige este repositorio. Render lee `render.yaml`; pega la connection string de Neon en `DATABASE_URL`. Al arrancar, el servidor crea las tablas y carga las comunas solo.
+3. **Conectar la app:** en GitHub, *Settings → Secrets and variables → Actions → Variables*, crea `API_URL` con la dirección que te da Render (por ejemplo `https://alertaclima-api.onrender.com`) y vuelve a correr la publicación.
+
+El plan gratuito de Render duerme el servidor tras 15 minutos sin uso y tarda cerca de un minuto en despertar: sirve para probar, no para una emergencia real. Para el piloto con un municipio hay que pasar a un plan pagado.
 
 ## Antes de lanzar públicamente
 

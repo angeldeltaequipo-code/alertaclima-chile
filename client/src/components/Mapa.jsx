@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { CircleMarker, GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import { CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
+import { svgReporte } from './iconosReporte'
+import { nombreCategoria } from '../services/reportes'
 import { limiteComuna } from '../services/comunas'
 import { radarInfo } from '../services/radar'
 
@@ -15,6 +18,33 @@ const CHILE = [
 const BASE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const ATRIB_BASE =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+
+const iconos = new Map()
+function iconoPin(categoria, seleccionado) {
+  const clave = `${categoria}:${seleccionado}`
+  if (!iconos.has(clave)) {
+    iconos.set(
+      clave,
+      L.divIcon({
+        className: '',
+        html: `<div class="pin-reporte${seleccionado ? ' seleccionado' : ''}">${svgReporte(categoria, 22)}</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [4, 34],
+      }),
+    )
+  }
+  return iconos.get(clave)
+}
+
+/** Al elegir un reporte desde la lista, el mapa lo trae a la vista. */
+function EnfocarReporte({ reporte, visible }) {
+  const map = useMap()
+  useEffect(() => {
+    if (reporte && visible) map.setView([reporte.lat, reporte.lng], Math.max(map.getZoom(), 15))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reporte?.id, visible])
+  return null
+}
 
 function Encuadre({ comuna, ubicacion, centrarEn, visible }) {
   const map = useMap()
@@ -66,7 +96,18 @@ function CapasRadar({ cuadros, indice, opacidad }) {
   ))
 }
 
-export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrarEn, visible = true }) {
+export default function Mapa({
+  tema,
+  comuna,
+  cuadros,
+  indice,
+  ubicacion,
+  centrarEn,
+  visible = true,
+  reportes = [],
+  seleccionado = null,
+  onSeleccionar = () => {},
+}) {
   const [limite, setLimite] = useState(null)
 
   useEffect(() => {
@@ -110,7 +151,21 @@ export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrar
           pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f80ff', fillOpacity: 1 }}
         />
       )}
+      {reportes.map((r) => (
+        <Marker
+          key={r.id}
+          position={[r.lat, r.lng]}
+          icon={iconoPin(r.categoria, seleccionado?.id === r.id)}
+          title={nombreCategoria(r.categoria)}
+          alt={`Reporte vecinal: ${nombreCategoria(r.categoria)}`}
+          keyboard
+          zIndexOffset={seleccionado?.id === r.id ? 1000 : 0}
+          eventHandlers={{ click: () => onSeleccionar(r) }}
+        />
+      ))}
       <Encuadre comuna={comuna} ubicacion={ubicacion} centrarEn={centrarEn} visible={visible} />
+      {/* Después de Encuadre: si se abrió desde la lista, el reporte gana sobre el encuadre de la comuna */}
+      <EnfocarReporte reporte={seleccionado} visible={visible} />
     </MapContainer>
   )
 }
