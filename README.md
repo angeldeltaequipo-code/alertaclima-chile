@@ -83,7 +83,8 @@ Planes gratuitos de Render: el servidor duerme tras 15 minutos sin uso y tarda c
 
 - **Radar:** RainViewer hoy permite su API gratuita solo para uso personal y educativo, con zoom máximo 7 y solo las últimas 2 horas. Para un uso comercial hay que acordarlo con ellos o cambiar de proveedor (todo está aislado en `client/src/services/radar.js`).
 - **Pronóstico:** la API gratuita de Open-Meteo es solo para uso no comercial. Al cobrarle a municipios hay que contratar su plan comercial (todo está en `client/src/services/clima.js`).
-- **Mapa base:** hoy usa los mapas de OpenStreetMap, sin clave pero sin garantía de servicio y sin permiso para guardarlos sin conexión. Para producción comercial conviene pasar a OpenFreeMap (gratuito, permite uso comercial, requiere MapLibre) o a un proveedor con contrato.
+- **Mapa base:** la vista «Mapa» usa OpenFreeMap (datos de OpenStreetMap; gratuito, permite uso comercial, sin clave, exige atribución). La vista «Satélite» usa Esri World Imagery, libre con atribución en etapa no comercial; antes de vender hay que crear una clave gratuita de ArcGIS Location Platform (hasta 2 millones de teselas al mes) y agregarla a las URL de `client/src/components/Mapa.jsx`.
+- **Ver la calle:** el botón abre Google Street View en el punto tocado (enlace público, sin clave).
 - **Comunas:** validar los códigos contra la tabla CUT oficial de SUBDERE (ver `client/src/data/FUENTES.md`).
 
 ## Fuentes oficiales: estado de la investigación (Fase 3)
