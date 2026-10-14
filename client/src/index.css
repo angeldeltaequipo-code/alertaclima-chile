@@ -210,16 +210,17 @@ body {
   box-shadow: 0 0 0 8px rgb(26 115 232 / 0.2), 0 1px 4px rgb(0 0 0 / 0.4);
 }
 /* Controles de zoom y brújula bajo los botones de ubicación y reporte, con tamaño de dedo */
-.maplibregl-ctrl-top-right {
+.maplibregl-map .maplibregl-ctrl-top-right {
   top: 7.4rem;
 }
-.maplibregl-ctrl-group button {
+.maplibregl-map .maplibregl-ctrl-group button {
   width: 44px;
   height: 44px;
 }
-.maplibregl-ctrl-group {
-  border-radius: 12px !important;
+.maplibregl-map .maplibregl-ctrl-group {
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
 }
 .maplibregl-ctrl-attrib {
   font-size: 11px;

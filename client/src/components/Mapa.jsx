@@ -158,6 +158,8 @@ export default function Mapa({
         paint: { 'text-color': '#0b3d91', 'text-halo-color': '#fff', 'text-halo-width': 2 },
       })
 
+      // La atribución parte plegada (botón «i») para no tapar el mapa en pantallas chicas.
+      caja.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show')
       ref.current.listo = true
       ref.current.pendientes.splice(0).forEach((fn) => fn(mapa))
     })
@@ -287,8 +289,10 @@ export default function Mapa({
     cuandoListo((mapa) => {
       const r = ref.current
       const vigentes = new Set(cuadros.map((c) => c.url))
-      for (const url of [...r.radar]) {
-        if (!vigentes.has(url)) {
+      // Se mantienen pocas capas montadas (la caché del navegador evita volver a descargar).
+      const montadas = [...r.radar]
+      for (const url of montadas) {
+        if (!vigentes.has(url) || (url !== actual && montadas.length > 4 && montadas.indexOf(url) < montadas.length - 4)) {
           const id = idRadar(url)
           if (mapa.getLayer(id)) mapa.removeLayer(id)
           if (mapa.getSource(id)) mapa.removeSource(id)
