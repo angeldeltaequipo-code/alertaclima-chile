@@ -17,7 +17,7 @@ function etiquetaHora(h, i) {
 
 /** Frase completa de una hora, para quien toca una columna y para lectores de pantalla. */
 function fraseHora(h, i) {
-  const partes = [`${i === 0 ? 'Ahora' : `A las ${hhmm(h.hora)}`}: ${Math.round(h.temperatura)}°, ${describir(h.codigo).texto.toLowerCase()}`]
+  const partes = [`${i === 0 ? 'Ahora' : `A las ${hhmm(h.hora)}`}: ${Math.round(h.temperatura)}°, ${(h.texto ?? describir(h.codigo).texto).toLowerCase()}`]
   if (h.lluvia > 0) partes.push(`${num(h.lluvia)} mm de lluvia`)
   if (h.probabilidad != null) partes.push(`${h.probabilidad} % de probabilidad de lluvia`)
   if (h.viento != null)

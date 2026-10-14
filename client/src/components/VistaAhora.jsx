@@ -111,7 +111,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
 
       <Bloque titulo="Próximas 24 horas" id="t-horas">
         {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
-        <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, esDeDia: ahora.esDeDia }, ...horas.slice(1)]} />
+        <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
       </Bloque>
 
       {hayLluvia && (

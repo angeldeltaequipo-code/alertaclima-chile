@@ -68,8 +68,15 @@ export async function camarasCercanas(punto, { fetchFn = fetch } = {}) {
       if (camaras.length) break
       return { disponible: true, camaras: [], error: r.error }
     }
-    const vistas = new Set(camaras.map((c) => c.id))
-    camaras = camaras.concat(r.camaras.filter((c) => !vistas.has(c.id)))
+    // Sin repetir: la misma cámara (id) o dos fichas iguales en el mismo lugar.
+    const firma = (c) => `${c.titulo.toLowerCase()}|${c.lat.toFixed(3)},${c.lng.toFixed(3)}`
+    const vistas = new Set(camaras.flatMap((c) => [c.id, firma(c)]))
+    for (const c of r.camaras) {
+      if (vistas.has(c.id) || vistas.has(firma(c))) continue
+      vistas.add(c.id)
+      vistas.add(firma(c))
+      camaras.push(c)
+    }
     if (camaras.length >= MINIMO) break
   }
   camaras = camaras

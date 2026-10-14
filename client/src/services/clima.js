@@ -269,7 +269,7 @@ export function condicionesActuales(modelo, obs) {
     sensacion: modelo.sensacion + (obs.temperatura - modelo.temperatura),
     humedad: obs.humedad ?? modelo.humedad,
     viento: obs.viento ?? modelo.viento,
-    rafagas: obs.rafagas ?? modelo.rafagas,
+    rafagas: obs.rafagas ?? Math.max(modelo.rafagas, obs.viento ?? 0),
     texto: obs.fenomeno ?? obs.cielo ?? d.texto,
     icono,
     medido: true,

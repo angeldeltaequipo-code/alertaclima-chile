@@ -65,7 +65,11 @@ function Viento({ ahora }) {
       <p className="mt-2 text-[14px] leading-snug">
         <strong>{nivelViento(ahora.viento)}</strong>
         {desde && <> del {desde}</>}. 
-        Ráfagas de <strong className="tabular-nums">{Math.round(ahora.rafagas)} km/h</strong>.
+        {ahora.rafagas > ahora.viento + 2 && (
+          <>
+            Ráfagas de <strong className="tabular-nums">{Math.round(ahora.rafagas)} km/h</strong>.
+          </>
+        )}
       </p>
     </Ficha>
   )

@@ -50,7 +50,7 @@ test('si cerca hay pocas cámaras, amplía la búsqueda y marca las lejanas', as
   const fetchFn = async (url) => {
     const radio = Number(new URL(url).searchParams.get('nearby').split(',')[2])
     radios.push(radio)
-    const lista = radio === 30 ? [ejemplo] : [ejemplo, ...[5, 6, 7].map((id) => ({ ...ejemplo, webcamId: id, location: { ...ejemplo.location, latitude: -36.2, longitude: -72.9 } }))]
+    const lista = radio === 30 ? [ejemplo] : [ejemplo, ...[5, 6, 7].map((id) => ({ ...ejemplo, webcamId: id, title: `Cámara ${id}`, location: { ...ejemplo.location, latitude: -36.2, longitude: -72.9 } }))]
     return { ok: true, json: async () => ({ webcams: lista }) }
   }
   const r = await camarasCercanas({ lat: -36.85, lng: -73.06 }, { fetchFn })
@@ -66,4 +66,12 @@ test('solo acepta reproductores de windy.com', () => {
   assert.match(con.reproductor, /^https:\/\/webcams\.windy\.com\//)
   const malo = interpretarCamara({ ...ejemplo, player: { day: 'https://malo.example/x' } }, LOTA)
   assert.equal(malo.reproductor, null)
+})
+
+test('no repite la misma cámara publicada dos veces en el mismo lugar', async () => {
+  process.env.WINDY_API_KEY = 'clave-de-prueba'
+  const fetchFn = async () => ({ ok: true, json: async () => ({ webcams: [ejemplo, { ...ejemplo, webcamId: 99 }] }) })
+  const r = await camarasCercanas({ lat: -10, lng: -70 }, { fetchFn })
+  assert.equal(r.camaras.length, 1)
+  delete process.env.WINDY_API_KEY
 })
