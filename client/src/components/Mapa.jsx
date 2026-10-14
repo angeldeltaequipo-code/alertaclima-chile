@@ -18,7 +18,8 @@ const CHILE = [
 // nombres de calles y números). Gratis, también para uso comercial, sin clave; exige atribución.
 const ESTILO = {
   claro: 'https://tiles.openfreemap.org/styles/liberty',
-  oscuro: 'https://tiles.openfreemap.org/styles/dark',
+  // El estilo oscuro de OpenFreeMap es casi negro y poco legible: se usa el claro en ambos temas, como Google Maps.
+  oscuro: 'https://tiles.openfreemap.org/styles/liberty',
 }
 const ATRIB_OFM =
   '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
