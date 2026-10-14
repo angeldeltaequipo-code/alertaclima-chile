@@ -2,6 +2,7 @@ import { NIVELES, alertaPrincipal } from '../services/alertas'
 import { nombreCategoria } from '../services/reportes'
 import { hhmm } from '../services/formato'
 import { intensidad } from '../services/clima'
+import { riesgoAluvion } from '../services/aluvion'
 
 // Puntos de color por tipo de línea. El color nunca va solo: siempre hay texto que lo dice.
 const PUNTO = {
@@ -55,6 +56,15 @@ export default function Resumen({ alertas, ahora, horas, reportes, reportesDispo
     { ...lineaAlertas(alertas), accion: alertas?.alertas?.length ? { texto: 'Ver', fn: onVerAlertas } : null },
     ahora && { tono: 'neutro', texto: `Ahora: ${Math.round(ahora.temperatura)}° y ${ahora.texto.toLowerCase()}${ahora.medido ? ' (medido)' : ''}.` },
     lineaLluvia(horas),
+    (() => {
+      const r = riesgoAluvion(horas)
+      if (!r || r.nivel === 'bajo') return null
+      return {
+        tono: r.nivel === 'alto' ? 'peligro' : 'atento',
+        texto: r.nivel === 'alto' ? 'Riesgo alto de aluviones y desbordes: aléjate de quebradas y cauces.' : 'Atención: posible riesgo de aluviones o desbordes.',
+        fuerte: r.nivel === 'alto',
+      }
+    })(),
     (() => {
       const l = lineaVecinos(reportes, reportesDisponibles)
       return l && { ...l, accion: reportes.length ? { texto: 'Ver mapa', fn: onVerMapa } : null }

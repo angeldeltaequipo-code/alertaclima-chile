@@ -203,6 +203,7 @@ export default function App() {
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} />}
+                onVerRios={buscarRios}
               />
             )}
           </div>

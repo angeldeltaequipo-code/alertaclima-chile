@@ -3,6 +3,8 @@ import GraficoHoras from './GraficoHoras'
 import Portada from './Portada'
 import Semana from './Semana'
 import Fichas from './Fichas'
+import RiesgoAluvion from './RiesgoAluvion'
+import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
 
@@ -43,7 +45,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, onVerRios = () => {} }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -79,6 +81,9 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
   const prox12 = horas.slice(0, 12)
   const lluviaAhora = !ahora.medido && ahora.lluvia > 0
   const hayLluvia = prox12.some((h) => h.lluvia > 0)
+  // Con riesgo, la tarjeta de aluviones sube arriba; sin riesgo, queda más abajo.
+  const urgenteAluvion = riesgoAluvion(horas)?.nivel !== 'bajo'
+  const aluvion = <RiesgoAluvion horas={horas} onVerRios={onVerRios} />
 
   return (
     <div className="space-y-3 px-4 pt-4 pb-6">
@@ -109,6 +114,8 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
         )}
       </p>
 
+      {urgenteAluvion && aluvion}
+
       <Bloque titulo="Próximas 24 horas" id="t-horas">
         {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
         <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
@@ -128,6 +135,8 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
       <Bloque titulo="Próximos 7 días" id="t-dias">
         <Semana dias={dias} actual={ahora.temperatura} />
       </Bloque>
+
+      {!urgenteAluvion && aluvion}
 
       <h2 className="px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />

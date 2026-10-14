@@ -33,6 +33,9 @@ function idRadar(url) {
   return `radar-${h.toString(36)}`
 }
 
+// Márgenes para encuadrar sin que la lista de abajo tape lo importante.
+const margen = (mapa) => ({ top: 150, left: 30, right: 70, bottom: Math.round(Math.min(mapa.getContainer().clientHeight * 0.52, 440)) })
+
 const aBounds = (bbox) => [
   [bbox[0][1], bbox[0][0]],
   [bbox[1][1], bbox[1][0]],
@@ -332,7 +335,7 @@ export default function Mapa({
           // Encuadre: el punto y el cauce más cercano.
           const b = new maplibregl.LngLatBounds([punto.lng, punto.lat], [punto.lng, punto.lat])
           for (const linea of lista[0].geometria.coordinates) for (const c of linea) b.extend(c)
-          mapa.fitBounds(b, { padding: { top: 140, bottom: 260, left: 40, right: 60 }, maxZoom: 15 })
+          mapa.fitBounds(b, { padding: margen(mapa), maxZoom: 15 })
         }
         ref.current.rios = lista
         props.current.onRios({ estado: lista.length ? 'listo' : 'vacio', lista, punto })
@@ -368,7 +371,7 @@ export default function Mapa({
       if (rioEnfocado) {
         const b = new maplibregl.LngLatBounds()
         for (const linea of rioEnfocado.geometria.coordinates) for (const c of linea) b.extend(c)
-        mapa.fitBounds(b, { padding: { top: 140, bottom: 260, left: 40, right: 60 }, maxZoom: 15 })
+        mapa.fitBounds(b, { padding: margen(mapa), maxZoom: 15 })
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps

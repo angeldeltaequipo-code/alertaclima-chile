@@ -67,7 +67,7 @@ export async function obtenerPronostico({ lat, lng }, { signal } = {}) {
   )
   p.set(
     'hourly',
-    'temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl',
+    'temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,freezing_level_height',
   )
   p.set(
     'daily',
@@ -124,6 +124,7 @@ function transformar(d) {
     rafagas: h.wind_gusts_10m?.[i] ?? null,
     direccion: h.wind_direction_10m?.[i] ?? null,
     presion: h.pressure_msl?.[i] ?? null,
+    isoterma: h.freezing_level_height?.[i] ?? null,
   }))
   const iInicio = Math.max(0, todas.findIndex((x) => x.hora >= inicio))
   const horas = todas.slice(iInicio, iInicio + 24)
@@ -147,7 +148,7 @@ function transformar(d) {
     direccion: dd.wind_direction_10m_dominant?.[i] ?? null,
   }))
 
-  return { ahora, horas, dias, obtenido: new Date() }
+  return { ahora, horas, dias, elevacion: d.elevation ?? null, obtenido: new Date() }
 }
 
 /** Reconstruye las fechas de un pronóstico guardado en el dispositivo. */
@@ -160,6 +161,7 @@ export function revivir(g) {
     dias: g.dias.map((x) => ({ ...x, fecha: f(x.fecha), salida: x.salida && f(x.salida), puesta: x.puesta && f(x.puesta) })),
     obtenido: f(g.obtenido),
     punto: g.punto,
+    elevacion: g.elevacion ?? null,
   }
 }
 
