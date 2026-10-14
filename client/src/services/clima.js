@@ -63,10 +63,17 @@ export async function obtenerPronostico({ lat, lng }, { signal } = {}) {
   p.set('longitude', lng.toFixed(4))
   p.set(
     'current',
-    'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day',
+    'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day,pressure_msl,dew_point_2m,uv_index,visibility,cloud_cover',
   )
-  p.set('hourly', 'temperature_2m,precipitation,precipitation_probability,weather_code,is_day')
-  p.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max')
+  p.set(
+    'hourly',
+    'temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl',
+  )
+  p.set(
+    'daily',
+    'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant',
+  )
+  p.set('past_hours', '3')
   p.set('timezone', 'America/Santiago')
   p.set('forecast_days', '7')
   p.set('wind_speed_unit', 'kmh')
@@ -96,22 +103,33 @@ function transformar(d) {
     rafagas: c.wind_gusts_10m,
     direccion: c.wind_direction_10m,
     esDeDia: c.is_day === 1,
+    presion: c.pressure_msl ?? null,
+    rocio: c.dew_point_2m ?? null,
+    uv: c.uv_index ?? null,
+    visibilidad: c.visibility ?? null,
+    nubes: c.cloud_cover ?? null,
   }
 
   const h = d.hourly
   const inicio = new Date(ahora.hora)
   inicio.setMinutes(0, 0, 0)
-  const horas = h.time
-    .map((t, i) => ({
-      hora: fecha(t),
-      temperatura: h.temperature_2m[i],
-      lluvia: h.precipitation[i],
-      probabilidad: h.precipitation_probability?.[i] ?? null,
-      codigo: h.weather_code[i],
-      esDeDia: h.is_day?.[i] === 1,
-    }))
-    .filter((x) => x.hora >= inicio)
-    .slice(0, 24)
+  const todas = h.time.map((t, i) => ({
+    hora: fecha(t),
+    temperatura: h.temperature_2m[i],
+    lluvia: h.precipitation[i],
+    probabilidad: h.precipitation_probability?.[i] ?? null,
+    codigo: h.weather_code[i],
+    esDeDia: h.is_day?.[i] === 1,
+    viento: h.wind_speed_10m?.[i] ?? null,
+    rafagas: h.wind_gusts_10m?.[i] ?? null,
+    direccion: h.wind_direction_10m?.[i] ?? null,
+    presion: h.pressure_msl?.[i] ?? null,
+  }))
+  const iInicio = Math.max(0, todas.findIndex((x) => x.hora >= inicio))
+  const horas = todas.slice(iInicio, iInicio + 24)
+  // Tendencia de la presión en las últimas 3 horas (una baja rápida anuncia mal tiempo).
+  const antes = todas[iInicio - 3]?.presion
+  ahora.tendenciaPresion = antes != null && ahora.presion != null ? Math.round((ahora.presion - antes) * 10) / 10 : null
 
   const dd = d.daily
   const dias = dd.time.map((t, i) => ({
@@ -121,6 +139,12 @@ function transformar(d) {
     min: dd.temperature_2m_min[i],
     lluvia: dd.precipitation_sum[i],
     probabilidad: dd.precipitation_probability_max?.[i] ?? null,
+    salida: dd.sunrise?.[i] ? fecha(dd.sunrise[i]) : null,
+    puesta: dd.sunset?.[i] ? fecha(dd.sunset[i]) : null,
+    uv: dd.uv_index_max?.[i] ?? null,
+    viento: dd.wind_speed_10m_max?.[i] ?? null,
+    rafagas: dd.wind_gusts_10m_max?.[i] ?? null,
+    direccion: dd.wind_direction_10m_dominant?.[i] ?? null,
   }))
 
   return { ahora, horas, dias, obtenido: new Date() }
@@ -133,7 +157,7 @@ export function revivir(g) {
   return {
     ahora: { ...g.ahora, hora: f(g.ahora.hora) },
     horas: g.horas.map((x) => ({ ...x, hora: f(x.hora) })),
-    dias: g.dias.map((x) => ({ ...x, fecha: f(x.fecha) })),
+    dias: g.dias.map((x) => ({ ...x, fecha: f(x.fecha), salida: x.salida && f(x.salida), puesta: x.puesta && f(x.puesta) })),
     obtenido: f(g.obtenido),
     punto: g.punto,
   }
@@ -181,6 +205,27 @@ export function describir(codigo) {
 const PUNTOS = ['norte', 'noreste', 'este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste']
 export function direccionViento(grados) {
   return PUNTOS[Math.round((((grados % 360) + 360) % 360) / 45) % 8]
+}
+
+/** Índice UV en palabras, con la escala de la OMS. */
+export function nivelUV(uv) {
+  if (uv == null) return null
+  if (uv < 3) return { texto: 'Bajo', consejo: 'No hace falta protegerse.' }
+  if (uv < 6) return { texto: 'Moderado', consejo: 'Usa bloqueador si estarás afuera.' }
+  if (uv < 8) return { texto: 'Alto', consejo: 'Bloqueador, gorro y lentes al mediodía.' }
+  if (uv < 11) return { texto: 'Muy alto', consejo: 'Evita el sol entre 11 y 16 h.' }
+  return { texto: 'Extremo', consejo: 'Evita el sol al mediodía; protégete siempre.' }
+}
+
+/** Escala de Beaufort resumida en palabras. */
+export function nivelViento(kmh) {
+  if (kmh == null) return null
+  if (kmh < 6) return 'Calma'
+  if (kmh < 20) return 'Brisa suave'
+  if (kmh < 39) return 'Viento moderado'
+  if (kmh < 62) return 'Viento fuerte'
+  if (kmh < 89) return 'Temporal'
+  return 'Temporal muy fuerte'
 }
 
 /** Intensidad de lluvia en mm/h, con los rangos de la Organización Meteorológica Mundial. */

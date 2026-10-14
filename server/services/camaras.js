@@ -8,6 +8,10 @@
 
 const API = 'https://api.windy.com/webcams/api/v3/webcams'
 const RADIO_KM = Number(process.env.CAMARAS_RADIO_KM ?? 30)
+// En Chile hay pocas cámaras públicas: si cerca hay menos de MINIMO, se amplía la búsqueda
+// (marcando esas cámaras como "lejanas" para no confundir a nadie).
+const RADIOS_AMPLIADOS = [120, 250] // 250 km es el máximo que acepta Windy
+const MINIMO = 4
 const CACHE_MS = 5 * 60 * 1000
 const cache = new Map() // zona -> { hasta, datos }
 
@@ -29,8 +33,16 @@ export function interpretarCamara(w, punto) {
     imagen,
     miniatura: w.images?.current?.thumbnail ?? imagen,
     actualizada: w.lastUpdatedOn ?? null,
-    enlace: w.urls?.detail ?? w.player?.day ?? `https://www.windy.com/webcams/${w.webcamId}`,
+    enlace: w.urls?.detail ?? `https://www.windy.com/webcams/${w.webcamId}`,
+    // Reproductor de Windy con la secuencia del día (pensado para incrustarse en otras páginas).
+    reproductor: reproductor(w.player),
   }
+}
+
+function reproductor(p) {
+  if (!p) return null
+  const url = typeof p.day === 'string' ? p.day : p.day?.embed ?? p.live?.embed ?? (typeof p.live === 'string' ? p.live : null)
+  return typeof url === 'string' && /^https:\/\/([a-z0-9-]+\.)*windy\.com\//.test(url) ? url : null
 }
 
 function distancia(a, b) {
@@ -49,10 +61,31 @@ export async function camarasCercanas(punto, { fetchFn = fetch } = {}) {
   const c = cache.get(zona)
   if (c && Date.now() < c.hasta) return { disponible: true, camaras: c.datos }
 
+  let camaras = []
+  for (const radio of [RADIO_KM, ...RADIOS_AMPLIADOS]) {
+    const r = await consultar(punto, radio, fetchFn)
+    if (r.error) {
+      if (camaras.length) break
+      return { disponible: true, camaras: [], error: r.error }
+    }
+    const vistas = new Set(camaras.map((c) => c.id))
+    camaras = camaras.concat(r.camaras.filter((c) => !vistas.has(c.id)))
+    if (camaras.length >= MINIMO) break
+  }
+  camaras = camaras
+    .sort((a, b) => a.distanciaKm - b.distanciaKm)
+    .slice(0, 12)
+    .map((c) => ({ ...c, lejana: c.distanciaKm > RADIO_KM }))
+  cache.set(zona, { hasta: Date.now() + CACHE_MS, datos: camaras })
+  if (cache.size > 500) cache.delete(cache.keys().next().value)
+  return { disponible: true, camaras }
+}
+
+async function consultar(punto, radio, fetchFn) {
   const url = new URL(API)
-  url.searchParams.set('nearby', `${punto.lat.toFixed(4)},${punto.lng.toFixed(4)},${RADIO_KM}`)
+  url.searchParams.set('nearby', `${punto.lat.toFixed(4)},${punto.lng.toFixed(4)},${radio}`)
   url.searchParams.set('include', 'images,location,urls,player')
-  url.searchParams.set('limit', '10')
+  url.searchParams.set('limit', '12')
   url.searchParams.set('lang', 'es')
   const r = await fetchFn(url, {
     headers: { 'x-windy-api-key': process.env.WINDY_API_KEY },
@@ -60,15 +93,13 @@ export async function camarasCercanas(punto, { fetchFn = fetch } = {}) {
   })
   if (!r.ok) {
     console.error('Windy Webcams respondió', r.status)
-    return { disponible: true, camaras: [], error: 'El servicio de cámaras no respondió' }
+    return { error: 'El servicio de cámaras no respondió' }
   }
   const datos = await r.json()
-  const camaras = (datos.webcams ?? [])
-    .filter((w) => !w.status || w.status === 'active')
-    .map((w) => interpretarCamara(w, punto))
-    .filter(Boolean)
-    .sort((a, b) => a.distanciaKm - b.distanciaKm)
-  cache.set(zona, { hasta: Date.now() + CACHE_MS, datos: camaras })
-  if (cache.size > 500) cache.delete(cache.keys().next().value)
-  return { disponible: true, camaras }
+  return {
+    camaras: (datos.webcams ?? [])
+      .filter((w) => !w.status || w.status === 'active')
+      .map((w) => interpretarCamara(w, punto))
+      .filter(Boolean),
+  }
 }

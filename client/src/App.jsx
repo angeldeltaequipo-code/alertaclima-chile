@@ -15,7 +15,7 @@ import { useReportes } from './hooks/useReportes'
 import { useAlertas } from './hooks/useAlertas'
 import { useObservacion } from './hooks/useObservacion'
 import { useCamaras } from './hooks/useCamaras'
-import CamarasCercanas, { FichaCamara } from './components/Camaras'
+import CamarasCercanas, { FichaCamara, VisorCamara } from './components/Camaras'
 import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
 import { useNotificaciones } from './hooks/useNotificaciones'
@@ -46,6 +46,7 @@ export default function App() {
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
   const notif = useNotificaciones({ enLinea })
   const [camaraSel, setCamaraSel] = useState(null)
+  const [camaraVisor, setCamaraVisor] = useState(null)
 
   // Alerta nueva (o que subió de nivel) que esta persona todavía no ha visto: aviso grande y vibración.
   const [, setVistas] = useState(0)
@@ -173,7 +174,7 @@ export default function App() {
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
-                camaras={<CamarasCercanas datos={camaras} comuna={comuna} />}
+                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} />}
               />
             )}
           </div>
@@ -239,7 +240,7 @@ export default function App() {
                 </p>
               )}
               {camaraSel ? (
-                <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} />
+                <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
                 <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={rep.votar} onCerrar={() => setSeleccionado(null)} />
               ) : (
@@ -256,6 +257,8 @@ export default function App() {
       </main>
 
       <Navegacion vista={vista} onCambiar={setVista} />
+
+      {camaraVisor && <VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} />}
 
       {aviso && (
         <div role="status" className="pointer-events-none fixed inset-x-0 top-3 z-[1100] flex justify-center px-4">

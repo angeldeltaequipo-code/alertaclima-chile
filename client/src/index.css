@@ -29,6 +29,10 @@
   --luna: #d6e0e8;
   --fondo-icono: var(--superficie);
   --grilla: #2c4458;
+  --lluvia-debil: #7cc0f2;
+  --lluvia-fuerte: #8a6bff;
+  --noche: rgb(0 0 0 / 0.16);
+  --activa: rgb(255 255 255 / 0.06);
 
   /* Niveles de alerta: fondo de la banda + color de texto encima */
   --nivel-sin-fondo: #172a3a;
@@ -66,6 +70,10 @@
   --sol: #e8a200;
   --luna: #6b7f91;
   --grilla: #d0dbe4;
+  --lluvia-debil: #74b5e8;
+  --lluvia-fuerte: #5b3fd6;
+  --noche: rgb(16 32 46 / 0.05);
+  --activa: rgb(16 32 46 / 0.06);
   color-scheme: light;
 }
 
@@ -85,6 +93,7 @@
   --color-lluvia: var(--lluvia);
   --color-lluvia-texto: var(--lluvia-texto);
   --color-grilla: var(--grilla);
+  --color-noche: var(--noche);
   --font-sans: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -220,4 +229,72 @@ body {
 }
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Gráfico por hora: columna tocada */
+.columna-activa {
+  background: var(--activa);
+  border-radius: 14px;
+}
+
+/* ---- Portada del clima: un cielo que acompaña a la condición ---- */
+.portada {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  padding: 18px 18px 16px;
+  color: #ffffff;
+  isolation: isolate;
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.45);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+  /* íconos sobre el cielo */
+  --lluvia: #9fd3ff;
+  --sol: #ffd24a;
+  --luna: #f3f6fa;
+  --fondo-icono: #ffffff;
+}
+.portada-icono {
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.25));
+}
+.portada-despejado { background: linear-gradient(165deg, #2f86d2 0%, #1d63a8 55%, #164f8a 100%); }
+.portada-parcial { background: linear-gradient(165deg, #3c7fb8 0%, #2a5f8f 60%, #224d74 100%); }
+.portada-nublado { background: linear-gradient(165deg, #5d7083 0%, #44566a 60%, #364656 100%); }
+.portada-niebla { background: linear-gradient(165deg, #6e7a88 0%, #535e6b 60%, #434c57 100%); }
+.portada-lluvia { background: linear-gradient(165deg, #4a5e73 0%, #34465a 55%, #273647 100%); }
+.portada-tormenta { background: linear-gradient(165deg, #4a3f66 0%, #2f2945 55%, #1d1a2c 100%); }
+.portada-nieve { background: linear-gradient(165deg, #6a87a5 0%, #4d6987 60%, #3b546e 100%); }
+.portada-despejado-noche { background: linear-gradient(165deg, #1b2f5c 0%, #111f42 55%, #0a142e 100%); }
+.portada-nublado-noche { background: linear-gradient(165deg, #2b3646 0%, #1d2632 60%, #141b24 100%); }
+.portada-lluvia-noche { background: linear-gradient(165deg, #233243 0%, #182331 60%, #101822 100%); }
+
+/* Halo de sol en los días despejados */
+.portada-sol {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(255 214 90 / 0.45) 0%, rgb(255 214 90 / 0.12) 45%, transparent 70%);
+  z-index: -1;
+}
+
+/* Lluvia que cae, muy sutil (se detiene con movimiento reducido o modo ahorro) */
+.portada-gotas {
+  position: absolute;
+  inset: -40px 0 0 0;
+  z-index: -1;
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(
+    105deg,
+    transparent 0 14px,
+    rgb(255 255 255 / 0.55) 14px 15px,
+    transparent 15px 31px
+  );
+  background-size: 100% 40px;
+  animation: llover 0.9s linear infinite;
+}
+@keyframes llover {
+  from { transform: translateY(0); }
+  to { transform: translateY(40px); }
 }

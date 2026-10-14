@@ -32,7 +32,7 @@ test('con clave, consulta a Windy con la cabecera correcta y ordena por distanci
   process.env.WINDY_API_KEY = 'clave-de-prueba'
   let pedido
   const fetchFn = async (url, opciones) => {
-    pedido = { url: String(url), clave: opciones.headers['x-windy-api-key'] }
+    pedido ??= { url: String(url), clave: opciones.headers['x-windy-api-key'] }
     const lejana = { ...ejemplo, webcamId: 2, location: { ...ejemplo.location, latitude: -36.9, longitude: -73.1 } }
     return { ok: true, json: async () => ({ webcams: [ejemplo, lejana, { ...ejemplo, webcamId: 3, status: 'inactive' }] }) }
   }
@@ -42,4 +42,28 @@ test('con clave, consulta a Windy con la cabecera correcta y ordena por distanci
   assert.equal(r.disponible, true)
   assert.deepEqual(r.camaras.map((c) => c.id), ['2', '1234567890']) // la inactiva se descarta
   delete process.env.WINDY_API_KEY
+})
+
+test('si cerca hay pocas cámaras, amplía la búsqueda y marca las lejanas', async () => {
+  process.env.WINDY_API_KEY = 'clave-de-prueba'
+  const radios = []
+  const fetchFn = async (url) => {
+    const radio = Number(new URL(url).searchParams.get('nearby').split(',')[2])
+    radios.push(radio)
+    const lista = radio === 30 ? [ejemplo] : [ejemplo, ...[5, 6, 7].map((id) => ({ ...ejemplo, webcamId: id, location: { ...ejemplo.location, latitude: -36.2, longitude: -72.9 } }))]
+    return { ok: true, json: async () => ({ webcams: lista }) }
+  }
+  const r = await camarasCercanas({ lat: -36.85, lng: -73.06 }, { fetchFn })
+  assert.deepEqual(radios, [30, 120])
+  assert.equal(r.camaras.length, 4) // sin repetir la cercana
+  assert.equal(r.camaras[0].lejana, false)
+  assert.equal(r.camaras.at(-1).lejana, true)
+  delete process.env.WINDY_API_KEY
+})
+
+test('solo acepta reproductores de windy.com', () => {
+  const con = interpretarCamara({ ...ejemplo, player: { day: 'https://webcams.windy.com/webcams/public/player?webcamId=1&playerType=day' } }, LOTA)
+  assert.match(con.reproductor, /^https:\/\/webcams\.windy\.com\//)
+  const malo = interpretarCamara({ ...ejemplo, player: { day: 'https://malo.example/x' } }, LOTA)
+  assert.equal(malo.reproductor, null)
 })
