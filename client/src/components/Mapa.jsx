@@ -135,8 +135,8 @@ export default function Mapa({
         tiles: [SATELITE],
         // En pantallas de alta densidad se piden imágenes un nivel más detalladas.
         tileSize: window.devicePixelRatio >= 1.5 ? 128 : 256,
-        // Nivel 18: hay foto en todo Chile. Más cerca se amplía esa misma foto (algo borrosa, pero se acerca).
-        maxzoom: 18,
+        // Nivel 19: la foto más detallada disponible. Más cerca se amplía esa misma foto (algo borrosa, pero se acerca).
+        maxzoom: 19,
         attribution: ATRIB_ESRI,
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
