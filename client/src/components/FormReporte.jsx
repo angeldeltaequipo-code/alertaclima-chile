@@ -1,32 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import maplibregl from 'maplibre-gl'
+import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import Hoja from './Hoja'
 import IconoReporte from './IconoReporte'
 import { CATEGORIAS } from '../services/reportes'
 import { comprimirFoto } from '../services/fotos'
 
-const BASE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-const ATRIB =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+maplibregl.setWorkerUrl(urlTrabajador)
 
-/** Sigue el centro del mapa: el reporte se ubica donde apunta la mira. */
-function Mira({ onMover }) {
-  const map = useMapEvents({
-    move: () => {
-      const c = map.getCenter()
-      onMover({ lat: c.lat, lng: c.lng })
-    },
-  })
-  return null
-}
-
-function Recentrar({ punto, token }) {
-  const map = useMap()
+/** Mapa pequeño con mira fija: el reporte se ubica donde apunta el centro. */
+function MapaMira({ inicio, zoom, onMover, recentrar }) {
+  const caja = useRef(null)
+  const mapa = useRef(null)
+  const mover = useRef(onMover)
+  mover.current = onMover
   useEffect(() => {
-    if (token) map.setView([punto.lat, punto.lng], Math.max(map.getZoom(), 16))
+    const m = new maplibregl.Map({
+      container: caja.current,
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [inicio.lng, inicio.lat],
+      zoom,
+      maxZoom: 19,
+      attributionControl: { compact: true },
+      dragRotate: false,
+    })
+    m.touchZoomRotate.disableRotation()
+    m.on('move', () => {
+      const c = m.getCenter()
+      mover.current({ lat: c.lat, lng: c.lng })
+    })
+    mapa.current = m
+    return () => m.remove()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
-  return null
+  }, [])
+  useEffect(() => {
+    if (recentrar) mapa.current?.flyTo({ center: [recentrar.lng, recentrar.lat], zoom: Math.max(mapa.current.getZoom(), 16) })
+  }, [recentrar])
+  return <div ref={caja} className="h-full w-full" />
 }
 
 /**
@@ -41,7 +52,7 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const [gps, setGps] = useState(inicio.esGps ? 'listo' : 'sin')
-  const [recentrar, setRecentrar] = useState(0)
+  const [recentrar, setRecentrar] = useState(null)
   const [foto, setFoto] = useState(null) // { blob, url }
   const [procesandoFoto, setProcesandoFoto] = useState(false)
   const [errorFoto, setErrorFoto] = useState(null)
@@ -74,7 +85,7 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setPunto({ lat: coords.latitude, lng: coords.longitude })
-        setRecentrar((n) => n + 1)
+        setRecentrar({ lat: coords.latitude, lng: coords.longitude })
         setGps('listo')
       },
       () => setGps('error'),
@@ -137,17 +148,7 @@ export default function FormReporte({ inicio, onEnviar, onCerrar }) {
           <legend className="mb-1 text-[18px] font-bold">¿Dónde?</legend>
           <p className="mb-2 text-[15px] text-texto-2">Mueve el mapa hasta que la mira quede sobre el problema.</p>
           <div className="relative h-64 overflow-hidden rounded-xl border-2 border-borde">
-            <MapContainer
-              center={[punto.lat, punto.lng]}
-              zoom={inicio.esGps ? 16 : 14}
-              className="h-full w-full"
-              attributionControl
-              zoomControl={false}
-            >
-              <TileLayer url={BASE_URL} attribution={ATRIB} maxZoom={19} className="capa-base" />
-              <Mira onMover={setPunto} />
-              <Recentrar punto={punto} token={recentrar} />
-            </MapContainer>
+            <MapaMira inicio={inicio.punto} zoom={inicio.esGps ? 16 : 14} onMover={setPunto} recentrar={recentrar} />
             {/* Mira fija en el centro */}
             <div className="pointer-events-none absolute inset-0 z-[500] grid place-items-center" aria-hidden="true">
               <svg width="44" height="44" viewBox="0 0 44 44" className="-translate-y-[2px]">

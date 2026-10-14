@@ -1,5 +1,5 @@
 /** Controles sobre el mapa: tipo de mapa (Mapa / Satélite) y «Ver la calle». */
-export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle }) {
+export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, onRios, riosActivo }) {
   return (
     <>
       <div className="absolute top-3 left-3 z-[500] flex flex-col items-start gap-2">
@@ -35,9 +35,22 @@ export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle }) 
           </svg>
           {modoCalle ? 'Cancelar' : 'Ver la calle'}
         </button>
+        <button
+          type="button"
+          aria-pressed={riosActivo}
+          onClick={onRios}
+          className={`flex min-h-11 items-center gap-2 rounded-xl px-3 text-[15px] font-bold shadow-lg ring-1 ring-linea backdrop-blur ${
+            riosActivo ? 'bg-[#1a73e8] text-white' : 'bg-superficie/95 text-texto'
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={riosActivo ? 'currentColor' : '#1a73e8'} strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+            <path d="M2 9c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" />
+          </svg>
+          Ríos cercanos
+        </button>
       </div>
       {modoCalle && (
-        <p role="status" className="absolute top-[7.6rem] right-16 left-3 z-[500] max-w-sm rounded-xl bg-senal px-3 py-2 text-center text-[15px] font-bold text-sobre-senal shadow-lg">
+        <p role="status" className="absolute top-[10.6rem] right-16 left-3 z-[500] max-w-sm rounded-xl bg-senal px-3 py-2 text-center text-[15px] font-bold text-sobre-senal shadow-lg">
           Toca un lugar del mapa para verlo como si estuvieras en la calle.
         </p>
       )}

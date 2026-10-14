@@ -1,7 +1,6 @@
 @import 'tailwindcss';
 @import '@fontsource/atkinson-hyperlegible-next/400.css';
 @import '@fontsource/atkinson-hyperlegible-next/700.css';
-@import 'leaflet/dist/leaflet.css';
 
 /*
   Tokens de color. Oscuro por defecto (ahorra batería en pantallas OLED).
@@ -137,12 +136,6 @@ body {
   }
 }
 
-/* Mapa base en modo oscuro: se oscurece el mapa claro de OpenStreetMap con un filtro,
-   solo la capa base (el radar y el contorno conservan sus colores reales). */
-:root:not([data-tema='claro']) .capa-base {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
-}
-
 /* Tarjetas: superficie clara, borde suave y sombra leve (solo en tema claro). */
 .tarjeta {
   background: var(--superficie);
@@ -198,30 +191,41 @@ body {
   transform: scale(1.15);
 }
 
-/* Leaflet adaptado a los tokens */
-.leaflet-container {
-  background: var(--fondo);
+/* ---- Mapa (MapLibre) ---- */
+.maplibregl-map {
   font-family: var(--font-sans);
 }
-.leaflet-control-attribution {
-  background: color-mix(in srgb, var(--fondo) 85%, transparent) !important;
-  color: var(--texto-2) !important;
+.pin-boton {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.punto-ubicacion {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #1a73e8;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 8px rgb(26 115 232 / 0.2), 0 1px 4px rgb(0 0 0 / 0.4);
+}
+/* Controles de zoom y brújula bajo los botones de ubicación y reporte, con tamaño de dedo */
+.maplibregl-ctrl-top-right {
+  top: 7.4rem;
+}
+.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-attrib {
   font-size: 11px;
 }
-.leaflet-control-attribution a {
-  color: var(--texto) !important;
-}
-.leaflet-control-zoom a {
-  width: 44px !important;
-  height: 44px !important;
-  line-height: 44px !important;
-  font-size: 22px !important;
-  background: var(--superficie) !important;
-  color: var(--texto) !important;
-  border-color: var(--borde) !important;
-}
-.leaflet-touch .leaflet-bar {
-  border: 2px solid var(--borde);
+.modo-calle .maplibregl-canvas {
+  cursor: crosshair;
 }
 
 .safe-top {
@@ -297,14 +301,4 @@ body {
 @keyframes llover {
   from { transform: translateY(0); }
   to { transform: translateY(40px); }
-}
-
-/* Controles de zoom de Leaflet bajo los botones de ubicación y reporte */
-.leaflet-top.leaflet-right {
-  top: 7.6rem;
-}
-/* Modo «ver la calle»: cursor de mira */
-.modo-calle,
-.modo-calle .leaflet-interactive {
-  cursor: crosshair !important;
 }

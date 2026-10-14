@@ -1,158 +1,65 @@
-import { useEffect, useState } from 'react'
-import L from 'leaflet'
-import { maplibreGL } from '@maplibre/maplibre-gl-leaflet'
-import { setWorkerUrl } from 'maplibre-gl'
+import { useEffect, useRef } from 'react'
+import maplibregl from 'maplibre-gl'
 import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
-
-setWorkerUrl(urlTrabajador)
-import { CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet'
 import { svgReporte } from './iconosReporte'
 import { nombreCategoria } from '../services/reportes'
 import { limiteComuna } from '../services/comunas'
 import { radarInfo } from '../services/radar'
+import { caucesCercanos } from '../services/rios'
 
+maplibregl.setWorkerUrl(urlTrabajador)
+
+// Mapa con MapLibre (el mismo tipo de motor vectorial que usan Google Maps y Apple Maps):
+// zoom suave, texto nítido a cualquier escala y rotación con dos dedos.
+//
+// Base «Mapa»: OpenFreeMap (datos de OpenStreetMap). Gratis, también comercial, sin clave.
+// Base «Satélite»: Esri World Imagery con las calles y nombres del mapa vectorial encima.
+//   Libre con atribución en etapa no comercial; para vender, usar una clave de ArcGIS Location Platform.
+const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
+const SATELITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+const ATRIB_ESRI = 'Imágenes © Esri, Vantor, Earthstar Geographics'
 const CHILE = [
-  [-56.0, -76.0],
-  [-17.4, -66.0],
+  [-76.0, -56.0],
+  [-66.0, -17.4],
+]
+const AMBAR = '#ffc93c'
+const RIO = '#1a73e8'
+
+const aBounds = (bbox) => [
+  [bbox[0][1], bbox[0][0]],
+  [bbox[1][1], bbox[1][0]],
 ]
 
-// ---- Mapas base ----
-// «Mapa»: OpenFreeMap (datos de OpenStreetMap dibujados en vectores, con edificios, parques,
-// nombres de calles y números). Gratis, también para uso comercial, sin clave; exige atribución.
-const ESTILO = {
-  claro: 'https://tiles.openfreemap.org/styles/liberty',
-  // El estilo oscuro de OpenFreeMap es casi negro y poco legible: se usa el claro en ambos temas, como Google Maps.
-  oscuro: 'https://tiles.openfreemap.org/styles/liberty',
-}
-const ATRIB_OFM =
-  '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
-
-// «Satélite»: imágenes de Esri World Imagery, con calles y nombres encima.
-// Uso libre con atribución en etapa no comercial; para venderlo hay que usar una clave
-// gratuita de ArcGIS Location Platform (ver README).
-const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services'
-const SATELITE = `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`
-const CALLES = `${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`
-const NOMBRES = `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`
-const ATRIB_ESRI = 'Imágenes: Esri, Vantor, Earthstar Geographics'
-
-/** Capa vectorial de MapLibre dentro de Leaflet (cambia de estilo con el tema). */
-function MapaVectorial({ estilo }) {
-  const map = useMap()
-  useEffect(() => {
-    const capa = maplibreGL({ style: estilo, attributionControl: false, interactive: false })
-    capa.addTo(map)
-    // Diagnóstico: con ?depurar en la dirección, el mapa queda accesible desde la consola.
-    if (location.search.includes('depurar')) window.__mapa = { map, capa }
-    map.attributionControl?.addAttribution(ATRIB_OFM)
-    return () => {
-      map.attributionControl?.removeAttribution(ATRIB_OFM)
-      capa.remove()
-    }
-  }, [estilo, map])
-  return null
+function elementoPin(html, etiqueta) {
+  const el = document.createElement('button')
+  el.type = 'button'
+  el.className = 'pin-boton'
+  el.setAttribute('aria-label', etiqueta)
+  el.innerHTML = html
+  return el
 }
 
-/** Modo «ver la calle»: el siguiente toque en el mapa abre la vista a nivel de calle de ese punto. */
-function ToqueCalle({ activo, onElegir }) {
-  const map = useMapEvents({
-    click(e) {
-      if (activo) onElegir(e.latlng)
-    },
-  })
-  useEffect(() => {
-    map.getContainer().classList.toggle('modo-calle', activo)
-  }, [activo, map])
-  return null
-}
-
-const iconos = new Map()
-function iconoPin(categoria, seleccionado) {
-  const clave = `${categoria}:${seleccionado}`
-  if (!iconos.has(clave)) {
-    iconos.set(
-      clave,
-      L.divIcon({
-        className: '',
-        html: `<div class="pin-reporte${seleccionado ? ' seleccionado' : ''}">${svgReporte(categoria, 22)}</div>`,
-        iconSize: [36, 36],
-        iconAnchor: [4, 34],
-      }),
-    )
+/** Sincroniza un conjunto de marcadores con una lista (agrega, mueve, quita). */
+function sincronizar(mapa, guardados, lista, crear) {
+  const vivos = new Set()
+  for (const item of lista) {
+    vivos.add(item.clave)
+    const m = guardados.get(item.clave)
+    if (m && m.firma === item.firma) continue
+    m?.marcador.remove()
+    const marcador = crear(item).addTo(mapa)
+    guardados.set(item.clave, { marcador, firma: item.firma })
   }
-  return iconos.get(clave)
-}
-
-const ICONO_CAMARA = L.divIcon({
-  className: '',
-  html: '<div class="pin-camara"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h12v10H3z"/><path d="M15 10l6-3v10l-6-3z"/></svg></div>',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-})
-
-/** Al elegir un reporte desde la lista, el mapa lo trae a la vista. */
-function EnfocarReporte({ reporte, visible }) {
-  const map = useMap()
-  useEffect(() => {
-    if (reporte && visible) map.setView([reporte.lat, reporte.lng], Math.max(map.getZoom(), 15))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reporte?.id, visible])
-  return null
-}
-
-function Encuadre({ comuna, ubicacion, centrarEn, visible }) {
-  const map = useMap()
-  // El mapa vive oculto en la pestaña Ahora; al mostrarlo hay que recalcular su tamaño.
-  useEffect(() => {
-    if (visible) {
-      map.invalidateSize()
-      if (comuna?.bbox) map.fitBounds(comuna.bbox, { padding: [24, 24], maxZoom: 13 })
+  for (const [k, m] of guardados) {
+    if (!vivos.has(k)) {
+      m.marcador.remove()
+      guardados.delete(k)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible])
-  useEffect(() => {
-    if (comuna?.bbox) map.fitBounds(comuna.bbox, { padding: [24, 24], maxZoom: 13 })
-  }, [comuna, map])
-  useEffect(() => {
-    if (ubicacion && centrarEn) map.setView([ubicacion.lat, ubicacion.lng], Math.max(map.getZoom(), 13))
-  }, [ubicacion, centrarEn, map])
-  return null
-}
-
-/**
- * Capas de radar: cada cuadro visitado queda montado (invisible) para que la
- * animación no vuelva a descargar imágenes en cada vuelta.
- */
-function CapasRadar({ cuadros, indice, opacidad }) {
-  const [montados, setMontados] = useState(() => new Set())
-  useEffect(() => {
-    setMontados((prev) => {
-      const actual = cuadros[indice]?.url
-      if (!actual || prev.has(actual)) return prev
-      const vigentes = new Set(cuadros.map((c) => c.url))
-      const sig = new Set([...prev].filter((u) => vigentes.has(u)))
-      sig.add(actual)
-      return sig
-    })
-  }, [cuadros, indice])
-
-  const actual = cuadros[indice]?.url
-  return [...montados].map((url) => (
-    <TileLayer
-      key={url}
-      url={url}
-      opacity={url === actual ? opacidad : 0}
-      zIndex={url === actual ? 410 : 400}
-      maxNativeZoom={radarInfo.zoomMaximo}
-      maxZoom={18}
-      attribution={radarInfo.atribucion}
-    />
-  ))
+  }
 }
 
 export default function Mapa({
-  tema,
   comuna,
   cuadros,
   indice,
@@ -167,86 +74,287 @@ export default function Mapa({
   base = 'mapa',
   modoCalle = false,
   onCalle = () => {},
+  pedirRios = 0,
+  onRios = () => {},
+  rioEnfocado = null,
 }) {
-  const [limite, setLimite] = useState(null)
+  const caja = useRef(null)
+  const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() })
+  const props = useRef({})
+  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle }
 
+  // Ejecuta cuando el estilo esté cargado.
+  const cuandoListo = (fn) => {
+    const r = ref.current
+    if (r.listo) fn(r.mapa)
+    else r.pendientes.push(fn)
+  }
+
+  // ---- Crear el mapa una sola vez ----
+  useEffect(() => {
+    const mapa = new maplibregl.Map({
+      container: caja.current,
+      style: ESTILO,
+      bounds: comuna?.bbox ? aBounds(comuna.bbox) : CHILE,
+      fitBoundsOptions: { padding: 24 },
+      maxZoom: 19,
+      minZoom: 3,
+      attributionControl: false,
+      dragRotate: true,
+      pitchWithRotate: false,
+      locale: { 'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar', 'NavigationControl.ResetBearing': 'Apuntar al norte' },
+    })
+    mapa.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), 'top-right')
+    mapa.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: [radarInfo.atribucion] }), 'bottom-right')
+    mapa.touchZoomRotate.enableRotation()
+    ref.current.mapa = mapa
+    if (location.search.includes('depurar')) window.__mapa = mapa
+
+    mapa.on('load', () => {
+      // Satélite: bajo las calles y los nombres, sobre los rellenos del mapa.
+      const primeraLinea = mapa.getStyle().layers.find((l) => l.type === 'line')?.id
+      mapa.addSource('satelite', {
+        type: 'raster',
+        tiles: [SATELITE],
+        // En pantallas de alta densidad se piden imágenes un nivel más detalladas.
+        tileSize: window.devicePixelRatio >= 1.5 ? 128 : 256,
+        maxzoom: 19,
+        attribution: ATRIB_ESRI,
+      })
+      mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
+
+      mapa.addSource('comuna', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      mapa.addLayer({ id: 'comuna-halo', type: 'line', source: 'comuna', paint: { 'line-color': '#000', 'line-opacity': 0.35, 'line-width': 5 } })
+      mapa.addLayer({ id: 'comuna', type: 'line', source: 'comuna', paint: { 'line-color': AMBAR, 'line-width': 3, 'line-dasharray': [2, 1.5] } })
+
+      mapa.addSource('rios', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      mapa.addLayer({ id: 'rios-halo', type: 'line', source: 'rios', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': ['case', ['get', 'enfocado'], 11, 8], 'line-opacity': 0.9 } })
+      mapa.addLayer({ id: 'rios', type: 'line', source: 'rios', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': RIO, 'line-width': ['case', ['get', 'enfocado'], 7, 4.5] } })
+      mapa.addLayer({
+        id: 'rios-nombre',
+        type: 'symbol',
+        source: 'rios',
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['get', 'nombre'],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 14,
+          'symbol-spacing': 280,
+        },
+        paint: { 'text-color': '#0b3d91', 'text-halo-color': '#fff', 'text-halo-width': 2 },
+      })
+
+      ref.current.listo = true
+      ref.current.pendientes.splice(0).forEach((fn) => fn(mapa))
+    })
+
+    mapa.on('click', (e) => {
+      if (props.current.modoCalle) props.current.onCalle({ lat: e.lngLat.lat, lng: e.lngLat.lng })
+    })
+
+    return () => {
+      mapa.remove()
+      ref.current = { mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ---- Al mostrarse la pestaña, recalcular tamaño ----
+  useEffect(() => {
+    if (visible) ref.current.mapa?.resize()
+  }, [visible])
+
+  // ---- Base: mapa o satélite ----
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      const sat = base === 'satelite'
+      mapa.setLayoutProperty('satelite', 'visibility', sat ? 'visible' : 'none')
+      // En satélite se ocultan los rellenos (parques, edificios, agua) para ver la foto.
+      for (const l of mapa.getStyle().layers) {
+        if ((l.type === 'fill' || l.type === 'fill-extrusion') && l.id !== 'satelite') {
+          mapa.setLayoutProperty(l.id, 'visibility', sat ? 'none' : 'visible')
+        }
+      }
+      // El satélite no tiene más detalle que el nivel 19 en ciudades; en el campo, menos.
+      mapa.setMaxZoom(sat ? 18.5 : 19)
+    })
+  }, [base])
+
+  // ---- Comuna: contorno y encuadre ----
   useEffect(() => {
     let vigente = true
-    setLimite(null)
-    if (comuna) {
-      limiteComuna(comuna.cut)
-        .then((f) => vigente && setLimite(f))
-        .catch(() => {})
-    }
+    if (!comuna) return
+    cuandoListo((mapa) => {
+      if (comuna.bbox) mapa.fitBounds(aBounds(comuna.bbox), { padding: 24, maxZoom: 13, duration: 0 })
+      mapa.getSource('comuna').setData({ type: 'FeatureCollection', features: [] })
+      mapa.getSource('rios').setData({ type: 'FeatureCollection', features: [] })
+      ref.current.rios = null
+    })
+    limiteComuna(comuna.cut)
+      .then((f) => vigente && f && cuandoListo((mapa) => mapa.getSource('comuna').setData(f)))
+      .catch(() => {})
     return () => {
       vigente = false
     }
-  }, [comuna])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comuna?.cut])
 
-  return (
-    <MapContainer
-      bounds={comuna?.bbox ?? CHILE}
-      className="h-full w-full"
-      attributionControl
-      preferCanvas
-      minZoom={4}
-      maxZoom={19}
-      zoomControl={false}
-    >
-      {base === 'satelite' ? (
-        <>
-          <TileLayer key="sat" url={SATELITE} attribution={ATRIB_ESRI} maxNativeZoom={18} maxZoom={19} />
-          <TileLayer key="calles" url={CALLES} maxNativeZoom={18} maxZoom={19} opacity={0.9} />
-          <TileLayer key="nombres" url={NOMBRES} maxNativeZoom={18} maxZoom={19} />
-        </>
-      ) : (
-        <MapaVectorial estilo={tema === 'claro' ? ESTILO.claro : ESTILO.oscuro} />
-      )}
-      <ZoomControl position="topright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
-      <ToqueCalle activo={modoCalle} onElegir={onCalle} />
-      <CapasRadar cuadros={cuadros} indice={indice} opacidad={0.75} />
-      {limite && (
-        <GeoJSON
-          key={comuna.cut}
-          data={limite}
-          interactive={false}
-          // Ámbar sobre el mapa oscuro; ocre oscuro sobre el claro (contraste ≥ 4,5:1).
-          style={{ color: base === 'satelite' || tema !== 'claro' ? '#ffc93c' : '#8a5600', weight: 3, fill: false, dashArray: '8 6' }}
-        />
-      )}
-      {ubicacion && (
-        <CircleMarker
-          center={[ubicacion.lat, ubicacion.lng]}
-          radius={9}
-          pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f80ff', fillOpacity: 1 }}
-        />
-      )}
-      {camaras.map((c) => (
-        <Marker
-          key={`cam-${c.id}`}
-          position={[c.lat, c.lng]}
-          icon={ICONO_CAMARA}
-          title={`Cámara: ${c.titulo}`}
-          alt={`Cámara pública: ${c.titulo}`}
-          keyboard
-          eventHandlers={{ click: () => onCamara(c) }}
-        />
-      ))}
-      {reportes.map((r) => (
-        <Marker
-          key={r.id}
-          position={[r.lat, r.lng]}
-          icon={iconoPin(r.categoria, seleccionado?.id === r.id)}
-          title={nombreCategoria(r.categoria)}
-          alt={`Reporte vecinal: ${nombreCategoria(r.categoria)}`}
-          keyboard
-          zIndexOffset={seleccionado?.id === r.id ? 1000 : 0}
-          eventHandlers={{ click: () => onSeleccionar(r) }}
-        />
-      ))}
-      <Encuadre comuna={comuna} ubicacion={ubicacion} centrarEn={centrarEn} visible={visible} />
-      {/* Después de Encuadre: si se abrió desde la lista, el reporte gana sobre el encuadre de la comuna */}
-      <EnfocarReporte reporte={seleccionado} visible={visible} />
-    </MapContainer>
-  )
+  // ---- Mi ubicación ----
+  const marcaUbicacion = useRef(null)
+  useEffect(() => {
+    const mapa = ref.current.mapa
+    if (!mapa || !ubicacion) return
+    if (!marcaUbicacion.current) {
+      const el = document.createElement('div')
+      el.className = 'punto-ubicacion'
+      el.setAttribute('aria-label', 'Tu ubicación')
+      marcaUbicacion.current = new maplibregl.Marker({ element: el })
+    }
+    marcaUbicacion.current.setLngLat([ubicacion.lng, ubicacion.lat]).addTo(mapa)
+  }, [ubicacion])
+  useEffect(() => {
+    if (ubicacion && centrarEn) ref.current.mapa?.flyTo({ center: [ubicacion.lng, ubicacion.lat], zoom: Math.max(ref.current.mapa.getZoom(), 14) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centrarEn])
+
+  // ---- Reportes vecinales ----
+  useEffect(() => {
+    const mapa = ref.current.mapa
+    if (!mapa) return
+    sincronizar(
+      mapa,
+      ref.current.reportes,
+      reportes.map((r) => ({ ...r, clave: r.id, firma: `${r.lat},${r.lng},${r.categoria},${seleccionado?.id === r.id}` })),
+      (r) => {
+        const el = elementoPin(
+          `<div class="pin-reporte${seleccionado?.id === r.id ? ' seleccionado' : ''}">${svgReporte(r.categoria, 22)}</div>`,
+          `Reporte vecinal: ${nombreCategoria(r.categoria)}`,
+        )
+        el.addEventListener('click', (e) => {
+          e.stopPropagation()
+          props.current.onSeleccionar(r)
+        })
+        if (seleccionado?.id === r.id) el.style.zIndex = '2'
+        return new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [-4, 2] }).setLngLat([r.lng, r.lat])
+      },
+    )
+  }, [reportes, seleccionado?.id])
+
+  useEffect(() => {
+    if (seleccionado && visible) ref.current.mapa?.flyTo({ center: [seleccionado.lng, seleccionado.lat], zoom: Math.max(ref.current.mapa.getZoom(), 15) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccionado?.id, visible])
+
+  // ---- Cámaras ----
+  useEffect(() => {
+    const mapa = ref.current.mapa
+    if (!mapa) return
+    sincronizar(
+      mapa,
+      ref.current.camaras,
+      camaras.map((c) => ({ ...c, clave: c.id, firma: `${c.lat},${c.lng}` })),
+      (c) => {
+        const el = elementoPin(
+          '<div class="pin-camara"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h12v10H3z"/><path d="M15 10l6-3v10l-6-3z"/></svg></div>',
+          `Cámara pública: ${c.titulo}`,
+        )
+        el.addEventListener('click', (e) => {
+          e.stopPropagation()
+          props.current.onCamara(c)
+        })
+        return new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat])
+      },
+    )
+  }, [camaras])
+
+  // ---- Radar: una capa por cuadro, que quedan cargadas para animar sin volver a descargar ----
+  useEffect(() => {
+    const actual = cuadros[indice]?.url
+    cuandoListo((mapa) => {
+      const r = ref.current
+      const vigentes = new Set(cuadros.map((c) => c.url))
+      for (const url of [...r.radar]) {
+        if (!vigentes.has(url)) {
+          const id = `radar-${btoa(url).slice(-24)}`
+          if (mapa.getLayer(id)) mapa.removeLayer(id)
+          if (mapa.getSource(id)) mapa.removeSource(id)
+          r.radar.delete(url)
+        }
+      }
+      if (actual && !r.radar.has(actual)) {
+        const id = `radar-${btoa(actual).slice(-24)}`
+        mapa.addSource(id, { type: 'raster', tiles: [actual], tileSize: 256, maxzoom: radarInfo.zoomMaximo })
+        mapa.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': 0, 'raster-fade-duration': 0 } }, 'comuna-halo')
+        r.radar.add(actual)
+      }
+      for (const url of r.radar) {
+        const id = `radar-${btoa(url).slice(-24)}`
+        if (mapa.getLayer(id)) mapa.setPaintProperty(id, 'raster-opacity', url === actual ? 0.75 : 0)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cuadros, indice])
+
+  // ---- Ríos y quebradas cercanos ----
+  useEffect(() => {
+    if (!pedirRios) return
+    const punto = ubicacion ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)
+    if (!punto) return
+    props.current.onRios({ estado: 'buscando' })
+    cuandoListo((mapa) => {
+      mapa.jumpTo({ center: [punto.lng, punto.lat], zoom: Math.min(mapa.getZoom(), 12) < 11 ? 12 : Math.min(mapa.getZoom(), 12) })
+      const buscar = () => {
+        const fuentes = mapa.querySourceFeatures('openmaptiles', { sourceLayer: 'waterway' })
+        const lista = caucesCercanos(fuentes, punto)
+        mapa.getSource('rios').setData({
+          type: 'FeatureCollection',
+          features: lista.map((c, i) => ({ type: 'Feature', id: i, properties: { nombre: c.nombre, enfocado: false }, geometry: c.geometria })),
+        })
+        if (lista.length) {
+          // Encuadre: el punto y el cauce más cercano.
+          const b = new maplibregl.LngLatBounds([punto.lng, punto.lat], [punto.lng, punto.lat])
+          for (const linea of lista[0].geometria.coordinates) for (const c of linea) b.extend(c)
+          mapa.fitBounds(b, { padding: { top: 140, bottom: 260, left: 40, right: 60 }, maxZoom: 15 })
+        }
+        ref.current.rios = lista
+        props.current.onRios({ estado: lista.length ? 'listo' : 'vacio', lista, punto })
+      }
+      // Se busca cuando el mapa termina de cargar los cauces de la zona (con un respaldo por si ya estaba quieto).
+      let hecho = false
+      const una = () => {
+        if (hecho) return
+        hecho = true
+        buscar()
+      }
+      mapa.once('idle', una)
+      setTimeout(() => mapa.areTilesLoaded() && una(), 1500)
+      setTimeout(una, 8000)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedirRios])
+
+  // Enfocar un cauce de la lista
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      const lista = ref.current.rios
+      if (!lista) return
+      mapa.getSource('rios').setData({
+        type: 'FeatureCollection',
+        features: lista.map((c, i) => ({
+          type: 'Feature',
+          id: i,
+          properties: { nombre: c.nombre, enfocado: rioEnfocado?.nombre === c.nombre },
+          geometry: c.geometria,
+        })),
+      })
+      if (rioEnfocado) {
+        const b = new maplibregl.LngLatBounds()
+        for (const linea of rioEnfocado.geometria.coordinates) for (const c of linea) b.extend(c)
+        mapa.fitBounds(b, { padding: { top: 140, bottom: 260, left: 40, right: 60 }, maxZoom: 15 })
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rioEnfocado])
+
+  return <div ref={caja} className={`h-full w-full ${modoCalle ? 'modo-calle' : ''}`} role="region" aria-label="Mapa" />
 }

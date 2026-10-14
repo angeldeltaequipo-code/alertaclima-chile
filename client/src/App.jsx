@@ -29,6 +29,7 @@ import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
 import { enlaceStreetView } from './services/fotos'
 import ControlesMapa from './components/ControlesMapa'
+import PanelRios from './components/PanelRios'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
@@ -55,6 +56,16 @@ export default function App() {
     guardar('mapa:base', b)
   }
   const [modoCalle, setModoCalle] = useState(false)
+  const [pedirRios, setPedirRios] = useState(0)
+  const [rios, setRios] = useState(null)
+  const [rioEnfocado, setRioEnfocado] = useState(null)
+  const buscarRios = () => {
+    setRioEnfocado(null)
+    setCamaraSel(null)
+    setSeleccionado(null)
+    setVista('radar')
+    setPedirRios((n) => n + 1)
+  }
   const verCalle = ({ lat, lng }) => {
     setModoCalle(false)
     window.open(enlaceStreetView(lat, lng), '_blank', 'noopener')
@@ -124,6 +135,8 @@ export default function App() {
   const elegirComuna = (nuevo, punto) => {
     setCut(nuevo)
     setSeleccionado(null)
+    setRios(null)
+    setRioEnfocado(null)
     document.getElementById('vista-ahora')?.scrollTo(0, 0)
     if (punto) setUbicacion(punto)
     setSelector(false)
@@ -136,6 +149,8 @@ export default function App() {
       ({ coords }) => {
         setUbicacion({ lat: coords.latitude, lng: coords.longitude })
         setCentrarEn((n) => n + 1)
+        // Con la lista de ríos abierta, se vuelve a buscar desde donde está la persona.
+        if (rios) setPedirRios((n) => n + 1)
       },
       (err) =>
         setAvisoUbicacion(
@@ -197,7 +212,6 @@ export default function App() {
           {mapaMontado && (
             <Suspense fallback={<div className="grid h-full place-items-center text-texto-2">Cargando mapa…</div>}>
               <Mapa
-                tema={temaVisible}
                 comuna={comuna}
                 cuadros={radar.cuadros}
                 indice={radar.indice}
@@ -218,10 +232,20 @@ export default function App() {
                 base={baseMapa}
                 modoCalle={modoCalle}
                 onCalle={verCalle}
+                pedirRios={pedirRios}
+                onRios={(r) => setRios({ ...r, desdeUbicacion: Boolean(ubicacion) })}
+                rioEnfocado={rioEnfocado}
               />
             </Suspense>
           )}
-          <ControlesMapa base={baseMapa} onBase={setBaseMapa} modoCalle={modoCalle} onModoCalle={setModoCalle} />
+          <ControlesMapa
+            base={baseMapa}
+            onBase={setBaseMapa}
+            modoCalle={modoCalle}
+            onModoCalle={setModoCalle}
+            onRios={rios ? () => setRios(null) : buscarRios}
+            riosActivo={Boolean(rios)}
+          />
           <button
             type="button"
             onClick={ubicarme}
@@ -255,7 +279,9 @@ export default function App() {
                   {avisoUbicacion}
                 </p>
               )}
-              {camaraSel ? (
+              {rios ? (
+                <PanelRios rios={rios} enfocado={rioEnfocado} onEnfocar={setRioEnfocado} onCerrar={() => { setRios(null); setRioEnfocado(null) }} />
+              ) : camaraSel ? (
                 <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
                 <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={rep.votar} onCerrar={() => setSeleccionado(null)} />
