@@ -191,3 +191,45 @@ export function intensidad(mmh) {
   if (mmh < 50) return 'fuerte'
   return 'muy fuerte'
 }
+
+// ---- Medición real + modelo ----
+
+function iconoDeMedicion(o) {
+  const f = o.fenomeno ?? ''
+  if (/Tormenta/.test(f)) return 'tormenta'
+  if (/Nieve|Granizo/.test(f)) return 'nieve'
+  if (/Niebla|Neblina/.test(f)) return 'niebla'
+  if (o.precipitacion) return /fuerte/.test(f) ? 'lluvia-fuerte' : /Llovizna/.test(f) ? 'llovizna' : 'lluvia'
+  if (o.cielo === 'Despejado') return 'despejado'
+  if (o.cielo === 'Pocas nubes' || o.cielo === 'Parcialmente nublado') return 'parcial'
+  if (o.cielo) return 'nublado'
+  return null
+}
+
+/**
+ * Condiciones "ahora": si hay una medición real cercana y reciente, manda lo medido;
+ * el modelo completa lo que la estación no mide. Devuelve también de dónde salió cada dato.
+ */
+export function condicionesActuales(modelo, obs) {
+  if (!modelo) return null
+  const d = describir(modelo.codigo)
+  if (!obs || obs.temperatura == null) {
+    return { ...modelo, texto: d.texto, icono: d.icono, medido: false }
+  }
+  const icono = iconoDeMedicion(obs) ?? d.icono
+  return {
+    ...modelo,
+    temperatura: obs.temperatura,
+    // La sensación del modelo se corrige por la diferencia entre lo medido y lo estimado.
+    sensacion: modelo.sensacion + (obs.temperatura - modelo.temperatura),
+    humedad: obs.humedad ?? modelo.humedad,
+    viento: obs.viento ?? modelo.viento,
+    rafagas: obs.rafagas ?? modelo.rafagas,
+    texto: obs.fenomeno ?? obs.cielo ?? d.texto,
+    icono,
+    medido: true,
+    lloviendoEnEstacion: obs.precipitacion,
+    temperaturaModelo: modelo.temperatura,
+    estacion: { nombre: obs.nombre, distanciaKm: obs.distanciaKm, hora: obs.hora, fuente: obs.fuente },
+  }
+}

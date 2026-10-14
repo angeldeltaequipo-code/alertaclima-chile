@@ -13,6 +13,8 @@ import { useRadar } from './hooks/useRadar'
 import { useClima } from './hooks/useClima'
 import { useReportes } from './hooks/useReportes'
 import { useAlertas } from './hooks/useAlertas'
+import { useObservacion } from './hooks/useObservacion'
+import { condicionesActuales } from './services/clima'
 import DetalleAlertas from './components/DetalleAlertas'
 import { comunaPorCut } from './services/comunas'
 import { hhmm } from './services/formato'
@@ -32,6 +34,7 @@ export default function App() {
   const clima = useClima({ comuna, ahorro: ahorro.activo, enLinea })
   const rep = useReportes({ comuna, enLinea })
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
+  const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const [verAlertas, setVerAlertas] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
   const [formulario, setFormulario] = useState(null)
@@ -113,7 +116,7 @@ export default function App() {
       <BandaEstado
         comuna={comuna}
         estado={alertas.estado}
-        ahora={clima.datos?.ahora}
+        ahora={condicionesActuales(clima.datos?.ahora, obs)}
         onCambiar={() => setSelector(true)}
         onVerAlertas={() => setVerAlertas(true)}
       />
@@ -127,6 +130,7 @@ export default function App() {
                 clima={clima}
                 comuna={comuna}
                 enLinea={enLinea}
+                obs={obs}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
               />
             )}

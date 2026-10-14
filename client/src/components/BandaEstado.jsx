@@ -81,7 +81,7 @@ function LineaOficial({ estado, onVerAlertas }) {
 export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAlertas }) {
   const principal = estado?.alertas ? alertaPrincipal(estado.alertas) : null
   const clave = principal ? NIVELES[principal.nivel].clave : 'sin'
-  const cond = ahora ? describir(ahora.codigo) : null
+  const cond = ahora ? { texto: ahora.texto ?? describir(ahora.codigo).texto, icono: ahora.icono ?? describir(ahora.codigo).icono } : null
 
   return (
     <header

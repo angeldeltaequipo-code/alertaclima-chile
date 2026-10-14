@@ -1,6 +1,6 @@
 import IconoClima from './IconoClima'
 import GraficoLluvia from './GraficoLluvia'
-import { climaInfo, describir, direccionViento, intensidad } from '../services/clima'
+import { climaInfo, condicionesActuales, describir, direccionViento, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
 
 const grados = (v) => `${Math.round(v)}°`
@@ -48,7 +48,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, reportes = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, reportes = null, obs = null }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -76,13 +76,14 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null }) 
     )
   }
 
-  const { ahora, horas, dias } = datos
-  const { texto, icono } = describir(ahora.codigo)
+  const { horas, dias } = datos
+  const ahora = condicionesActuales(datos.ahora, obs)
+  const { texto, icono } = ahora
   const prox12 = horas.slice(0, 12)
   const semMin = Math.min(...dias.map((d) => d.min))
   const semMax = Math.max(...dias.map((d) => d.max))
   const rango = Math.max(1, semMax - semMin)
-  const lluviaAhora = ahora.lluvia > 0
+  const lluviaAhora = !ahora.medido && ahora.lluvia > 0
   const hayLluvia = prox12.some((h) => h.lluvia > 0)
 
   return (
@@ -115,6 +116,21 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null }) 
           </div>
         </dl>
         <p className="mt-3 text-[15px] text-texto-2">
+          {ahora.medido ? (
+            <span className="block">
+              <strong className="text-texto">Medido a las {hhmm(ahora.estacion.hora)}</strong> en la estación{' '}
+              {ahora.estacion.nombre}, a {num(ahora.estacion.distanciaKm, 0)} km. El modelo estimaba{' '}
+              {grados(ahora.temperaturaModelo)}.
+            </span>
+          ) : (
+            <span className="block">
+              <strong className="text-texto">Estimación del modelo</strong>: no hay una estación meteorológica con datos
+              recientes cerca de {comuna.nombre}.
+            </span>
+          )}
+          {ahora.lloviendoEnEstacion && (
+            <strong className="block text-lluvia-texto">Está lloviendo en la estación: {ahora.texto.toLowerCase()}.</strong>
+          )}
           {lluviaAhora ? (
             <>
               <strong className="text-lluvia-texto">
@@ -123,7 +139,7 @@ export default function VistaAhora({ clima, comuna, enLinea, reportes = null }) 
               (lluvia {intensidad(ahora.lluvia)}).{' '}
             </>
           ) : null}
-          Viento del {direccionViento(ahora.direccion)}. Humedad {ahora.humedad} %.
+          {!ahora.medido && `Viento del ${direccionViento(ahora.direccion)}. `}Humedad {ahora.humedad} %.
         </p>
       </section>
 

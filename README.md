@@ -6,7 +6,7 @@ App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de 
 
 ## Qué hace hoy
 
-- Pestaña **Ahora**: temperatura, sensación térmica, viento y ráfagas, lluvia de la última hora, gráfico de lluvia de las próximas 12 horas con un resumen en palabras, pronóstico hora a hora y de 7 días.
+- Pestaña **Ahora**: cuando hay una estación meteorológica a menos de 40 km con datos de la última hora y media, muestra **lo medido** (temperatura, humedad, viento, lluvia), indicando la estación, la distancia y la hora; si no, la estimación del modelo, dicho así. Además: temperatura, sensación térmica, viento y ráfagas, lluvia de la última hora, gráfico de lluvia de las próximas 12 horas con un resumen en palabras, pronóstico hora a hora y de 7 días.
 - Pestaña **Radar**: mapa con radar de lluvia y leyenda de intensidad.
 - **Reportes vecinales:** anegamientos, desbordes, caminos cortados, cortes de luz y árboles caídos, con ubicación en el mapa. Aparecen al instante para los vecinos de la comuna, que pueden confirmarlos o avisar que ya no están (3 desmentidos netos los ocultan). Máximo 5 reportes por hora por persona, vencen solos y se guardan en cola si no hay señal.
 - Elegir comuna escribiendo su nombre, por región o con la ubicación del celular (346 comunas con su código CUT).
@@ -85,6 +85,11 @@ Planes gratuitos de Render: el servidor duerme tras 15 minutos sin uso y tarda c
 - **SENAPRED:** no se encontró una API, RSS ni datos abiertos de alertas. Su página de alertas se arma con JavaScript desde un servicio interno no documentado. Usarlo sin autorización sería *scraping*, así que no se integró. Propuesta: pedir acceso formal (convenio o solicitud por Ley de Transparencia) y, mientras tanto, cargar las alertas a mano desde el panel. El código ya tiene la interfaz `AlertSource` (`server/services/alertas.js`) para sumar una integración oficial sin cambiar la app.
 - **Dirección Meteorológica de Chile:** publica servicios JSON en su portal climatológico (datos de estaciones automáticas, entre otros), pero no se encontró un servicio de avisos, alertas y alarmas meteorológicas. Vale la pena consultarles directamente.
 - **DGA (niveles de ríos):** unas 650 estaciones transmiten en línea caudal, nivel y lluvia, y la información es gratuita, pero no tiene API documentada. Propuesta: contactar al Departamento de Información de Recursos Hídricos para acceso a datos en tiempo real antes de integrar.
+
+## Mediciones reales
+
+- **Hoy:** estaciones de unos 24 aeropuertos y aeródromos chilenos (METAR de la DGAC, vía aviationweather.gov, sin registro). El servidor las consulta cada 10 minutos (`server/services/observaciones.js`). Cubren solo las comunas cercanas a un aeropuerto.
+- **Siguiente paso:** la red de estaciones automáticas de la Dirección Meteorológica de Chile, con muchas más estaciones. Requiere registrarse en climatologia.meteochile.gob.cl para obtener usuario y clave (`DMC_USUARIO`, `DMC_TOKEN`). Se suma como otra fuente en el mismo archivo.
 
 ## Fuentes de datos
 

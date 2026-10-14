@@ -4,6 +4,7 @@ import cors from 'cors'
 import { saludRouter } from './routes/salud.js'
 import { reportesRouter } from './routes/reportes.js'
 import { adminRouter, alertasRouter } from './routes/alertas.js'
+import { observacionRouter } from './routes/observacion.js'
 import { ErrorValidacion } from './services/reportes.js'
 
 export const origenesPermitidos = () =>
@@ -23,6 +24,7 @@ export function crearApp({ emitir, avisarComunas } = {}) {
   app.use('/api/salud', saludRouter)
   app.use('/api/reportes', reportesRouter({ emitir }))
   app.use('/api/alertas', alertasRouter())
+  app.use('/api/observacion', observacionRouter())
   app.use('/api/admin', adminRouter({ avisarComunas }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))
