@@ -68,7 +68,7 @@ Los reportes necesitan el servidor (API + base de datos). La app publicada funci
 
 1. Entra a [Render](https://render.com) con tu cuenta de GitHub.
 2. *New → Blueprint*, elige este repositorio y confirma. Render lee `render.yaml`, crea la base de datos y el servidor y los conecta solo. Al arrancar, el servidor crea las tablas y carga las comunas.
-3. En GitHub, *Settings → Secrets and variables → Actions → Variables*, crea `API_URL` con la dirección del servidor (por ejemplo `https://alertaclima-api.onrender.com`) y vuelve a correr la publicación.
+3. La app publicada usa `https://alertaclima-api.onrender.com` (definida en `.github/workflows/publicar.yml`). Si el servidor cambia de dirección, crea la variable `API_URL` en GitHub (*Settings → Secrets and variables → Actions → Variables*).
 
 Planes gratuitos de Render: el servidor duerme tras 15 minutos sin uso y tarda cerca de un minuto en despertar, y la base de datos gratuita vence a los 30 días. Sirven para probar; para el piloto con un municipio hay que pasar ambos a planes pagados.
 

@@ -30,8 +30,8 @@ jobs:
       - run: npm run build
         working-directory: client
         env:
-          # Dirección del servidor de reportes (variable del repositorio API_URL). Vacía = sin reportes.
-          VITE_API_URL: ${{ vars.API_URL }}
+          # Dirección del servidor de reportes (variable API_URL del repositorio; si no existe, la de Render).
+          VITE_API_URL: ${{ vars.API_URL || 'https://alertaclima-api.onrender.com' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: client/dist
