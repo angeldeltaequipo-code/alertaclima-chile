@@ -75,6 +75,7 @@ export default function VistaAhora({ clima, comuna, enLinea }) {
   const semMax = Math.max(...dias.map((d) => d.max))
   const rango = Math.max(1, semMax - semMin)
   const lluviaAhora = ahora.lluvia > 0
+  const hayLluvia = prox12.some((h) => h.lluvia > 0)
 
   return (
     <div className="space-y-3 px-4 pt-4 pb-6">
@@ -119,8 +120,8 @@ export default function VistaAhora({ clima, comuna, enLinea }) {
       </section>
 
       <Bloque titulo="Lluvia en las próximas 12 horas" id="t-lluvia">
-        <p className="mb-2 text-[16px]">{resumenLluvia(prox12)}</p>
-        <GraficoLluvia horas={prox12} />
+        <p className={hayLluvia ? 'mb-2 text-[16px]' : 'text-[16px]'}>{resumenLluvia(prox12)}</p>
+        {hayLluvia && <GraficoLluvia horas={prox12} />}
       </Bloque>
 
       <Bloque titulo="Hora a hora" id="t-horas">

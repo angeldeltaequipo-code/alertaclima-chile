@@ -47,6 +47,7 @@ export default function App() {
 
   const elegirComuna = (nuevo, punto) => {
     setCut(nuevo)
+    document.getElementById('vista-ahora')?.scrollTo(0, 0)
     if (punto) setUbicacion(punto)
     setSelector(false)
   }
@@ -81,7 +82,7 @@ export default function App() {
 
       <main className="relative min-h-0 flex-1">
         {/* Ahora */}
-        <div hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
+        <div id="vista-ahora" hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-xl">
             {comuna && <VistaAhora clima={clima} comuna={comuna} enLinea={enLinea} />}
           </div>

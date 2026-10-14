@@ -123,6 +123,12 @@ body {
   }
 }
 
+/* Mapa base en modo oscuro: se oscurece el mapa claro de OpenStreetMap con un filtro,
+   solo la capa base (el radar y el contorno conservan sus colores reales). */
+:root:not([data-tema='claro']) .capa-base {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+
 /* Leaflet adaptado a los tokens */
 .leaflet-container {
   background: var(--fondo);

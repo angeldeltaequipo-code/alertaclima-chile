@@ -8,12 +8,13 @@ const CHILE = [
   [-17.4, -66.0],
 ]
 
-const BASE = {
-  oscuro: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  claro: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-}
+// Mapa base: OpenStreetMap, sin clave. Su política exige atribución visible, no
+// descargar en masa ni guardar teselas para uso sin conexión, así que el service
+// worker NO las guarda (solo la caché normal del navegador).
+// Para producción comercial conviene un proveedor propio (ver README).
+const BASE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const ATRIB_BASE =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
 
 function Encuadre({ comuna, ubicacion, centrarEn, visible }) {
   const map = useMap()
@@ -91,7 +92,7 @@ export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrar
       minZoom={4}
       maxZoom={17}
     >
-      <TileLayer key={tema} url={BASE[tema]} attribution={ATRIB_BASE} subdomains="abcd" maxZoom={19} />
+      <TileLayer url={BASE_URL} attribution={ATRIB_BASE} maxZoom={19} className="capa-base" />
       <CapasRadar cuadros={cuadros} indice={indice} opacidad={0.75} />
       {limite && (
         <GeoJSON

@@ -106,7 +106,7 @@ export default function Ajustes({ tema, setTema, ahorro }) {
             comunales simplificados, solo como referencia.
           </li>
           <li>
-            <strong className="text-texto">Mapa:</strong> © OpenStreetMap y CARTO.
+            <strong className="text-texto">Mapa:</strong> © colaboradores de OpenStreetMap.
           </li>
           <li>
             <strong className="text-texto">Alertas oficiales:</strong> aún no conectadas. Ante una emergencia, sigue

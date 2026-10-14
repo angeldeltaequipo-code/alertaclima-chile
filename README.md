@@ -65,7 +65,7 @@ La app necesita HTTPS para instalarse y para usar la ubicación; todos estos ser
 
 - **Radar:** RainViewer hoy permite su API gratuita solo para uso personal y educativo, con zoom máximo 7 y solo las últimas 2 horas. Para un uso comercial hay que acordarlo con ellos o cambiar de proveedor (todo está aislado en `client/src/services/radar.js`).
 - **Pronóstico:** la API gratuita de Open-Meteo es solo para uso no comercial. Al cobrarle a municipios hay que contratar su plan comercial (todo está en `client/src/services/clima.js`).
-- **Mapa base:** CARTO permite uso gratuito con límites; con mucho tráfico conviene un plan o un servidor de mapas propio.
+- **Mapa base:** hoy usa los mapas de OpenStreetMap, sin clave pero sin garantía de servicio y sin permiso para guardarlos sin conexión. Para producción comercial conviene pasar a OpenFreeMap (gratuito, permite uso comercial, requiere MapLibre) o a un proveedor con contrato.
 - **Comunas:** validar los códigos contra la tabla CUT oficial de SUBDERE (ver `client/src/data/FUENTES.md`).
 
 ## Fuentes de datos

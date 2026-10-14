@@ -41,16 +41,6 @@ export default defineConfig({
             options: { cacheName: 'limites', expiration: { maxEntries: 20 } },
           },
           {
-            // Mapa base: se guarda lo visto para poder consultarlo sin señal.
-            urlPattern: ({ url }) => url.hostname.endsWith('basemaps.cartocdn.com'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'mapa-base',
-              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
             // Pronóstico y búsqueda de localidades: lo más nuevo si hay señal.
             urlPattern: ({ url }) => url.hostname.endsWith('open-meteo.com'),
             handler: 'NetworkFirst',
