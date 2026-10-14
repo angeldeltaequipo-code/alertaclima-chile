@@ -160,6 +160,9 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
       </Bloque>
 
       <Bloque titulo="Hora a hora" id="t-horas">
+        <p className="-mt-1 mb-2 text-[14px] text-texto-2">
+          Debajo de cada hora: lluvia esperada en mm o, si no se espera lluvia, la probabilidad de que llueva.
+        </p>
         <ol className="-mx-4 flex snap-x gap-1 overflow-x-auto px-4 pb-1">
           {horas.map((h, i) => {
             const d = describir(h.codigo)
@@ -169,7 +172,18 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
                 <IconoClima icono={d.icono} esDeDia={h.esDeDia} size={32} titulo={d.texto} />
                 <span className="text-[17px] font-bold tabular-nums">{grados(h.temperatura)}</span>
                 <span className="text-[13px] text-lluvia-texto tabular-nums">
-                  {h.lluvia > 0 ? `${num(h.lluvia)} mm` : h.probabilidad ? `${h.probabilidad} %` : ' '}
+                  {h.lluvia > 0 ? (
+                    `${num(h.lluvia)} mm`
+                  ) : h.probabilidad ? (
+                    <span className="inline-flex items-center gap-0.5" aria-label={`${h.probabilidad} % de probabilidad de lluvia`}>
+                      <svg width="9" height="12" viewBox="0 0 9 12" aria-hidden="true">
+                        <path d="M4.5 0.5C3 3 1 5.2 1 7.6a3.5 3.5 0 0 0 7 0C8 5.2 6 3 4.5 0.5z" fill="currentColor" />
+                      </svg>
+                      {h.probabilidad} %
+                    </span>
+                  ) : (
+                    ' '
+                  )}
                 </span>
               </li>
             )

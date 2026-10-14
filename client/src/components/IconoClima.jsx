@@ -1,3 +1,4 @@
+import { useId } from 'react'
 // Íconos del tiempo dibujados a mano en una grilla de 32 px.
 // Sol en ámbar, gotas en el azul de lluvia, nubes en el color del texto.
 
@@ -25,13 +26,17 @@ function Sol({ cx = 16, cy = 16, r = 6 }) {
   )
 }
 
+// Luna creciente: un círculo al que se le recorta otro desplazado (máscara SVG).
 function Luna({ x = 0, y = 0, s = 1 }) {
+  const id = `luna${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
-    <path
-      transform={`translate(${x} ${y}) scale(${s})`}
-      d="M20.5 22.5A9 9 0 0 1 13.2 6.3 9 9 0 1 0 25.7 18.8a9 9 0 0 1-5.2 3.7z"
-      fill="var(--luna)"
-    />
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <mask id={id}>
+        <rect width="32" height="32" fill="white" />
+        <circle cx="21.5" cy="11" r="8.5" fill="black" />
+      </mask>
+      <circle cx="15" cy="16.5" r="10.5" fill="var(--luna)" mask={`url(#${id})`} />
+    </g>
   )
 }
 
@@ -51,12 +56,12 @@ export default function IconoClima({ icono, esDeDia = true, size = 32, titulo })
   let cuerpo
   switch (icono) {
     case 'despejado':
-      cuerpo = esDeDia ? <Sol /> : <Luna x={1} y={1} s={0.95} />
+      cuerpo = esDeDia ? <Sol /> : <Luna x={1} y={0} />
       break
     case 'parcial':
       cuerpo = (
         <>
-          {esDeDia ? <Sol cx={12} cy={11} r={5} /> : <Luna x={-3} y={-3} s={0.8} />}
+          {esDeDia ? <Sol cx={12} cy={11} r={5} /> : <Luna x={-2} y={-3} s={0.72} />}
           <path d={nube} {...comun} fill="var(--fondo-icono)" transform="translate(3 2)" />
         </>
       )
