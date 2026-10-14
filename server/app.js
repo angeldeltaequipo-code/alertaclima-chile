@@ -3,12 +3,13 @@ import helmet from 'helmet'
 import cors from 'cors'
 import { saludRouter } from './routes/salud.js'
 import { reportesRouter } from './routes/reportes.js'
+import { adminRouter, alertasRouter } from './routes/alertas.js'
 import { ErrorValidacion } from './services/reportes.js'
 
 export const origenesPermitidos = () =>
   (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim())
 
-export function crearApp({ emitir } = {}) {
+export function crearApp({ emitir, avisarComunas } = {}) {
   const app = express()
   app.disable('x-powered-by')
   // Detrás del proxy del hosting, la IP real viene en X-Forwarded-For.
@@ -21,6 +22,8 @@ export function crearApp({ emitir } = {}) {
 
   app.use('/api/salud', saludRouter)
   app.use('/api/reportes', reportesRouter({ emitir }))
+  app.use('/api/alertas', alertasRouter())
+  app.use('/api/admin', adminRouter({ avisarComunas }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))
   // eslint-disable-next-line no-unused-vars

@@ -22,6 +22,10 @@ services:
         value: https://angeldeltaequipo-code.github.io
       - key: TRUST_PROXY
         value: 'true'
+      - key: ADMIN_TOKEN # Clave del panel de alertas (…/#admin). Render la genera; se ve en Environment.
+        generateValue: true
+      - key: ALERTA_HORAS_SIN_CONFIRMAR
+        value: '12'
 
 databases:
   - name: alertaclima-db

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
 import SelectorComuna from './components/SelectorComuna'
@@ -12,8 +12,9 @@ import { useAhorro, useComunaGuardada, useTema } from './hooks/usePreferencias'
 import { useRadar } from './hooks/useRadar'
 import { useClima } from './hooks/useClima'
 import { useReportes } from './hooks/useReportes'
+import { useAlertas } from './hooks/useAlertas'
+import DetalleAlertas from './components/DetalleAlertas'
 import { comunaPorCut } from './services/comunas'
-import { estadoComuna } from './services/alertas'
 import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
 
@@ -30,6 +31,8 @@ export default function App() {
   const radar = useRadar({ ahorro: ahorro.activo, enLinea })
   const clima = useClima({ comuna, ahorro: ahorro.activo, enLinea })
   const rep = useReportes({ comuna, enLinea })
+  const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
+  const [verAlertas, setVerAlertas] = useState(false)
   const [seleccionado, setSeleccionado] = useState(null)
   const [formulario, setFormulario] = useState(null)
   const [aviso, setAviso] = useState(null)
@@ -40,11 +43,6 @@ export default function App() {
   const [ubicacion, setUbicacion] = useState(null)
   const [centrarEn, setCentrarEn] = useState(0)
   const [avisoUbicacion, setAvisoUbicacion] = useState(null)
-  const [estado, setEstado] = useState(null)
-
-  useEffect(() => {
-    if (cut) estadoComuna(cut).then(setEstado)
-  }, [cut])
 
   const setVista = (v) => {
     setVistaState(v)
@@ -112,7 +110,13 @@ export default function App() {
         </div>
       )}
 
-      <BandaEstado comuna={comuna} estado={estado} ahora={clima.datos?.ahora} onCambiar={() => setSelector(true)} />
+      <BandaEstado
+        comuna={comuna}
+        estado={alertas.estado}
+        ahora={clima.datos?.ahora}
+        onCambiar={() => setSelector(true)}
+        onVerAlertas={() => setVerAlertas(true)}
+      />
 
       <main className="relative min-h-0 flex-1">
         {/* Ahora */}
@@ -209,6 +213,10 @@ export default function App() {
         <Suspense fallback={null}>
           <FormReporte inicio={formulario} onEnviar={enviarReporte} onCerrar={() => setFormulario(null)} />
         </Suspense>
+      )}
+
+      {verAlertas && comuna && (
+        <DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} />
       )}
 
       {selector && <SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} />}

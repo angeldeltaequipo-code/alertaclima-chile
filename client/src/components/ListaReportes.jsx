@@ -37,7 +37,7 @@ export default function ListaReportes({ datos, onVer, onReportar }) {
                   </span>
                   <span className="block text-[14px] text-texto-2">
                     {nombreCategoria(r.categoria)} · {hace(r.creado)}
-                    {r.confirmaciones > 0 && ` · ${r.confirmaciones} confirman`}
+                    {r.confirmaciones > 0 && ` · ${r.confirmaciones} ${r.confirmaciones === 1 ? 'confirma' : 'confirman'}`}
                   </span>
                 </span>
                 <span className="text-[14px] font-bold text-senal-texto">Ver</span>

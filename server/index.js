@@ -9,7 +9,12 @@ const PUERTO = Number(process.env.PORT ?? 3000)
 let io
 const emitir = (evento, reporte) => io?.to(`comuna:${reporte.comuna_cut}`).emit(evento, reporte)
 
-const app = crearApp({ emitir })
+// Cambios en alertas oficiales: se avisa a cada comuna afectada para que la app vuelva a consultar.
+const avisarComunas = (cuts) => {
+  for (const cut of cuts) io?.to(`comuna:${cut}`).emit('alerta:cambio', { comuna: cut })
+}
+
+const app = crearApp({ emitir, avisarComunas })
 const http = createServer(app)
 
 // Tiempo real: una sala por comuna (CUT). Cada cliente sigue una sola comuna a la vez.

@@ -2,7 +2,7 @@
 
 App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de tu comuna desde el celular, con mala señal y poca batería.
 
-**Estado:** fases 0, 1 y 2 listas: app ciudadana (clima, mapa, radar, modo sin conexión) y reportes vecinales en tiempo real. Los reportes se activan en la app publicada cuando el servidor está desplegado (ver «Desplegar el servidor»). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
+**Estado:** fases 0 a 3 listas: app ciudadana (clima, mapa, radar, modo sin conexión), reportes vecinales en tiempo real y alertas oficiales con panel de administración. Los reportes se activan en la app publicada cuando el servidor está desplegado (ver «Desplegar el servidor»). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
 
 ## Qué hace hoy
 
@@ -14,7 +14,8 @@ App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de 
 - Abre sin conexión y avisa desde qué hora son los datos que muestra.
 - Tema oscuro (por defecto) y claro, modo ahorro manual o automático con batería baja.
 - Instalable en Android y iPhone.
-- Dice claramente que las alertas oficiales **todavía no están conectadas** y deriva a senapred.cl. Nunca muestra alertas inventadas.
+- **Alertas oficiales:** la banda superior toma el color del nivel vigente (Preventiva, Amarilla, Roja, Evacuación) con su fuente y hora de verificación, y una ficha con qué hacer y el enlace a la publicación oficial. Si nadie confirma una alerta en 12 horas, se muestra como «sin confirmar». Si no hay alertas cargadas, lo dice así y deriva a senapred.cl: nunca da a entender que no hay alertas.
+- **Panel de alertas** en `…/#admin`: cargar, confirmar, corregir y cancelar alertas copiadas de SENAPRED u otra fuente oficial (solo enlaces https de gob.cl o senapred.cl), con bitácora. Se entra con la clave `ADMIN_TOKEN` del servidor (en Render: servicio *alertaclima-api → Environment*).
 
 ## Estructura
 
@@ -78,6 +79,12 @@ Planes gratuitos de Render: el servidor duerme tras 15 minutos sin uso y tarda c
 - **Pronóstico:** la API gratuita de Open-Meteo es solo para uso no comercial. Al cobrarle a municipios hay que contratar su plan comercial (todo está en `client/src/services/clima.js`).
 - **Mapa base:** hoy usa los mapas de OpenStreetMap, sin clave pero sin garantía de servicio y sin permiso para guardarlos sin conexión. Para producción comercial conviene pasar a OpenFreeMap (gratuito, permite uso comercial, requiere MapLibre) o a un proveedor con contrato.
 - **Comunas:** validar los códigos contra la tabla CUT oficial de SUBDERE (ver `client/src/data/FUENTES.md`).
+
+## Fuentes oficiales: estado de la investigación (Fase 3)
+
+- **SENAPRED:** no se encontró una API, RSS ni datos abiertos de alertas. Su página de alertas se arma con JavaScript desde un servicio interno no documentado. Usarlo sin autorización sería *scraping*, así que no se integró. Propuesta: pedir acceso formal (convenio o solicitud por Ley de Transparencia) y, mientras tanto, cargar las alertas a mano desde el panel. El código ya tiene la interfaz `AlertSource` (`server/services/alertas.js`) para sumar una integración oficial sin cambiar la app.
+- **Dirección Meteorológica de Chile:** publica servicios JSON en su portal climatológico (datos de estaciones automáticas, entre otros), pero no se encontró un servicio de avisos, alertas y alarmas meteorológicas. Vale la pena consultarles directamente.
+- **DGA (niveles de ríos):** unas 650 estaciones transmiten en línea caudal, nivel y lluvia, y la información es gratuita, pero no tiene API documentada. Propuesta: contactar al Departamento de Información de Recursos Hídricos para acceso a datos en tiempo real antes de integrar.
 
 ## Fuentes de datos
 

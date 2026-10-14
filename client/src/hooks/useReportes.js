@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  API_URL,
   crearReporte,
   encolar,
   enviarPendientes,
@@ -10,6 +9,7 @@ import {
   revivir,
   votarReporte,
 } from '../services/reportes'
+import { alCambiarConexion, escuchar, seguirComuna } from '../services/tiempoReal'
 
 const POLLING = 60 * 1000
 
@@ -23,7 +23,6 @@ export function useReportes({ comuna, enLinea }) {
   const [error, setError] = useState(null)
   const [enVivo, setEnVivo] = useState(false)
   const [nPendientes, setNPendientes] = useState(() => pendientes().length)
-  const socketRef = useRef(null)
 
   const aplicar = useCallback(
     (r) => {
@@ -46,7 +45,7 @@ export function useReportes({ comuna, enLinea }) {
     }
   }, [cut])
 
-  // Lista inicial y consulta periódica de respaldo (más espaciada si el socket está vivo).
+  // Lista inicial y consulta periódica de respaldo (más espaciada si el tiempo real está vivo).
   useEffect(() => {
     if (!enLinea) return
     setReportes([])
@@ -55,32 +54,14 @@ export function useReportes({ comuna, enLinea }) {
     return () => clearInterval(id)
   }, [cargar, enLinea, enVivo])
 
-  // Tiempo real. Socket.io se carga aparte para no pesar en el arranque.
+  useEffect(() => alCambiarConexion(setEnVivo), [])
+
   useEffect(() => {
     if (!reportesDisponibles || !cut || !enLinea) return
-    let cancelado = false
-    let socket
-    import('socket.io-client').then(({ io }) => {
-      if (cancelado) return
-      socket = io(API_URL, { transports: ['websocket', 'polling'], reconnectionDelayMax: 30000 })
-      socketRef.current = socket
-      const unirse = () => {
-        socket.emit('seguir-comuna', cut)
-        setEnVivo(true)
-      }
-      socket.on('connect', unirse)
-      socket.on('disconnect', () => setEnVivo(false))
-      const alLlegar = (r) => aplicar(revivir(r))
-      socket.on('reporte:nuevo', alLlegar)
-      socket.on('reporte:actualizado', alLlegar)
-      socket.on('reporte:retirado', alLlegar)
-    })
-    return () => {
-      cancelado = true
-      socket?.disconnect()
-      socketRef.current = null
-      setEnVivo(false)
-    }
+    seguirComuna(cut)
+    const alLlegar = (r) => aplicar(revivir(r))
+    const quitar = ['reporte:nuevo', 'reporte:actualizado', 'reporte:retirado'].map((ev) => escuchar(ev, alLlegar))
+    return () => quitar.forEach((q) => q())
   }, [cut, enLinea, aplicar])
 
   // Al volver la señal, se envía lo que quedó en cola.
