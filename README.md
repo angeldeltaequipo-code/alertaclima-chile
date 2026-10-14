@@ -66,11 +66,11 @@ La app necesita HTTPS para instalarse y para usar la ubicación; todos estos ser
 
 Los reportes necesitan el servidor (API + base de datos). La app publicada funciona sin él, pero no muestra reportes.
 
-1. **Base de datos en [Neon](https://neon.com)** (plan gratuito, incluye PostGIS): crea un proyecto en la región AWS US East (Virginia), la misma del servidor y copia la *connection string* (`postgresql://...?sslmode=require`).
-2. **Servidor en [Render](https://render.com):** *New → Blueprint*, elige este repositorio. Render lee `render.yaml`; pega la connection string de Neon en `DATABASE_URL`. Al arrancar, el servidor crea las tablas y carga las comunas solo.
-3. **Conectar la app:** en GitHub, *Settings → Secrets and variables → Actions → Variables*, crea `API_URL` con la dirección que te da Render (por ejemplo `https://alertaclima-api.onrender.com`) y vuelve a correr la publicación.
+1. Entra a [Render](https://render.com) con tu cuenta de GitHub.
+2. *New → Blueprint*, elige este repositorio y confirma. Render lee `render.yaml`, crea la base de datos y el servidor y los conecta solo. Al arrancar, el servidor crea las tablas y carga las comunas.
+3. En GitHub, *Settings → Secrets and variables → Actions → Variables*, crea `API_URL` con la dirección del servidor (por ejemplo `https://alertaclima-api.onrender.com`) y vuelve a correr la publicación.
 
-El plan gratuito de Render duerme el servidor tras 15 minutos sin uso y tarda cerca de un minuto en despertar: sirve para probar, no para una emergencia real. Para el piloto con un municipio hay que pasar a un plan pagado.
+Planes gratuitos de Render: el servidor duerme tras 15 minutos sin uso y tarda cerca de un minuto en despertar, y la base de datos gratuita vence a los 30 días. Sirven para probar; para el piloto con un municipio hay que pasar ambos a planes pagados.
 
 ## Antes de lanzar públicamente
 

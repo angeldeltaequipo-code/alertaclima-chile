@@ -1,9 +1,10 @@
-# Despliegue del servidor en Render (Blueprint). La base de datos vive en Neon (PostGIS incluido).
+# Despliegue completo en Render (Blueprint): servidor + base de datos PostgreSQL.
+# Render conecta ambos solo; no hay que copiar ni pegar claves.
 services:
   - type: web
     name: alertaclima-api
     runtime: node
-    plan: free # Para producción: un plan pagado, que no se duerme tras 15 min sin uso.
+    plan: free # Para el piloto real: un plan pagado, que no se duerme tras 15 min sin uso.
     region: virginia
     buildCommand: cd server && npm ci --omit=dev
     startCommand: cd server && node scripts/migrar.js && node scripts/sembrar-comunas.js --si-vacia && node index.js
@@ -12,10 +13,19 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false # Se pega a mano: la cadena de conexión de Neon
+        fromDatabase:
+          name: alertaclima-db
+          property: connectionString
       - key: HASH_SECRET
         generateValue: true
       - key: CORS_ORIGINS
         value: https://angeldeltaequipo-code.github.io
       - key: TRUST_PROXY
         value: 'true'
+
+databases:
+  - name: alertaclima-db
+    plan: free # Gratis por 30 días; después hay que pasarla a un plan pagado para no perder los datos.
+    region: virginia
+    databaseName: alertaclima
+    user: alertaclima
