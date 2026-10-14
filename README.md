@@ -2,7 +2,7 @@
 
 App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de tu comuna desde el celular, con mala señal y poca batería.
 
-**Estado:** fases 0 a 3 listas: app ciudadana (clima, mapa, radar, modo sin conexión), reportes vecinales en tiempo real y alertas oficiales con panel de administración. Los reportes se activan en la app publicada cuando el servidor está desplegado (ver «Desplegar el servidor»). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
+**Estado:** fases 0 a 4 listas (incluye notificaciones): app ciudadana (clima, mapa, radar, modo sin conexión), reportes vecinales en tiempo real y alertas oficiales con panel de administración. Los reportes se activan en la app publicada cuando el servidor está desplegado (ver «Desplegar el servidor»). La especificación completa y las fases siguientes están en `docs/especificacion.md`.
 
 ## Qué hace hoy
 
@@ -12,7 +12,8 @@ App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de 
 - **Fotos en los reportes:** quien reporta puede sacar o elegir una foto. Se achica en el celular, se le borran los datos ocultos (incluida la ubicación GPS de la cámara) y se guarda en la base de datos. Con 2 denuncias de vecinos se oculta hasta que un administrador la revise en el panel.
 - **Ver la calle en Google Maps:** cada reporte tiene un botón que abre Street View en ese punto (imágenes de archivo de Google, no en vivo; la app lo aclara).
 - **Cámaras cercanas:** cámaras públicas de Windy Webcams a menos de 30 km, en la pestaña Ahora y como pines en el mapa, con crédito y enlace a Windy. Se activa al cargar `WINDY_API_KEY` en el servidor (registro gratuito en api.windy.com).
-- **Aviso de alertas:** cuando llega o sube una alerta oficial, aviso a pantalla completa y vibración (en Android; el iPhone no permite que una página vibre). Funciona con la app abierta; con la app cerrada llegará como notificación (Fase 4).
+- **Aviso de alertas:** cuando llega o sube una alerta oficial, aviso a pantalla completa y vibración (en Android; el iPhone no permite que una página vibre).
+- **Notificaciones (con la app cerrada):** cada persona elige hasta 5 comunas. Se notifica cuando se publica una alerta oficial, cuando sube de nivel y cuando termina; nunca por reportes de vecinos. En Android vibran según la gravedad y las rojas o de evacuación quedan en pantalla hasta tocarlas. En iPhone funcionan solo con la app agregada a la pantalla de inicio (iOS 16.4+). Las claves del servidor (VAPID) se generan solas y se guardan en la base de datos; el panel permite publicar sin notificar para correcciones menores.
 - **Reportes vecinales:** anegamientos, desbordes, caminos cortados, cortes de luz y árboles caídos, con ubicación en el mapa. Aparecen al instante para los vecinos de la comuna, que pueden confirmarlos o avisar que ya no están (3 desmentidos netos los ocultan). Máximo 5 reportes por hora por persona, vencen solos y se guardan en cola si no hay señal.
 - Elegir comuna escribiendo su nombre, por región o con la ubicación del celular (346 comunas con su código CUT).
 - Mapa con el contorno de la comuna y radar de lluvia de las últimas 2 horas, animado y pausable.

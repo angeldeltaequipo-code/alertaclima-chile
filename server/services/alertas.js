@@ -203,7 +203,7 @@ export async function actualizarAlerta(pool, id, { accion, ...datos } = {}) {
   }
   const despues = await leerAlerta(pool, n)
   // Comunas afectadas = las de antes y las de después (por si cambió la cobertura).
-  return { alerta: despues, comunasAfectadas: [...new Set([...antes.comunas, ...despues.comunas])] }
+  return { antes, alerta: despues, comunasAfectadas: [...new Set([...antes.comunas, ...despues.comunas])] }
 }
 
 export async function listarAlertasAdmin(db) {

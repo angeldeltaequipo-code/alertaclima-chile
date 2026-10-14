@@ -128,6 +128,7 @@ export default function PanelAdmin() {
   const ejecutar = async () => {
     const { alerta, accion } = pendiente
     try {
+      // Cancelar avisa a los suscritos que la alerta terminó; confirmar no notifica.
       await actualizar(clave, alerta.id, { accion })
       avisar(accion === 'confirmar' ? 'Alerta confirmada.' : 'Alerta cancelada.')
       setPendiente(null)
@@ -212,7 +213,7 @@ export default function PanelAdmin() {
                         <div className="mt-2 rounded-lg border-2 border-senal p-3">
                           <p className="font-bold">
                             {pendiente.accion === 'cancelar'
-                              ? '¿Cancelar esta alerta? Dejará de mostrarse a los vecinos.'
+                              ? '¿Cancelar esta alerta? Dejará de mostrarse y se avisará a los suscritos que terminó.'
                               : '¿Revisaste la fuente y la alerta sigue vigente?'}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-2">

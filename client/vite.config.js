@@ -29,47 +29,12 @@ export default defineConfig({
           { src: 'icono-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        // La interfaz completa queda en caché: la app abre sin conexión.
+      // Service worker propio (src/sw.js): sin conexión + notificaciones.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: 'index.html',
-        runtimeCaching: [
-          {
-            // Límites comunales: cambian casi nunca.
-            urlPattern: ({ url }) => url.pathname.includes('/limites/'),
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'limites', expiration: { maxEntries: 20 } },
-          },
-          {
-            // Pronóstico y búsqueda de localidades: lo más nuevo si hay señal.
-            urlPattern: ({ url }) => url.hostname.endsWith('open-meteo.com'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'clima',
-              networkTimeoutSeconds: 8,
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 },
-            },
-          },
-          {
-            // Índice de cuadros de radar: siempre se intenta lo más nuevo.
-            urlPattern: ({ url }) => url.hostname === 'api.rainviewer.com',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'radar-indice',
-              networkTimeoutSeconds: 6,
-              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 6 },
-            },
-          },
-          {
-            urlPattern: ({ url }) => url.hostname.endsWith('rainviewer.com'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'radar-cuadros',
-              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 3 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
     }),
   ],

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useInstalar } from '../hooks/useInstalar'
+import { AjustesNotificaciones } from './Notificaciones'
 import { setVibrarActivado, vibracionSoportada, vibrar, vibrarActivado } from '../services/aviso'
 
 function AjusteVibracion() {
@@ -39,7 +40,7 @@ function AjusteVibracion() {
         <p className="text-[15px] text-texto-2">Este teléfono o navegador no permite que una página web lo haga vibrar (por ejemplo, el iPhone).</p>
       )}
       <p className="mt-2 text-[14px] text-texto-2">
-        Por ahora el aviso funciona con la app abierta. Pronto llegará también como notificación con la app cerrada.
+        Con la app cerrada, el aviso llega como notificación (actívalas arriba).
       </p>
     </>
   )
@@ -78,7 +79,7 @@ function Opciones({ nombre, valor, opciones, onCambiar }) {
   )
 }
 
-export default function Ajustes({ tema, setTema, ahorro }) {
+export default function Ajustes({ tema, setTema, ahorro, notif, comuna }) {
   const { instalada, puedeInstalar, esIOS, instalar } = useInstalar()
 
   return (
@@ -100,7 +101,11 @@ export default function Ajustes({ tema, setTema, ahorro }) {
         </p>
       </Seccion>
 
-      <Seccion titulo="Avisos de alertas">
+      <Seccion titulo="Notificaciones de alertas">
+        <AjustesNotificaciones notif={notif} comuna={comuna} />
+      </Seccion>
+
+      <Seccion titulo="Aviso con la app abierta">
         <AjusteVibracion />
       </Seccion>
 

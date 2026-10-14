@@ -5,12 +5,13 @@ import { saludRouter } from './routes/salud.js'
 import { fotosRouter, reportesRouter } from './routes/reportes.js'
 import { adminRouter, alertasRouter } from './routes/alertas.js'
 import { camarasRouter, observacionRouter } from './routes/observacion.js'
+import { pushRouter } from './routes/push.js'
 import { ErrorValidacion } from './services/reportes.js'
 
 export const origenesPermitidos = () =>
   (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim())
 
-export function crearApp({ emitir, avisarComunas } = {}) {
+export function crearApp({ emitir, avisarComunas, enviarPush } = {}) {
   const emitirReporte = emitir
   const app = express()
   app.disable('x-powered-by')
@@ -29,7 +30,8 @@ export function crearApp({ emitir, avisarComunas } = {}) {
   app.use('/api/alertas', alertasRouter())
   app.use('/api/observacion', observacionRouter())
   app.use('/api/camaras', camarasRouter())
-  app.use('/api/admin', adminRouter({ avisarComunas, emitir: emitirReporte }))
+  app.use('/api/push', pushRouter())
+  app.use('/api/admin', adminRouter({ avisarComunas, emitir: emitirReporte, enviarPush }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))
   // eslint-disable-next-line no-unused-vars

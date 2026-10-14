@@ -41,6 +41,8 @@ export default function FormAlerta({ inicial, onGuardar, onCancelar }) {
   const [regionAbierta, setRegionAbierta] = useState(() => inicial?.comunas?.[0]?.slice(0, 2) ?? '')
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
+  // Notificar por defecto al publicar; al corregir, solo si sube el nivel (el servidor lo decide).
+  const [notificar, setNotificar] = useState(true)
   const set = (k) => (e) => setD({ ...d, [k]: e.target.value })
 
   const region = regiones.find((r) => r.cut === regionAbierta)
@@ -78,6 +80,7 @@ export default function FormAlerta({ inicial, onGuardar, onCancelar }) {
         ...d,
         vigente_hasta: d.vigente_hasta ? new Date(d.vigente_hasta).toISOString() : null,
         comunas: [...seleccion],
+        notificar,
       })
     } catch (err) {
       setError(err.message)
@@ -205,6 +208,14 @@ export default function FormAlerta({ inicial, onGuardar, onCancelar }) {
           {seleccion.size ? `Seleccionadas: ${seleccion.size} — ${resumen}` : 'Ninguna comuna seleccionada.'}
         </p>
       </fieldset>
+
+      <label className="flex min-h-12 items-start gap-3 rounded-xl bg-superficie-2 p-3 text-[16px]">
+        <input type="checkbox" checked={notificar} onChange={(e) => setNotificar(e.target.checked)} className="mt-1 size-5" />
+        <span>
+          <strong>Enviar notificación</strong> a quienes siguen estas comunas
+          {inicial ? ' (solo si el nivel sube)' : ''}. Desmárcalo solo para correcciones menores.
+        </span>
+      </label>
 
       {error && (
         <p role="alert" className="text-[16px] font-bold text-peligro">

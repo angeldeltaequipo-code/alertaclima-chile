@@ -48,7 +48,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, resumen = null, reportes = null, camaras = null, obs = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -72,6 +72,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, rep
       <div className="space-y-3 px-4 py-4">
         {estado}
         {resumen}
+        {invitacion}
         {reportes}
         {camaras}
       </div>
@@ -91,6 +92,8 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, rep
   return (
     <div className="space-y-3 px-4 pt-4 pb-6">
       {resumen}
+
+      {invitacion}
 
       {/* Ahora */}
       <section aria-label="Condiciones actuales" className="px-1 pb-1">

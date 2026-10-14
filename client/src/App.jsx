@@ -18,6 +18,8 @@ import { useCamaras } from './hooks/useCamaras'
 import CamarasCercanas, { FichaCamara } from './components/Camaras'
 import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
+import { useNotificaciones } from './hooks/useNotificaciones'
+import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
 import { condicionesActuales } from './services/clima'
@@ -42,6 +44,7 @@ export default function App() {
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
+  const notif = useNotificaciones({ enLinea })
   const [camaraSel, setCamaraSel] = useState(null)
 
   // Alerta nueva (o que subió de nivel) que esta persona todavía no ha visto: aviso grande y vibración.
@@ -168,6 +171,7 @@ export default function App() {
                     onVerMapa={() => setVista('radar')}
                   />
                 }
+                invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} />}
               />
@@ -247,7 +251,7 @@ export default function App() {
 
         {/* Ajustes */}
         <div hidden={vista !== 'ajustes'} className="h-full overflow-y-auto overscroll-contain">
-          <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} />
+          <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} />
         </div>
       </main>
 
