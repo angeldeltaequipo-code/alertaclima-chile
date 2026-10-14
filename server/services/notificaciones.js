@@ -187,12 +187,12 @@ const ultimaPrueba = new Map() // endpoint -> hora de la última prueba
 export async function enviarPrueba(pool, endpoint, { enviar = webpush.sendNotification, urlApp } = {}) {
   if (typeof endpoint !== 'string' || endpoint.length > 1000) throw new ErrorValidacion('Suscripción inválida')
   const antes = ultimaPrueba.get(endpoint)
-  if (antes && Date.now() - antes < 60_000) throw new ErrorValidacion('Espera un minuto antes de enviar otra prueba', 429)
+  if (antes && Date.now() - antes < 60_000) throw new ErrorValidacion('Espera un minuto antes de pedir otra prueba.', 429)
   await clavesVapid(pool)
   const { rows } = await pool.query('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE endpoint = $1', [endpoint])
   const s = rows[0]
   if (!s) {
-    throw new ErrorValidacion('Este dispositivo no está suscrito. Desactiva y vuelve a activar las notificaciones.', 404)
+    throw new ErrorValidacion('Algo se desconectó. Toca «Desactivar notificaciones» y vuelve a activarlas.', 404)
   }
   ultimaPrueba.set(endpoint, Date.now())
   if (ultimaPrueba.size > 5000) ultimaPrueba.delete(ultimaPrueba.keys().next().value)
@@ -212,10 +212,10 @@ export async function enviarPrueba(pool, endpoint, { enviar = webpush.sendNotifi
   } catch (e) {
     if (e.statusCode === 404 || e.statusCode === 410) {
       await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [s.id])
-      throw new ErrorValidacion('La suscripción de este dispositivo venció. Desactiva y vuelve a activar las notificaciones.', 410)
+      throw new ErrorValidacion('Algo se desconectó. Toca «Desactivar notificaciones» y vuelve a activarlas.', 410)
     }
     console.error('Prueba de notificación falló', e.statusCode, e.body)
-    throw new ErrorValidacion('El servicio de notificaciones del navegador rechazó el envío. Intenta de nuevo en un rato.', 502)
+    throw new ErrorValidacion('No pudimos enviar la prueba. Inténtalo de nuevo en un rato.', 502)
   }
 }
 

@@ -89,7 +89,7 @@ async function enviar(ruta, cuerpo) {
       body: JSON.stringify(cuerpo),
     })
   } catch {
-    throw new ErrorNotificacion('No hay conexión con el servidor. Revisa tu señal y vuelve a intentar.', 'red')
+    throw new ErrorNotificacion('No hay conexión. Revisa tu señal y vuelve a intentarlo.', 'red')
   }
   const d = await r.json().catch(() => ({}))
   if (!r.ok) throw new ErrorNotificacion(d.error ?? `El servidor respondió ${r.status}`, 'servidor')
@@ -106,13 +106,13 @@ async function claveDelServidor() {
       /* reintento */
     }
   }
-  throw new ErrorNotificacion('El servidor no respondió. Espera un minuto y vuelve a intentar.', 'servidor')
+  throw new ErrorNotificacion('No pudimos conectarnos. Espera un minuto y vuelve a intentarlo.', 'servidor')
 }
 
 async function suscripcionActual(crear) {
   const reg = await Promise.race([
     navigator.serviceWorker.ready,
-    new Promise((_, no) => setTimeout(() => no(new ErrorNotificacion('La app aún se está instalando. Recarga la página y vuelve a intentar.', 'sw')), 15000)),
+    new Promise((_, no) => setTimeout(() => no(new ErrorNotificacion('La app todavía se está preparando. Vuelve a cargar la página e inténtalo otra vez.', 'sw')), 15000)),
   ])
   let sub = await reg.pushManager.getSubscription()
   if (!sub && crear) {
@@ -129,11 +129,11 @@ async function suscripcionActual(crear) {
         if (permiso() === 'denied') throw bloqueadas()
         if (entorno().navegador === 'brave')
           throw new ErrorNotificacion(
-            'Brave trae apagado el servicio de notificaciones. Abre brave://settings/privacy, activa «Usar los servicios de Google para mensajería push», reinicia Brave y vuelve a intentar.',
+            'El navegador Brave no deja recibir avisos si no se cambia un ajuste. Lo más fácil: abre AlertaClima en Chrome.',
             'brave',
           )
         throw new ErrorNotificacion(
-          'Este navegador no pudo registrarse en su servicio de notificaciones. Revisa tu conexión o prueba con Chrome, Edge, Firefox o Safari.',
+          'No se pudieron activar los avisos en este navegador. Revisa tu conexión o prueba en Chrome o Safari.',
           'suscribir',
         )
       }
@@ -143,14 +143,14 @@ async function suscripcionActual(crear) {
 }
 
 const bloqueadas = () =>
-  new ErrorNotificacion('Las notificaciones están bloqueadas para esta página en este navegador.', 'bloqueadas')
+  new ErrorNotificacion('Las notificaciones están apagadas en este navegador.', 'bloqueadas')
 
 /** Pide permiso (debe llamarse directo desde un toque de la persona) y suscribe estas comunas. */
 export async function activar(comunas) {
   if (permiso() === 'denied') throw bloqueadas()
   const p = await Notification.requestPermission()
   if (p === 'denied') throw bloqueadas()
-  if (p !== 'granted') throw new ErrorNotificacion('Cerraste el aviso sin elegir. Toca «Activar» otra vez y elige «Permitir».', 'sin-respuesta')
+  if (p !== 'granted') throw new ErrorNotificacion('Cerraste la pregunta sin responder. Toca «Activar» otra vez y elige «Permitir».', 'sin-respuesta')
   const sub = await suscripcionActual(true)
   await enviar('/suscripciones', { suscripcion: sub.toJSON(), comunas })
   guardar('notif:comunas', comunas)
@@ -178,7 +178,7 @@ export async function desactivar() {
 /** Pide al servidor una notificación de prueba a este dispositivo. */
 export async function probar() {
   const sub = await suscripcionActual(false)
-  if (!sub) throw new ErrorNotificacion('Este dispositivo no está suscrito. Desactiva y vuelve a activar las notificaciones.', 'sin-suscripcion')
+  if (!sub) throw new ErrorNotificacion('Algo se desconectó. Toca «Desactivar notificaciones» y vuelve a activarlas.', 'sin-suscripcion')
   await enviar('/prueba', { endpoint: sub.endpoint })
 }
 

@@ -1,87 +1,19 @@
 import { useState } from 'react'
 import { comunaPorCut } from '../services/comunas'
 import { guardar, leer } from '../services/almacen'
+import { AbrirEnNavegador, GuiaPermiso } from './GuiaPermiso'
 
 const PASOS_IPHONE = (
   <ol className="list-decimal space-y-1 pl-5 text-[16px]">
     <li>Abre esta página en Safari.</li>
-    <li>Toca el botón Compartir (el cuadrado con una flecha hacia arriba).</li>
-    <li>Elige «Agregar a inicio» y abre AlertaClima desde ese ícono.</li>
-    <li>Toca «Activar» y luego «Permitir».</li>
+    <li>Toca el botón para compartir (un cuadrado con una flecha hacia arriba).</li>
+    <li>Elige «Agregar a inicio».</li>
+    <li>Abre AlertaClima desde su nuevo ícono y toca «Activar».</li>
   </ol>
 )
 
-/** Pasos para desbloquear las notificaciones, según el navegador y el sistema de la persona. */
-function pasosDesbloqueo({ navegador, sistema, instalada }) {
-  if (sistema === 'ios')
-    return ['Abre la app Ajustes del iPhone.', 'Entra a Notificaciones y busca AlertaClima.', 'Activa «Permitir notificaciones».', 'Vuelve a AlertaClima.']
-  if (sistema === 'android' && instalada)
-    return [
-      'Mantén presionado el ícono de AlertaClima en tu pantalla de inicio.',
-      'Toca «Información de la app» (la i dentro de un círculo).',
-      'Entra a «Notificaciones» y actívalas.',
-      'Vuelve a AlertaClima.',
-    ]
-  if (navegador === 'samsung')
-    return ['Toca el menú (☰) y entra a «Configuración».', '«Sitios y descargas» → «Notificaciones».', 'Busca esta página y permítela.', 'Vuelve a AlertaClima.']
-  if (navegador === 'firefox')
-    return [
-      'Toca o haz clic en el candado, a la izquierda de la dirección.',
-      'Junto a «Enviar notificaciones: Bloqueado», toca la ✕ para quitar el bloqueo.',
-      'Recarga la página y toca «Activar» otra vez.',
-    ]
-  if (navegador === 'safari')
-    return ['En el menú Safari, abre «Configuración» y la pestaña «Sitios web».', 'Elige «Notificaciones» a la izquierda.', 'Busca esta página y cambia a «Permitir».', 'Recarga la página.']
-  if (sistema === 'android')
-    return [
-      'Toca el ícono que está a la izquierda de la dirección de la página.',
-      'Toca «Permisos» (o «Configuración del sitio»).',
-      'Entra a «Notificaciones» y elige «Permitir».',
-      'Vuelve a esta página.',
-    ]
-  // Chrome, Edge, Brave y Opera en computador
-  const pasos = [
-    'Haz clic en el ícono que está a la izquierda de la dirección de la página (un candado o dos rayitas).',
-    'Busca «Notificaciones» y cámbialo a «Permitir».',
-    'Recarga la página.',
-  ]
-  if (sistema === 'mac')
-    pasos.push(
-      `Si aun así no aparecen: abre Configuración del Sistema → Notificaciones → ${
-        navegador === 'edge' ? 'Microsoft Edge' : navegador === 'brave' ? 'Brave Browser' : 'Google Chrome'
-      } y activa «Permitir notificaciones».`,
-    )
-  if (sistema === 'windows')
-    pasos.push(`Si aun así no aparecen: en Windows abre Configuración → Sistema → Notificaciones y actívalas para ${navegador === 'edge' ? 'Edge' : 'Chrome'}.`)
-  return pasos
-}
-
-/** Aviso con los pasos para desbloquear: se cierra solo cuando el permiso cambia. */
 function Desbloquear({ notif }) {
-  return (
-    <div role="alert" className="rounded-2xl border-2 border-senal bg-superficie-2 p-3">
-      <p className="text-[16px] font-bold">Las notificaciones están bloqueadas en este navegador</p>
-      <p className="mt-1 text-[15px] text-texto-2">
-        Alguna vez se eligió «Bloquear» (o el navegador lo hizo solo). Desde la app no se puede cambiar: hay que hacerlo así:
-      </p>
-      <ol className="mt-2 list-decimal space-y-1 pl-5 text-[15px]">
-        {pasosDesbloqueo(notif.entorno).map((p) => (
-          <li key={p}>{p}</li>
-        ))}
-      </ol>
-      <p className="mt-2 text-[14px] text-texto-2">Cuando lo cambies, esta sección se actualiza sola.</p>
-    </div>
-  )
-}
-
-function AbrirEnNavegador() {
-  return (
-    <p className="text-[16px]">
-      Estás viendo AlertaClima dentro de otra app, y ahí no se pueden recibir notificaciones. Ábrela en{' '}
-      <strong>Chrome</strong> (Android o computador) o <strong>Safari</strong> (iPhone): toca el menú de la página y elige «Abrir en el
-      navegador».
-    </p>
-  )
+  return <GuiaPermiso entorno={notif.entorno} />
 }
 
 function MensajeError({ notif }) {
@@ -106,7 +38,7 @@ function Prueba({ notif }) {
       </button>
       {notif.prueba === 'enviada' && (
         <p role="status" className="mt-2 text-[15px]">
-          Enviada. Debería aparecer en unos segundos. Si no llega, revisa que el modo «No molestar» esté apagado.
+          Enviada. Te debería llegar en unos segundos. Si no llega, revisa que el modo «No molestar» esté apagado.
         </p>
       )}
       {notif.prueba && !['enviando', 'enviada'].includes(notif.prueba) && (
@@ -132,7 +64,7 @@ export function AjustesNotificaciones({ notif, comuna }) {
       </>
     )
   if (notif.soporte === 'no')
-    return <p className="text-[16px]">Este navegador no permite notificaciones. Prueba con Chrome, Firefox, Edge o Safari actualizados.</p>
+    return <p className="text-[16px]">Este navegador no puede recibir avisos. Prueba abriendo AlertaClima en Chrome o Safari.</p>
 
   return (
     <div className="space-y-3">
@@ -201,7 +133,7 @@ export function InvitacionNotificaciones({ notif, comuna }) {
         </div>
       </section>
     )
-  if (descartada || notif.activas || ['no', 'sin-servidor', 'integrado'].includes(notif.soporte)) return null
+  if (descartada || notif.activas || ['no', 'sin-servidor'].includes(notif.soporte)) return null
   const descartar = () => {
     guardar('notif:invitacion-descartada', true)
     setDescartada(true)
@@ -229,10 +161,16 @@ export function InvitacionNotificaciones({ notif, comuna }) {
           )}
         </div>
       </div>
-      {notif.bloqueadas && (
+      {notif.soporte === 'integrado' ? (
         <div className="mt-3">
-          <Desbloquear notif={notif} />
+          <AbrirEnNavegador />
         </div>
+      ) : (
+        notif.bloqueadas && (
+          <div className="mt-3">
+            <Desbloquear notif={notif} />
+          </div>
+        )
       )}
       <div className="mt-2">
         <MensajeError notif={notif} />
