@@ -15,8 +15,16 @@ const BASE = {
 const ATRIB_BASE =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
 
-function Encuadre({ comuna, ubicacion, centrarEn }) {
+function Encuadre({ comuna, ubicacion, centrarEn, visible }) {
   const map = useMap()
+  // El mapa vive oculto en la pestaña Ahora; al mostrarlo hay que recalcular su tamaño.
+  useEffect(() => {
+    if (visible) {
+      map.invalidateSize()
+      if (comuna?.bbox) map.fitBounds(comuna.bbox, { padding: [24, 24], maxZoom: 13 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
   useEffect(() => {
     if (comuna?.bbox) map.fitBounds(comuna.bbox, { padding: [24, 24], maxZoom: 13 })
   }, [comuna, map])
@@ -57,7 +65,7 @@ function CapasRadar({ cuadros, indice, opacidad }) {
   ))
 }
 
-export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrarEn }) {
+export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrarEn, visible = true }) {
   const [limite, setLimite] = useState(null)
 
   useEffect(() => {
@@ -101,7 +109,7 @@ export default function Mapa({ tema, comuna, cuadros, indice, ubicacion, centrar
           pathOptions={{ color: '#ffffff', weight: 3, fillColor: '#2f80ff', fillOpacity: 1 }}
         />
       )}
-      <Encuadre comuna={comuna} ubicacion={ubicacion} centrarEn={centrarEn} />
+      <Encuadre comuna={comuna} ubicacion={ubicacion} centrarEn={centrarEn} visible={visible} />
     </MapContainer>
   )
 }

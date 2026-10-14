@@ -1,4 +1,5 @@
 import { hhmm } from '../services/formato'
+import LeyendaRadar from './LeyendaRadar'
 
 function hace(d) {
   const min = Math.round((Date.now() - d.getTime()) / 60000)
@@ -82,6 +83,7 @@ export default function ControlRadar({ radar, ahorro, enLinea }) {
           />
         </div>
       </div>
+      <LeyendaRadar />
       {ahorro && <p className="mt-1 text-[13px] text-texto-2">Modo ahorro: animación pausada.</p>}
     </div>
   )

@@ -20,6 +20,14 @@
   --peligro: #ff6b6b;
   --ok: #5fd68f;
 
+  /* Clima */
+  --lluvia: #3897e2;         /* barras de lluvia e íconos de gotas */
+  --lluvia-texto: #8cc8ff;   /* cifras de lluvia como texto (AA sobre fondo y superficie) */
+  --sol: #ffc93c;
+  --luna: #d6e0e8;
+  --fondo-icono: var(--superficie);
+  --grilla: #2c4458;
+
   /* Niveles de alerta: fondo de la banda + color de texto encima */
   --nivel-sin-fondo: #172a3a;
   --nivel-sin-texto: #f2f6f9;
@@ -49,6 +57,11 @@
   --ok: #0f6b3a;
   --nivel-sin-fondo: #eef3f7;
   --nivel-sin-texto: #0e1a24;
+  --lluvia: #0565a8;
+  --lluvia-texto: #0565a8;
+  --sol: #e8a200;
+  --luna: #6b7f91;
+  --grilla: #d0dbe4;
   color-scheme: light;
 }
 
@@ -64,6 +77,9 @@
   --color-sobre-senal: var(--sobre-senal);
   --color-peligro: var(--peligro);
   --color-ok: var(--ok);
+  --color-lluvia: var(--lluvia);
+  --color-lluvia-texto: var(--lluvia-texto);
+  --color-grilla: var(--grilla);
   --font-sans: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 

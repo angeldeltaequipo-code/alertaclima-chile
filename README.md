@@ -6,6 +6,8 @@ App web progresiva (PWA) para seguir la lluvia y las emergencias climáticas de 
 
 ## Qué hace hoy
 
+- Pestaña **Ahora**: temperatura, sensación térmica, viento y ráfagas, lluvia de la última hora, gráfico de lluvia de las próximas 12 horas con un resumen en palabras, pronóstico hora a hora y de 7 días.
+- Pestaña **Radar**: mapa con radar de lluvia y leyenda de intensidad.
 - Elegir comuna escribiendo su nombre, por región o con la ubicación del celular (346 comunas con su código CUT).
 - Mapa con el contorno de la comuna y radar de lluvia de las últimas 2 horas, animado y pausable.
 - Abre sin conexión y avisa desde qué hora son los datos que muestra.
@@ -62,6 +64,7 @@ La app necesita HTTPS para instalarse y para usar la ubicación; todos estos ser
 ## Antes de lanzar públicamente
 
 - **Radar:** RainViewer hoy permite su API gratuita solo para uso personal y educativo, con zoom máximo 7 y solo las últimas 2 horas. Para un uso comercial hay que acordarlo con ellos o cambiar de proveedor (todo está aislado en `client/src/services/radar.js`).
+- **Pronóstico:** la API gratuita de Open-Meteo es solo para uso no comercial. Al cobrarle a municipios hay que contratar su plan comercial (todo está en `client/src/services/clima.js`).
 - **Mapa base:** CARTO permite uso gratuito con límites; con mucho tráfico conviene un plan o un servidor de mapas propio.
 - **Comunas:** validar los códigos contra la tabla CUT oficial de SUBDERE (ver `client/src/data/FUENTES.md`).
 

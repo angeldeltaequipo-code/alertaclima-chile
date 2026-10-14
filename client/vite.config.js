@@ -51,6 +51,16 @@ export default defineConfig({
             },
           },
           {
+            // Pronóstico y búsqueda de localidades: lo más nuevo si hay señal.
+            urlPattern: ({ url }) => url.hostname.endsWith('open-meteo.com'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'clima',
+              networkTimeoutSeconds: 8,
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+          {
             // Índice de cuadros de radar: siempre se intenta lo más nuevo.
             urlPattern: ({ url }) => url.hostname === 'api.rainviewer.com',
             handler: 'NetworkFirst',

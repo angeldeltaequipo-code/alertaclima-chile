@@ -1,4 +1,3 @@
-import Hoja from './Hoja'
 import { useInstalar } from '../hooks/useInstalar'
 
 function Seccion({ titulo, children }) {
@@ -34,11 +33,12 @@ function Opciones({ nombre, valor, opciones, onCambiar }) {
   )
 }
 
-export default function Ajustes({ tema, setTema, ahorro, onCerrar }) {
+export default function Ajustes({ tema, setTema, ahorro }) {
   const { instalada, puedeInstalar, esIOS, instalar } = useInstalar()
 
   return (
-    <Hoja titulo="Ajustes" onCerrar={onCerrar}>
+    <div className="mx-auto max-w-xl">
+      <h2 className="sr-only">Ajustes</h2>
       <Seccion titulo="Pantalla">
         <Opciones
           nombre="Tema"
@@ -98,6 +98,10 @@ export default function Ajustes({ tema, setTema, ahorro, onCerrar }) {
             cobertura de radar en Chile es parcial: que no se vea lluvia no garantiza que no esté lloviendo.
           </li>
           <li>
+            <strong className="text-texto">Clima y pronóstico:</strong> Open-Meteo (licencia CC BY 4.0), calculado para
+            la localidad principal de tu comuna.
+          </li>
+          <li>
             <strong className="text-texto">Comunas:</strong> 346 comunas con su código único territorial. Límites
             comunales simplificados, solo como referencia.
           </li>
@@ -110,6 +114,6 @@ export default function Ajustes({ tema, setTema, ahorro, onCerrar }) {
           </li>
         </ul>
       </Seccion>
-    </Hoja>
+    </div>
   )
 }

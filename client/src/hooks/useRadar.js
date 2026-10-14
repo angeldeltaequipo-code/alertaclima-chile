@@ -44,7 +44,7 @@ export function useRadar({ ahorro, enLinea }) {
         nuevos.map((c) => ({ hora: c.hora.toISOString(), url: c.url })),
       )
     } catch (e) {
-      setError(e.message || 'No se pudo cargar el radar')
+      setError(e instanceof TypeError ? 'No hubo respuesta del servicio de radar. Revisa tu conexión' : e.message)
     } finally {
       cargando.current = false
     }
