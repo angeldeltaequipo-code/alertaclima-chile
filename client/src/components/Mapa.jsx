@@ -39,6 +39,8 @@ function MapaVectorial({ estilo }) {
   useEffect(() => {
     const capa = maplibreGL({ style: estilo, attributionControl: false, interactive: false })
     capa.addTo(map)
+    // Diagnóstico: con ?depurar en la dirección, el mapa queda accesible desde la consola.
+    if (location.search.includes('depurar')) window.__mapa = { map, capa }
     map.attributionControl?.addAttribution(ATRIB_OFM)
     return () => {
       map.attributionControl?.removeAttribution(ATRIB_OFM)
