@@ -6,6 +6,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 // base relativa: la app funciona servida en la raíz o en una subcarpeta.
 export default defineConfig({
   base: './',
+  // MapLibre: versión "CSP", con el trabajador (worker) en un archivo aparte que se carga
+  // desde nuestro propio dominio. La versión normal lo arma en tiempo de ejecución y falla al empaquetarse.
+  resolve: {
+    alias: [{ find: /^maplibre-gl$/, replacement: 'maplibre-gl/dist/maplibre-gl-csp.js' }],
+  },
   plugins: [
     react(),
     tailwindcss(),

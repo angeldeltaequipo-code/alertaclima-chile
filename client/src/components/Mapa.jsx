@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import L from 'leaflet'
 import { maplibreGL } from '@maplibre/maplibre-gl-leaflet'
+import { setWorkerUrl } from 'maplibre-gl'
+import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
+
+setWorkerUrl(urlTrabajador)
 import { CircleMarker, GeoJSON, MapContainer, Marker, TileLayer, useMap, useMapEvents, ZoomControl } from 'react-leaflet'
 import { svgReporte } from './iconosReporte'
 import { nombreCategoria } from '../services/reportes'
