@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es-CL">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>AlertaClima Chile</title>
+    <meta name="description" content="Lluvia, radar y alertas de tu comuna en tiempo real." />
+    <meta name="theme-color" content="#0E1A24" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AlertaClima" />
+    <link rel="icon" type="image/svg+xml" href="./icono.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <script>
+      // Aplica el tema guardado antes de pintar, para evitar un destello claro.
+      try {
+        var t = localStorage.getItem('ac:tema')
+        if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.tema = t
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>AlertaClima necesita JavaScript activado para funcionar.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

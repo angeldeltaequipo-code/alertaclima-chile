@@ -1,0 +1,141 @@
+@import 'tailwindcss';
+@import '@fontsource/atkinson-hyperlegible-next/400.css';
+@import '@fontsource/atkinson-hyperlegible-next/700.css';
+@import 'leaflet/dist/leaflet.css';
+
+/*
+  Tokens de color. Oscuro por defecto (ahorra batería en pantallas OLED).
+  Todas las combinaciones texto/fondo cumplen WCAG AA, y las críticas AAA.
+*/
+:root {
+  --fondo: #0e1a24;
+  --superficie: #172a3a;
+  --superficie-2: #20384c;
+  --borde: #4a6478;
+  --texto: #f2f6f9;
+  --texto-2: #b9c8d5;
+  --senal: #ffc93c;          /* ámbar de señalética: acciones principales */
+  --senal-texto: #ffc93c;    /* ámbar usado como texto sobre el fondo */
+  --sobre-senal: #0e1a24;
+  --peligro: #ff6b6b;
+  --ok: #5fd68f;
+
+  /* Niveles de alerta: fondo de la banda + color de texto encima */
+  --nivel-sin-fondo: #172a3a;
+  --nivel-sin-texto: #f2f6f9;
+  --nivel-preventiva-fondo: #1f7a47;
+  --nivel-preventiva-texto: #ffffff;
+  --nivel-amarilla-fondo: #ffd23f;
+  --nivel-amarilla-texto: #0e1a24;
+  --nivel-roja-fondo: #c81e1e;
+  --nivel-roja-texto: #ffffff;
+  --nivel-evacuacion-fondo: #6b0016;
+  --nivel-evacuacion-texto: #ffffff;
+
+  color-scheme: dark;
+}
+
+:root[data-tema='claro'] {
+  --fondo: #ffffff;
+  --superficie: #eef3f7;
+  --superficie-2: #dde7ef;
+  --borde: #7d93a6;
+  --texto: #0e1a24;
+  --texto-2: #34495c;
+  --senal: #ffc93c;
+  --senal-texto: #6e4300;
+  --sobre-senal: #0e1a24;
+  --peligro: #b3001b;
+  --ok: #0f6b3a;
+  --nivel-sin-fondo: #eef3f7;
+  --nivel-sin-texto: #0e1a24;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-senal: var(--senal);
+  --color-senal-texto: var(--senal-texto);
+  --color-sobre-senal: var(--sobre-senal);
+  --color-peligro: var(--peligro);
+  --color-ok: var(--ok);
+  --font-sans: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Foco visible y grueso: se ve a pleno sol y con guantes de por medio. */
+:focus-visible {
+  outline: 3px solid var(--senal);
+  outline-offset: 2px;
+}
+
+/* Modo ahorro y movimiento reducido: sin transiciones. */
+.ahorro *,
+.ahorro *::before,
+.ahorro *::after {
+  transition: none !important;
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Leaflet adaptado a los tokens */
+.leaflet-container {
+  background: var(--fondo);
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--fondo) 85%, transparent) !important;
+  color: var(--texto-2) !important;
+  font-size: 11px;
+}
+.leaflet-control-attribution a {
+  color: var(--texto) !important;
+}
+.leaflet-control-zoom a {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 22px !important;
+  background: var(--superficie) !important;
+  color: var(--texto) !important;
+  border-color: var(--borde) !important;
+}
+.leaflet-touch .leaflet-bar {
+  border: 2px solid var(--borde);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
