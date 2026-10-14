@@ -114,7 +114,7 @@ export default function Mapa({
       style: ESTILO,
       bounds: comuna?.bbox ? aBounds(comuna.bbox) : CHILE,
       fitBoundsOptions: { padding: 24 },
-      maxZoom: 19,
+      maxZoom: 21,
       minZoom: 3,
       attributionControl: false,
       dragRotate: true,
@@ -135,7 +135,8 @@ export default function Mapa({
         tiles: [SATELITE],
         // En pantallas de alta densidad se piden imágenes un nivel más detalladas.
         tileSize: window.devicePixelRatio >= 1.5 ? 128 : 256,
-        maxzoom: 19,
+        // Nivel 18: hay foto en todo Chile. Más cerca se amplía esa misma foto (algo borrosa, pero se acerca).
+        maxzoom: 18,
         attribution: ATRIB_ESRI,
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
@@ -194,8 +195,7 @@ export default function Mapa({
           mapa.setLayoutProperty(l.id, 'visibility', sat ? 'none' : 'visible')
         }
       }
-      // El satélite no tiene más detalle que el nivel 19 en ciudades; en el campo, menos.
-      mapa.setMaxZoom(sat ? 18.5 : 19)
+      mapa.setMaxZoom(21)
     })
   }, [base])
 

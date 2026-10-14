@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { hhmm } from '../services/formato'
+import { guardar, leer } from '../services/almacen'
 import LeyendaRadar from './LeyendaRadar'
 
 function hace(d) {
@@ -12,6 +14,55 @@ function hace(d) {
 /** Control de la animación del radar, pensado para el pulgar. */
 export default function ControlRadar({ radar, ahorro, enLinea }) {
   const { cuadros, indice, setIndice, reproduciendo, setReproduciendo, error, recargar } = radar
+  // Plegado por defecto: una pastilla chica que no tapa el mapa.
+  const [abierto, setAbiertoState] = useState(() => leer('radar:abierto', false))
+  const setAbierto = (v) => {
+    setAbiertoState(v)
+    guardar('radar:abierto', v)
+  }
+
+  if (!abierto) {
+    const actualP = cuadros[indice]
+    return (
+      <div className="flex justify-start">
+        <div className="flex items-center gap-1 rounded-full bg-superficie/95 p-1 pr-1.5 shadow-lg ring-1 ring-linea backdrop-blur">
+          {actualP && (
+            <button
+              type="button"
+              onClick={() => setReproduciendo(!reproduciendo)}
+              aria-label={reproduciendo ? 'Pausar animación del radar' : 'Reproducir animación del radar'}
+              className="grid size-10 place-items-center rounded-full bg-senal text-sobre-senal"
+            >
+              {reproduciendo ? (
+                <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
+                  <rect x="4" y="3" width="4" height="14" fill="currentColor" />
+                  <rect x="12" y="3" width="4" height="14" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M5 3l12 7-12 7z" fill="currentColor" />
+                </svg>
+              )}
+            </button>
+          )}
+          <button type="button" onClick={() => setAbierto(true)} className="flex min-h-10 items-center gap-1.5 px-2 text-[15px] font-bold" aria-label="Mostrar controles del radar de lluvia">
+            Radar {actualP ? <span className="tabular-nums">{hhmm(actualP.hora)}</span> : error ? 'no disponible' : '…'}
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 9l4-4 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const plegar = (
+    <button type="button" onClick={() => setAbierto(false)} aria-label="Ocultar controles del radar" className="grid size-10 shrink-0 place-items-center rounded-full bg-superficie-2">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+        <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </button>
+  )
 
   if (!enLinea && cuadros.length === 0) {
     return (
@@ -82,6 +133,7 @@ export default function ControlRadar({ radar, ahorro, enLinea }) {
             className="mt-1 h-8 w-full accent-[var(--senal)]"
           />
         </div>
+        {plegar}
       </div>
       <LeyendaRadar />
       {ahorro && <p className="mt-1 text-[13px] text-texto-2">Modo ahorro: animación pausada.</p>}
