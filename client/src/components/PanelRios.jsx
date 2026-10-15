@@ -1,7 +1,7 @@
 import { distanciaTexto } from '../services/rios'
 
 /** Lista de ríos y quebradas cercanos, sobre el mapa. Tocar uno lo muestra completo. */
-export default function PanelRios({ rios, enfocado, onEnfocar, onCerrar }) {
+export default function PanelRios({ rios, enfocado, onEnfocar, onOrigen, onCerrar }) {
   return (
     <section aria-labelledby="t-rios" className="max-h-[46vh] overflow-y-auto rounded-3xl bg-superficie p-3 shadow-xl ring-1 ring-linea">
       <div className="mb-1 flex items-center gap-2">
@@ -22,9 +22,27 @@ export default function PanelRios({ rios, enfocado, onEnfocar, onCerrar }) {
       {rios.estado === 'vacio' && <p className="py-2 text-[16px]">No encontramos ríos ni quebradas con nombre cerca de este punto.</p>}
       {rios.estado === 'listo' && (
         <>
-          <p className="mb-2 text-[14px] text-texto-2">
-            {rios.desdeUbicacion ? 'Desde tu ubicación.' : 'Desde el centro de tu comuna. Toca el botón de ubicación para buscar desde donde estás.'}
-          </p>
+          {rios.hayUbicacion ? (
+            <div role="radiogroup" aria-label="Buscar cerca de" className="mb-2 grid grid-cols-2 rounded-xl bg-superficie-2 p-1">
+              {[
+                ['comuna', rios.comuna ?? 'Mi comuna'],
+                ['ubicacion', 'Donde estoy'],
+              ].map(([k, t]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={rios.origen === k}
+                  onClick={() => rios.origen !== k && onOrigen(k)}
+                  className={`min-h-10 truncate rounded-lg px-2 text-[14px] font-bold ${rios.origen === k ? 'bg-superficie text-texto shadow' : 'text-texto-2'}`}
+                >
+                  Cerca de {k === 'comuna' ? t : 'mí'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mb-2 text-[14px] text-texto-2">Cerca de {rios.comuna ?? 'tu comuna'}.</p>
+          )}
           <ul className="space-y-1.5">
             {rios.lista.map((r) => (
               <li key={r.nombre}>

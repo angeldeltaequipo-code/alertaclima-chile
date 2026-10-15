@@ -123,7 +123,7 @@ export default function Mapa({
   base = 'mapa',
   modoCalle = false,
   onCalle = () => {},
-  pedirRios = 0,
+  pedirRios = null,
   onRios = () => {},
   rioEnfocado = null,
 }) {
@@ -358,9 +358,8 @@ export default function Mapa({
 
   // ---- Ríos y quebradas cercanos ----
   useEffect(() => {
-    if (!pedirRios) return
-    const punto = ubicacion ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)
-    if (!punto) return
+    if (!pedirRios?.punto) return
+    const punto = pedirRios.punto
     props.current.onRios({ estado: 'buscando' })
     cuandoListo((mapa) => {
       mapa.jumpTo({ center: [punto.lng, punto.lat], zoom: Math.min(mapa.getZoom(), 12) < 11 ? 12 : Math.min(mapa.getZoom(), 12) })
@@ -392,7 +391,7 @@ export default function Mapa({
       setTimeout(una, 8000)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pedirRios])
+  }, [pedirRios?.n])
 
   // Enfocar un cauce de la lista
   useEffect(() => {

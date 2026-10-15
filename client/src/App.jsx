@@ -57,15 +57,24 @@ export default function App() {
     guardar('mapa:base', b)
   }
   const [modoCalle, setModoCalle] = useState(false)
-  const [pedirRios, setPedirRios] = useState(0)
+  const [pedirRios, setPedirRios] = useState(null) // { n, punto, origen }
   const [rios, setRios] = useState(null)
   const [rioEnfocado, setRioEnfocado] = useState(null)
-  const buscarRios = () => {
+  // Punto de búsqueda de ríos: la localidad de la comuna elegida, o la ubicación de la persona
+  // (por defecto, la ubicación solo si está dentro o cerca de la comuna que está mirando).
+  const puntoComuna = comuna ? clima.datos?.punto ?? { lat: comuna.centro[0], lng: comuna.centro[1] } : null
+  const ubicacionEnComuna =
+    ubicacion && comuna?.bbox &&
+    ubicacion.lat >= comuna.bbox[0][0] - 0.05 && ubicacion.lat <= comuna.bbox[1][0] + 0.05 &&
+    ubicacion.lng >= comuna.bbox[0][1] - 0.05 && ubicacion.lng <= comuna.bbox[1][1] + 0.05
+  const buscarRios = (origen = ubicacionEnComuna ? 'ubicacion' : 'comuna') => {
+    const punto = origen === 'ubicacion' && ubicacion ? ubicacion : puntoComuna
+    if (!punto) return
     setRioEnfocado(null)
     setCamaraSel(null)
     setSeleccionado(null)
     setVista('radar')
-    setPedirRios((n) => n + 1)
+    setPedirRios((p) => ({ n: (p?.n ?? 0) + 1, punto, origen: origen === 'ubicacion' && ubicacion ? 'ubicacion' : 'comuna' }))
   }
   const verCalle = ({ lat, lng }) => {
     setModoCalle(false)
@@ -151,7 +160,7 @@ export default function App() {
         setUbicacion({ lat: coords.latitude, lng: coords.longitude })
         setCentrarEn((n) => n + 1)
         // Con la lista de ríos abierta, se vuelve a buscar desde donde está la persona.
-        if (rios) setPedirRios((n) => n + 1)
+        if (rios) setPedirRios((p) => ({ n: (p?.n ?? 0) + 1, punto: { lat: coords.latitude, lng: coords.longitude }, origen: 'ubicacion' }))
       },
       (err) =>
         setAvisoUbicacion(
@@ -203,7 +212,7 @@ export default function App() {
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} />}
-                onVerRios={buscarRios}
+                onVerRios={() => buscarRios()}
               />
             )}
           </div>
@@ -236,7 +245,7 @@ export default function App() {
                 modoCalle={modoCalle}
                 onCalle={verCalle}
                 pedirRios={pedirRios}
-                onRios={(r) => setRios({ ...r, desdeUbicacion: Boolean(ubicacion) })}
+                onRios={(r) => setRios({ ...r, origen: pedirRios?.origen, comuna: comuna?.nombre, hayUbicacion: Boolean(ubicacion) })}
                 rioEnfocado={rioEnfocado}
               />
             </Suspense>
@@ -247,7 +256,7 @@ export default function App() {
             onBase={setBaseMapa}
             modoCalle={modoCalle}
             onModoCalle={setModoCalle}
-            onRios={rios ? () => setRios(null) : buscarRios}
+            onRios={rios ? () => setRios(null) : () => buscarRios()}
             riosActivo={Boolean(rios)}
           />
           <button
@@ -284,7 +293,16 @@ export default function App() {
                 </p>
               )}
               {rios ? (
-                <PanelRios rios={rios} enfocado={rioEnfocado} onEnfocar={setRioEnfocado} onCerrar={() => { setRios(null); setRioEnfocado(null) }} />
+                <PanelRios
+                  rios={rios}
+                  enfocado={rioEnfocado}
+                  onEnfocar={setRioEnfocado}
+                  onOrigen={buscarRios}
+                  onCerrar={() => {
+                    setRios(null)
+                    setRioEnfocado(null)
+                  }}
+                />
               ) : camaraSel ? (
                 <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
