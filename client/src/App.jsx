@@ -60,22 +60,6 @@ export default function App() {
   const [pedirRios, setPedirRios] = useState(null) // { n, punto, origen }
   const [rios, setRios] = useState(null)
   const [rioEnfocado, setRioEnfocado] = useState(null)
-  // Punto de búsqueda de ríos: la localidad de la comuna elegida, o la ubicación de la persona
-  // (por defecto, la ubicación solo si está dentro o cerca de la comuna que está mirando).
-  const puntoComuna = comuna ? clima.datos?.punto ?? { lat: comuna.centro[0], lng: comuna.centro[1] } : null
-  const ubicacionEnComuna =
-    ubicacion && comuna?.bbox &&
-    ubicacion.lat >= comuna.bbox[0][0] - 0.05 && ubicacion.lat <= comuna.bbox[1][0] + 0.05 &&
-    ubicacion.lng >= comuna.bbox[0][1] - 0.05 && ubicacion.lng <= comuna.bbox[1][1] + 0.05
-  const buscarRios = (origen = ubicacionEnComuna ? 'ubicacion' : 'comuna') => {
-    const punto = origen === 'ubicacion' && ubicacion ? ubicacion : puntoComuna
-    if (!punto) return
-    setRioEnfocado(null)
-    setCamaraSel(null)
-    setSeleccionado(null)
-    setVista('radar')
-    setPedirRios((p) => ({ n: (p?.n ?? 0) + 1, punto, origen: origen === 'ubicacion' && ubicacion ? 'ubicacion' : 'comuna' }))
-  }
   const verCalle = ({ lat, lng }) => {
     setModoCalle(false)
     window.open(enlaceStreetView(lat, lng), '_blank', 'noopener')
@@ -104,6 +88,23 @@ export default function App() {
   const [ubicacion, setUbicacion] = useState(null)
   const [centrarEn, setCentrarEn] = useState(0)
   const [avisoUbicacion, setAvisoUbicacion] = useState(null)
+
+  // Punto de búsqueda de ríos: la localidad de la comuna elegida, o la ubicación de la persona
+  // (por defecto, la ubicación solo si está dentro o cerca de la comuna que está mirando).
+  const puntoComuna = comuna ? clima.datos?.punto ?? { lat: comuna.centro[0], lng: comuna.centro[1] } : null
+  const ubicacionEnComuna =
+    ubicacion && comuna?.bbox &&
+    ubicacion.lat >= comuna.bbox[0][0] - 0.05 && ubicacion.lat <= comuna.bbox[1][0] + 0.05 &&
+    ubicacion.lng >= comuna.bbox[0][1] - 0.05 && ubicacion.lng <= comuna.bbox[1][1] + 0.05
+  const buscarRios = (origen = ubicacionEnComuna ? 'ubicacion' : 'comuna') => {
+    const punto = origen === 'ubicacion' && ubicacion ? ubicacion : puntoComuna
+    if (!punto) return
+    setRioEnfocado(null)
+    setCamaraSel(null)
+    setSeleccionado(null)
+    setVista('radar')
+    setPedirRios((p) => ({ n: (p?.n ?? 0) + 1, punto, origen: origen === 'ubicacion' && ubicacion ? 'ubicacion' : 'comuna' }))
+  }
 
   const setVista = (v) => {
     setVistaState(v)
