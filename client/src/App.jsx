@@ -83,7 +83,8 @@ export default function App() {
   const [sos, setSos] = useState(false)
   const [narradoUnaVez, setNarradoUnaVez] = useState(false)
   useEffect(() => {
-    if (!narradoUnaVez && modoNarrador() && clima.datos && comuna) {
+    // En la página de registro no se abre el reporte encima (taparía la bienvenida).
+    if (!narradoUnaVez && modoNarrador() && clima.datos && comuna && !new URLSearchParams(location.search).has('registro')) {
       setNarradoUnaVez(true)
       setZumi(true)
     }
@@ -481,10 +482,12 @@ export default function App() {
             cuenta={cuenta}
             onElegir={(c, p) => {
               setVerRegistro(false)
+              history.replaceState(null, '', location.pathname)
               elegirComuna(c, p)
             }}
             onBuscar={() => {
               setVerRegistro(false)
+              history.replaceState(null, '', location.pathname)
               setSelector(true)
             }}
           />
