@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: curl -sS -o /dev/null -w "Smithsonian HTTP %{http_code}\n" -A "Mozilla/5.0" https://volcano.si.edu/news/WeeklyVolcanoRSS.xml || true
+      - run: curl -sS -o /dev/null -w "::warning::Smithsonian HTTP %{http_code}\n" -A "Mozilla/5.0" https://volcano.si.edu/news/WeeklyVolcanoRSS.xml || true
       - run: node server/scripts/volcanes.mjs
       - name: Publicar si cambió
         env:
