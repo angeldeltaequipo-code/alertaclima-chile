@@ -67,7 +67,7 @@ export async function obtenerPronostico({ lat, lng }, { signal } = {}) {
   )
   p.set(
     'hourly',
-    'temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,freezing_level_height',
+    'temperature_2m,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,freezing_level_height,cloud_cover',
   )
   p.set(
     'daily',
@@ -125,6 +125,7 @@ function transformar(d) {
     direccion: h.wind_direction_10m?.[i] ?? null,
     presion: h.pressure_msl?.[i] ?? null,
     isoterma: h.freezing_level_height?.[i] ?? null,
+    nubes: h.cloud_cover?.[i] ?? null,
   }))
   const iInicio = Math.max(0, todas.findIndex((x) => x.hora >= inicio))
   const horas = todas.slice(iInicio, iInicio + 24)

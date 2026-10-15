@@ -4,6 +4,7 @@ import Portada from './Portada'
 import Semana from './Semana'
 import Fichas from './Fichas'
 import RiesgoAluvion from './RiesgoAluvion'
+import MiraElCielo from './MiraElCielo'
 import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
@@ -137,6 +138,8 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
       </Bloque>
 
       {!urgenteAluvion && aluvion}
+
+      <MiraElCielo horas={horas} hoy={dias[0]} />
 
       <h2 className="px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />

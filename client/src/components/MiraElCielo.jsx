@@ -1,0 +1,148 @@
+import { useEffect, useRef, useState } from 'react'
+import { CAMARAS_CIELO, calidadNoche, faseLunar, urlFresca } from '../services/cielo'
+import { hhmm } from '../services/formato'
+
+/** Dibujo de la Luna tal como se ve desde Chile (hemisferio sur: crece por la izquierda). */
+export function Luna({ fase, tam = 64 }) {
+  const r = 30
+  const k = Math.cos(2 * Math.PI * fase.fraccion)
+  const rx = Math.abs(k) * r
+  // Mitad iluminada a la derecha (como en el hemisferio norte creciente) y luego se refleja según corresponda.
+  const d = `M50 ${50 - r} A${r} ${r} 0 0 1 50 ${50 + r} A${rx} ${r} 0 0 ${k > 0 ? 0 : 1} 50 ${50 - r} Z`
+  return (
+    <svg width={tam} height={tam} viewBox="0 0 100 100" role="img" aria-label={`${fase.nombre}, ${Math.round(fase.iluminacion * 100)} % iluminada`}>
+      <defs>
+        <radialGradient id="luna-brillo" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stopColor="#fef9c3" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#fef9c3" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#luna-brillo)" />
+      <circle cx="50" cy="50" r={r} fill="#334155" />
+      <path d={d} fill="#fef3c7" transform={fase.creciente ? 'translate(100 0) scale(-1 1)' : undefined} />
+      <circle cx="50" cy="50" r={r} fill="none" stroke="#fef3c7" strokeOpacity="0.3" />
+    </svg>
+  )
+}
+
+function Visor({ camara, onCerrar }) {
+  const ref = useRef(null)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    const previo = document.activeElement
+    ref.current?.focus()
+    const tecla = (e) => e.key === 'Escape' && onCerrar()
+    document.addEventListener('keydown', tecla)
+    return () => {
+      document.removeEventListener('keydown', tecla)
+      previo?.focus?.()
+    }
+  }, [onCerrar])
+  const pano = camara.tipo === 'panorama'
+  return (
+    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/80 sm:items-center" onClick={onCerrar}>
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={camara.nombre}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="safe-bottom w-full max-w-xl rounded-t-3xl bg-[#0b1020] p-4 text-white shadow-2xl sm:rounded-3xl"
+      >
+        <div className="mb-3 flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[19px] leading-tight font-bold">{camara.nombre}</p>
+            <p className="text-[14px] text-white/70">{camara.lugar}</p>
+          </div>
+          <button type="button" onClick={onCerrar} aria-label="Cerrar" className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div className={`overflow-hidden rounded-2xl bg-black ${pano ? 'overflow-x-auto' : ''}`}>
+          {error ? (
+            <p className="grid aspect-video place-items-center p-4 text-center text-[15px] text-white/70">La cámara no respondió. Prueba en unos minutos.</p>
+          ) : (
+            <img
+              src={urlFresca(camara.url)}
+              alt={`Imagen en vivo: ${camara.nombre}`}
+              onError={() => setError(true)}
+              className={pano ? 'block h-[46vh] max-h-[420px] w-auto max-w-none' : 'mx-auto block max-h-[60vh] w-auto max-w-full'}
+            />
+          )}
+        </div>
+        {pano && !error && <p className="mt-1 text-center text-[13px] text-white/60">← Desliza para mirar alrededor →</p>}
+        <p className="mt-2 text-[15px] leading-snug text-white/85">{camara.descripcion}</p>
+        <p className="mt-2 text-[12px] text-white/60">
+          Imagen: {camara.credito} ·{' '}
+          <a href={camara.enlace} target="_blank" rel="noopener" className="underline">
+            más cámaras en eso.org
+          </a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Tarjeta «Mira el cielo»: la Luna, cómo viene la noche y los observatorios de Chile en vivo. */
+export default function MiraElCielo({ horas, hoy }) {
+  const [abierta, setAbierta] = useState(null)
+  const fase = faseLunar()
+  const noche = calidadNoche(horas)
+  return (
+    <section aria-labelledby="t-cielo" className="cielo-tarjeta">
+      <div className="cielo-estrellas" aria-hidden="true" />
+      <div className="relative">
+        <h2 id="t-cielo" className="text-[19px] font-bold text-white">
+          Mira el cielo
+        </h2>
+        <div className="mt-2 flex items-center gap-4">
+          <Luna fase={fase} />
+          <div className="min-w-0 text-white">
+            <p className="text-[17px] font-bold">{fase.nombre}</p>
+            <p className="text-[14px] text-white/75">
+              {Math.round(fase.iluminacion * 100)} % iluminada · llena el {fase.proximaLlena.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}
+            </p>
+            {hoy?.puesta && <p className="text-[14px] text-white/75">El sol se pone a las {hhmm(hoy.puesta)}</p>}
+          </div>
+        </div>
+        {noche && (
+          <div className="mt-3 rounded-2xl bg-white/10 p-3 text-white ring-1 ring-white/10">
+            <p className="flex items-center gap-2 text-[15px]">
+              <span className="font-bold">Esta noche: {noche.texto}</span>
+              <span className="flex gap-0.5" aria-hidden="true">
+                {[1, 2, 3, 4].map((i) => (
+                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i <= noche.puntos ? '#fde68a' : 'none'} stroke="#fde68a" strokeWidth="1.8">
+                    <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z" />
+                  </svg>
+                ))}
+              </span>
+            </p>
+            <p className="mt-0.5 text-[14px] text-white/75">
+              {noche.detalle} Nubosidad media {noche.nubes} %.
+            </p>
+          </div>
+        )}
+
+        <h3 className="mt-4 text-[16px] font-bold text-white">Observatorios de Chile en vivo</h3>
+        <ul className="-mx-4 mt-2 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+          {CAMARAS_CIELO.map((c) => (
+            <li key={c.id} className="w-44 shrink-0 snap-start">
+              <button type="button" onClick={() => setAbierta(c)} className="block w-full text-left" aria-label={`Ver ${c.nombre}`}>
+                <span className="block aspect-square overflow-hidden rounded-2xl bg-black ring-1 ring-white/15">
+                  <img src={urlFresca(c.url)} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.opacity = '0.2')} />
+                </span>
+                <span className="mt-1 block text-[14px] leading-tight font-bold text-white">{c.nombre}</span>
+                <span className="block truncate text-[12px] text-white/65">{c.lugar}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[12px] text-white/55">Cámaras de ESO y sus socios. De día se ven los telescopios; de noche, las estrellas.</p>
+      </div>
+      {abierta && <Visor camara={abierta} onCerrar={() => setAbierta(null)} />}
+    </section>
+  )
+}

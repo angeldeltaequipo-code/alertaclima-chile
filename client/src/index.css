@@ -407,3 +407,27 @@ body {
 .lista-entrar > *:nth-child(5) { animation-delay: 300ms; }
 .lista-entrar > *:nth-child(6) { animation-delay: 360ms; }
 .lista-entrar > *:nth-child(n + 7) { animation-delay: 420ms; }
+
+/* ---- Mira el cielo ---- */
+.cielo-tarjeta {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 16px;
+  background: radial-gradient(120% 90% at 80% 0%, #312e81 0%, #111a3d 45%, #050816 100%);
+  box-shadow: 0 10px 30px -14px rgb(49 46 129 / 0.9);
+}
+.cielo-estrellas {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 10% 20%, #fff9, transparent),
+    radial-gradient(1px 1px at 30% 8%, #fff8, transparent),
+    radial-gradient(1.4px 1.4px at 66% 26%, #fffa, transparent),
+    radial-gradient(1px 1px at 88% 12%, #fff7, transparent),
+    radial-gradient(1px 1px at 52% 46%, #fff5, transparent),
+    radial-gradient(1.2px 1.2px at 18% 64%, #fff6, transparent),
+    radial-gradient(1px 1px at 80% 58%, #fff5, transparent),
+    radial-gradient(1px 1px at 40% 86%, #fff4, transparent);
+  animation: titilar 3.5s ease-in-out infinite alternate;
+}
