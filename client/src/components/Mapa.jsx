@@ -332,10 +332,10 @@ export default function Mapa({
     cuandoListo((mapa) => {
       const r = ref.current
       const vigentes = new Set(cuadros.map((c) => c.url))
-      // Se mantienen pocas capas montadas (la caché del navegador evita volver a descargar).
-      const montadas = [...r.radar]
-      for (const url of montadas) {
-        if (!vigentes.has(url) || (url !== actual && montadas.length > 4 && montadas.indexOf(url) < montadas.length - 4)) {
+      // Cada cuadro queda montado mientras siga vigente: así la animación no vuelve a descargar
+      // imágenes en cada vuelta (RainViewer limita a 100 pedidos por minuto).
+      for (const url of [...r.radar]) {
+        if (!vigentes.has(url)) {
           const id = idRadar(url)
           if (mapa.getLayer(id)) mapa.removeLayer(id)
           if (mapa.getSource(id)) mapa.removeSource(id)
