@@ -5,7 +5,7 @@ import cors from 'cors'
 import { saludRouter } from './routes/salud.js'
 import { fotosRouter, reportesRouter } from './routes/reportes.js'
 import { adminRouter, alertasRouter } from './routes/alertas.js'
-import { camarasRouter, observacionRouter } from './routes/observacion.js'
+import { camarasRouter, evacuacionRouter, observacionRouter } from './routes/observacion.js'
 import { pushRouter } from './routes/push.js'
 import { cuentaRouter } from './routes/cuenta.js'
 import { chatRouter } from './routes/chat.js'
@@ -34,6 +34,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/alertas', alertasRouter())
   app.use('/api/observacion', observacionRouter())
   app.use('/api/camaras', camarasRouter())
+  app.use('/api/evacuacion', evacuacionRouter())
   app.use('/api/push', pushRouter({ enviarPush }))
   app.use('/api/cuenta', cuentaRouter({ verificar: verificarGoogle }))
   app.use('/api/chat', chatRouter({ emitirChat }))

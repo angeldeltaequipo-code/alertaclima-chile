@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { observacionCercana } from '../services/observaciones.js'
 import { camarasCercanas, camarasDeChile } from '../services/camaras.js'
 import { ErrorValidacion } from '../services/reportes.js'
+import { evacuacionCerca } from '../services/evacuacion.js'
 
 function leerPunto(req) {
   const lat = Number(req.query.lat)
@@ -47,6 +48,19 @@ export function observacionRouter() {
       }
       const observacion = await observacionCercana({ lat, lng })
       res.set('Cache-Control', 'public, max-age=300').json({ observacion })
+    } catch (e) {
+      next(e)
+    }
+  })
+  return r
+}
+
+/** GET /api/evacuacion?lat=&lng= → zonas de encuentro y vías de evacuación cercanas (OpenStreetMap). */
+export function evacuacionRouter() {
+  const r = Router()
+  r.get('/', async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'public, max-age=3600').json(await evacuacionCerca(leerPunto(req)))
     } catch (e) {
       next(e)
     }
