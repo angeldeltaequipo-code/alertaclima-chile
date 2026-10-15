@@ -77,12 +77,9 @@ export default function Resumen({ alertas, horas, reportes = [], reportesDisponi
 
   return (
     <section aria-labelledby="t-resumen">
-      <h2 id="t-resumen" className="entrar mb-2.5 px-1 text-[21px] leading-tight font-bold">
+      <h2 id="t-resumen" className="sr-only">
         {saludo}
-        {nombre ? `, ${nombre.split(' ')[0]}` : ''}
-        <span className="mt-0.5 block text-[15px] font-normal text-texto-2">
-          Así está {comuna?.nombre ?? 'tu comuna'} este {new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </span>
+        {nombre ? `, ${nombre.split(' ')[0]}` : ''}: resumen de {comuna?.nombre ?? 'tu comuna'}
       </h2>
       <div className="grid grid-cols-2 gap-2.5">
         <Ficha id="alertas" titulo="Alertas" retraso={60} {...a} onClick={onVerAlertas} />

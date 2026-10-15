@@ -2,9 +2,6 @@ import Cosmos from './components/Cosmos'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
-import SelectorComuna from './components/SelectorComuna'
-import Bienvenida from './components/Bienvenida'
-import Ajustes from './components/Ajustes'
 import VistaAhora from './components/VistaAhora'
 import Navegacion from './components/Navegacion'
 import ListaReportes from './components/ListaReportes'
@@ -22,19 +19,13 @@ import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
 import { useNotificaciones } from './hooks/useNotificaciones'
 import { useCuenta } from './hooks/useCuenta'
-import PuertaCuenta from './components/PuertaCuenta'
-import VistaChat from './components/VistaChat'
-import VistaRiesgos from './components/VistaRiesgos'
 import { useRiesgos } from './hooks/useRiesgos'
 import { BotonZumi } from './components/Zumi'
-import EstudioZumi from './components/EstudioZumi'
-import { BotonSOS, PantallaSOS } from './components/SOS'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
 import { condicionesActuales } from './services/clima'
-import DetalleAlertas from './components/DetalleAlertas'
 import { comunaPorCut } from './services/comunas'
 import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
@@ -46,6 +37,17 @@ import Resguardo from './components/Resguardo'
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
 const FormReporte = lazy(() => import('./components/FormReporte'))
+// Lo que no se ve al abrir la app se descarga recién cuando hace falta: la primera carga es más liviana.
+const VistaRiesgos = lazy(() => import('./components/VistaRiesgos'))
+const VistaChat = lazy(() => import('./components/VistaChat'))
+const Ajustes = lazy(() => import('./components/Ajustes'))
+const EstudioZumi = lazy(() => import('./components/EstudioZumi'))
+const DetalleAlertas = lazy(() => import('./components/DetalleAlertas'))
+const Bienvenida = lazy(() => import('./components/Bienvenida'))
+const SelectorComuna = lazy(() => import('./components/SelectorComuna'))
+const PuertaCuenta = lazy(() => import('./components/PuertaCuenta'))
+const PantallaSOS = lazy(() => import('./components/SOS').then((m) => ({ default: m.PantallaSOS })))
+const Cargando = () => <div className="grid h-full min-h-40 place-items-center text-texto-2">Cargando…</div>
 
 export default function App() {
   const [tema, setTema, temaVisible] = useTema()
@@ -118,6 +120,11 @@ export default function App() {
 
   const [vista, setVistaState] = useState(() => leer('vista', 'ahora'))
   const [mapaMontado, setMapaMontado] = useState(vista === 'radar')
+  // Pestañas ya abiertas: se montan la primera vez que se visitan y quedan vivas después.
+  const [visitadas, setVisitadas] = useState(() => new Set([vista]))
+  useEffect(() => {
+    setVisitadas((v) => (v.has(vista) ? v : new Set([...v, vista])))
+  }, [vista])
   const [selector, setSelector] = useState(false)
   const [ubicacion, setUbicacion] = useState(null)
   const [centrarEn, setCentrarEn] = useState(0)
@@ -233,6 +240,7 @@ export default function App() {
         ahora={condicionesActuales(clima.datos?.ahora, obs)}
         onCambiar={() => setSelector(true)}
         onVerAlertas={() => setVerAlertas(true)}
+        onSOS={comuna ? () => setSos(true) : null}
       />
 
       <main className="relative z-[1] min-h-0 flex-1">
@@ -245,6 +253,7 @@ export default function App() {
                 sismos={riesgos.datos?.sismos}
                 reportesLista={rep.reportes}
                 comuna={comuna}
+                nombre={cuenta.usuario?.nombre}
                 enLinea={enLinea}
                 obs={obs}
                 resumen={
@@ -372,6 +381,8 @@ export default function App() {
         {/* Riesgos: sismos, tsunamis y volcanes */}
         <div hidden={vista !== 'riesgos'} className="h-full overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-xl">
+            {visitadas.has('riesgos') && (
+            <Suspense fallback={<Cargando />}>
             <VistaRiesgos
               riesgos={riesgos}
               comuna={comuna}
@@ -381,37 +392,48 @@ export default function App() {
                 setVista('radar')
               }}
             />
+            </Suspense>
+            )}
           </div>
         </div>
 
         {/* Chat de la comuna */}
         <div hidden={vista !== 'chat'} className="h-full">
           <div className="mx-auto h-full max-w-xl">
-            <VistaChat cuenta={cuenta} comuna={comuna} enLinea={enLinea} visible={vista === 'chat'} />
+            {visitadas.has('chat') && (
+              <Suspense fallback={<Cargando />}>
+                <VistaChat cuenta={cuenta} comuna={comuna} enLinea={enLinea} visible={vista === 'chat'} />
+              </Suspense>
+            )}
           </div>
         </div>
 
         {/* Ajustes */}
         <div hidden={vista !== 'ajustes'} className="h-full overflow-y-auto overscroll-contain">
-          <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
+          {visitadas.has('ajustes') && (
+            <Suspense fallback={<Cargando />}>
+              <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
+            </Suspense>
+          )}
         </div>
       </main>
 
       <Navegacion vista={vista} onCambiar={setVista} />
 
-      {cuenta.puerta && cuenta.clientId && <PuertaCuenta cuenta={cuenta} />}
+      {cuenta.puerta && cuenta.clientId && <Suspense fallback={null}><PuertaCuenta cuenta={cuenta} /></Suspense>}
 
-      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonSOS arriba={vista === 'radar'} onAbrir={() => setSos(true)} />}
-      {sos && <PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} />}
+      {sos && <Suspense fallback={null}><PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} /></Suspense>}
       {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
-        <EstudioZumi
-          nombreCuenta={cuenta.usuario?.nombre?.split(' ')[0]}
-          conCuenta={cuenta.estado === 'con-sesion'}
-          traje={traje}
-          onCerrar={() => setZumi(false)}
-          datos={datosZumi}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-[1150] grid place-items-center bg-[#050a18] text-white/80">Llamando a ZUMI…</div>}>
+          <EstudioZumi
+            nombreCuenta={cuenta.usuario?.nombre?.split(' ')[0]}
+            conCuenta={cuenta.estado === 'con-sesion'}
+            traje={traje}
+            onCerrar={() => setZumi(false)}
+            datos={datosZumi}
+          />
+        </Suspense>
       )}
 
       {camaraVisor && <VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} />}
@@ -441,11 +463,11 @@ export default function App() {
       )}
 
       {verAlertas && comuna && (
-        <DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} />
+        <Suspense fallback={null}><DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} /></Suspense>
       )}
 
-      {!cut && !selector && <Bienvenida cuenta={cuenta} onElegir={elegirComuna} onBuscar={() => setSelector(true)} />}
-      {selector && <SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} />}
+      {!cut && !selector && <Suspense fallback={null}><Bienvenida cuenta={cuenta} onElegir={elegirComuna} onBuscar={() => setSelector(true)} /></Suspense>}
+      {selector && <Suspense fallback={null}><SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} /></Suspense>}
     </div>
   )
 }

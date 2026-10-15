@@ -29,7 +29,9 @@ const ESTRELLAS = Array.from({ length: 26 }, (_, i) => ({
  * Portada de la pestaña Ahora: el tiempo de un vistazo, con un cielo que acompaña
  * a la condición. Lo esencial (temperatura y condición) va en grande y en palabras.
  */
-export default function Portada({ ahora, hoy, comuna }) {
+export default function Portada({ ahora, hoy, comuna, nombre }) {
+  const h = new Date().getHours()
+  const saludo = h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
   const sc = escena(ahora.icono, ahora.esDeDia)
   const llueve = sc.startsWith('lluvia') || sc === 'tormenta'
   return (
@@ -47,7 +49,11 @@ export default function Portada({ ahora, hoy, comuna }) {
       <div className="relative">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[15px] font-bold opacity-90">Ahora</p>
+            <p className="text-[15px] font-bold opacity-90">
+              {saludo}
+              {nombre ? `, ${nombre.split(' ')[0]}` : ''}
+            </p>
+            <p className="text-[13px] opacity-75 first-letter:uppercase">{new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })} · ahora</p>
             <p className="mt-1 text-[88px] leading-[0.88] font-bold tracking-tighter tabular-nums">{grados(ahora.temperatura)}</p>
           </div>
           <div className="portada-icono -mt-1 -mr-1 shrink-0">

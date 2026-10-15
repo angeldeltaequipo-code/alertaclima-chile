@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import MapaSismos from './MapaSismos'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
 import { hace } from '../services/reportes'
 
@@ -126,6 +127,9 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
               <button type="button" onClick={onVerMapa} className="min-h-10 rounded-full bg-superficie-2 px-3 text-[14px] font-bold">
                 Ver en el mapa
               </button>
+            </div>
+            <div className="mt-3">
+              <MapaSismos sismos={sismos} punto={punto} />
             </div>
             <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-2xl bg-superficie-2 py-2">

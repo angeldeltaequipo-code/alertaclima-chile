@@ -8,6 +8,7 @@ import MiraElCielo from './MiraElCielo'
 import Resguardo from './Resguardo'
 import EspacioEnVivo from './EspacioEnVivo'
 import PulsoEnVivo from './PulsoEnVivo'
+import Atajos from './Atajos'
 import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
@@ -49,7 +50,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {} }) {
+export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {} }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -75,7 +76,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
         {resumen}
         {invitacion}
         {reportes}
-        {camaras}
+        <div id="t-camaras" className="scroll-mt-16">{camaras}</div>
       </div>
     )
   }
@@ -90,13 +91,14 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
   const aluvion = <RiesgoAluvion horas={horas} onVerRios={onVerRios} />
 
   return (
-    <div className="lista-entrar space-y-3 px-4 pt-4 pb-6">
+    <div className="lista-entrar space-y-3 px-4 pt-3 pb-24">
+      <Atajos />
+      <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />
       {resumen}
       <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
 
       {invitacion}
 
-      <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} />
       <p className="px-1 text-[14px] leading-snug text-texto-2">
         {ahora.medido ? (
           <>
@@ -135,7 +137,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
 
       {reportes}
 
-      {camaras}
+      <div id="t-camaras" className="scroll-mt-16">{camaras}</div>
 
       <Bloque titulo="Próximos 7 días" id="t-dias">
         <Semana dias={dias} actual={ahora.temperatura} />
@@ -144,13 +146,14 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
       {!urgenteAluvion && aluvion}
 
       <Resguardo>
+        <span id="t-cielo-ancla" className="block scroll-mt-16" />
         <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
       </Resguardo>
       <Resguardo>
         <EspacioEnVivo punto={datos.punto} />
       </Resguardo>
 
-      <h2 className="px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
+      <h2 id="t-detalle" className="scroll-mt-16 px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />
 
       <p className="px-1 text-[13px] text-texto-2">
