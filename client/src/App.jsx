@@ -411,7 +411,7 @@ export default function App() {
         <DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} />
       )}
 
-      {!cut && !selector && <Bienvenida onElegir={elegirComuna} onBuscar={() => setSelector(true)} />}
+      {!cut && !selector && <Bienvenida cuenta={cuenta} onElegir={elegirComuna} onBuscar={() => setSelector(true)} />}
       {selector && <SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} />}
     </div>
   )

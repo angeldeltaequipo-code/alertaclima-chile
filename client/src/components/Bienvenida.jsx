@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { comunaEnPunto } from '../services/comunas'
+import BotonGoogle from './BotonGoogle'
 
 const PUNTOS = [
   {
@@ -23,7 +24,10 @@ const PUNTOS = [
 ]
 
 /** Primera pantalla: qué es AlertaClima y cómo empezar en un toque. */
-export default function Bienvenida({ onElegir, onBuscar }) {
+export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
+  const [sinCuenta, setSinCuenta] = useState(false)
+  // Paso 1: entrar con Google (si está activo y aún no hay sesión). Paso 2: elegir la comuna.
+  const pasoCuenta = cuenta?.estado === 'sin-sesion' && cuenta.clientId && !sinCuenta
   const [buscando, setBuscando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
@@ -84,7 +88,24 @@ export default function Bienvenida({ onElegir, onBuscar }) {
           ))}
         </ul>
 
+        {pasoCuenta ? (
+          <div className="mt-auto pt-8">
+            <div className="entrar rounded-3xl bg-white p-4 shadow-xl" style={{ animationDelay: '650ms' }}>
+              <p className="mb-3 text-center text-[16px] font-bold text-slate-900">Entra en un toque con tu cuenta de Google</p>
+              <BotonGoogle clientId={cuenta.clientId} />
+              <p className="mt-2 text-center text-[12px] text-slate-600">
+                Solo mostramos tu nombre, la inicial de tu apellido y tu foto. Al continuar aceptas los{' '}
+                <a href="./terminos.html" target="_blank" rel="noopener" className="underline">términos</a> y la{' '}
+                <a href="./privacidad.html" target="_blank" rel="noopener" className="underline">política de privacidad</a>.
+              </p>
+            </div>
+            <button type="button" onClick={() => setSinCuenta(true)} className="entrar mt-3 min-h-12 w-full text-[16px] font-bold text-white/80 underline" style={{ animationDelay: '720ms' }}>
+              Seguir sin cuenta (solo clima y alertas)
+            </button>
+          </div>
+        ) : (
         <div className="mt-auto pt-8">
+          {cuenta?.usuario && <p className="entrar mb-3 text-center text-[17px] font-bold text-white">¡Hola, {cuenta.usuario.nombre.split(' ')[0]}! Ahora dinos dónde estás.</p>}
           <button
             type="button"
             onClick={ubicarme}
@@ -114,6 +135,7 @@ export default function Bienvenida({ onElegir, onBuscar }) {
           )}
           <p className="mt-4 text-center text-[13px] text-white/60">Gratis. El clima y las alertas no necesitan cuenta.</p>
         </div>
+        )}
       </div>
     </div>
   )
