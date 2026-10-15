@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { observacionCercana } from '../services/observaciones.js'
-import { camarasCercanas } from '../services/camaras.js'
+import { camarasCercanas, camarasDeChile } from '../services/camaras.js'
 import { ErrorValidacion } from '../services/reportes.js'
 
 function leerPunto(req) {
@@ -15,6 +15,14 @@ function leerPunto(req) {
 /** GET /api/camaras?lat=&lng= → cámaras públicas cercanas (Windy). Sin clave: { disponible: false }. */
 export function camarasRouter() {
   const r = Router()
+  // GET /api/camaras/chile → todas las cámaras públicas del país (para el mapa nacional)
+  r.get('/chile', async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'public, max-age=300').json(await camarasDeChile())
+    } catch (e) {
+      next(e)
+    }
+  })
   r.get('/', async (req, res, next) => {
     try {
       const resultado = await camarasCercanas(leerPunto(req))

@@ -75,3 +75,23 @@ test('no repite la misma cámara publicada dos veces en el mismo lugar', async (
   assert.equal(r.camaras.length, 1)
   delete process.env.WINDY_API_KEY
 })
+
+test('cámaras de Chile: recorre las páginas de Windy y guarda en caché', async () => {
+  const { camarasDeChile } = await import('../services/camaras.js')
+  process.env.WINDY_API_KEY = 'prueba'
+  const llamadas = []
+  const cam = (i) => ({ webcamId: i, title: `Cam ${i}`, status: 'active', location: { latitude: -33 - i / 100, longitude: -70.6, city: 'Santiago' }, images: { current: { preview: `https://imgproxy.windy.com/${i}.jpg` } } })
+  const f = async (url) => {
+    llamadas.push(String(url))
+    const off = Number(new URL(url).searchParams.get('offset'))
+    const n = off === 0 ? 50 : 12
+    return { ok: true, json: async () => ({ total: 62, webcams: Array.from({ length: n }, (_, k) => cam(off + k)) }) }
+  }
+  const r = await camarasDeChile({ fetchFn: f })
+  assert.equal(r.total, 62)
+  assert.equal(r.camaras.length, 62)
+  assert.equal(llamadas.length, 2)
+  assert.match(llamadas[0], /countries=CL/)
+  await camarasDeChile({ fetchFn: f })
+  assert.equal(llamadas.length, 2)
+})

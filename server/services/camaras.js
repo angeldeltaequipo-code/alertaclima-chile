@@ -110,3 +110,37 @@ async function consultar(punto, radio, fetchFn) {
       .filter(Boolean),
   }
 }
+
+// ---- Todas las cámaras públicas de Chile (para el mapa nacional) ----
+let cacheChile = null // { hasta, datos }
+const CACHE_CHILE_MS = 8 * 60 * 1000 // los enlaces de imagen de Windy duran 10 minutos
+
+/** Todas las cámaras activas de Chile en Windy (paginadas de a 50). */
+export async function camarasDeChile({ fetchFn = fetch } = {}) {
+  if (!camarasDisponibles()) return { disponible: false, total: 0, camaras: [] }
+  if (cacheChile && Date.now() < cacheChile.hasta) return cacheChile.datos
+  const todas = []
+  let total = null
+  for (let offset = 0; offset < 1000; offset += 50) {
+    const url = new URL(API)
+    url.searchParams.set('countries', 'CL')
+    url.searchParams.set('include', 'images,location,urls,player')
+    url.searchParams.set('limit', '50')
+    url.searchParams.set('offset', String(offset))
+    url.searchParams.set('lang', 'es')
+    const r = await fetchFn(url, { headers: { 'x-windy-api-key': process.env.WINDY_API_KEY }, signal: AbortSignal.timeout(15000) })
+    if (!r.ok) {
+      console.error('Windy Webcams (Chile) respondió', r.status)
+      if (todas.length) break
+      return { disponible: true, total: 0, camaras: [], error: 'El servicio de cámaras no respondió' }
+    }
+    const d = await r.json()
+    total = d.total ?? total
+    const lote = (d.webcams ?? []).filter((w) => !w.status || w.status === 'active').map((w) => interpretarCamara(w, null)).filter(Boolean)
+    todas.push(...lote)
+    if (!d.webcams?.length || d.webcams.length < 50 || (total != null && offset + 50 >= total)) break
+  }
+  const datos = { disponible: true, total: total ?? todas.length, camaras: todas }
+  cacheChile = { hasta: Date.now() + CACHE_CHILE_MS, datos }
+  return datos
+}
