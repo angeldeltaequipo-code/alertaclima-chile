@@ -30,6 +30,10 @@ services:
         generateValue: true
       - key: GOOGLE_CLIENT_ID # ID de cliente OAuth de Google (público). Sin él, el inicio de sesión queda apagado.
         sync: false
+      - key: RESEND_API_KEY # Clave de Resend para el correo de bienvenida. Sin ella no se envían correos.
+        sync: false
+      - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"
+        sync: false
 
 databases:
   - name: alertaclima-db

@@ -5,6 +5,7 @@
 // - Se guarda lo mínimo: el identificador de Google, nombre e inicial, y la foto.
 // - La sesión es un texto firmado con HMAC (no hay contraseñas ni cookies de terceros).
 //   Dura 60 días; se renueva sola cada vez que la persona vuelve a entrar con Google.
+import { correoBienvenida, enviarCorreo } from './correo.js'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { OAuth2Client } from 'google-auth-library'
 import { ErrorValidacion } from './reportes.js'
@@ -73,11 +74,16 @@ export async function ingresarConGoogle(pool, credencial, { verificar = verifica
   const { rows } = await pool.query(
     `INSERT INTO usuarios (google_sub, nombre, foto_url) VALUES ($1, $2, $3)
      ON CONFLICT (google_sub) DO UPDATE SET nombre = EXCLUDED.nombre, foto_url = EXCLUDED.foto_url, ultimo_ingreso = now()
-     RETURNING id, nombre, foto_url, bloqueado, creado_en`,
+     RETURNING id, nombre, foto_url, bloqueado, creado_en, (xmax = 0) AS nueva`,
     [datos.sub, nombreMostrado(datos), foto],
   )
   const u = rows[0]
   if (u.bloqueado) throw new ErrorValidacion('Esta cuenta fue bloqueada por no respetar las reglas de la comunidad.', 403)
+  // Bienvenida por correo solo al crear la cuenta. El correo se usa aquí y no se guarda.
+  if (u.nueva && datos.email && datos.email_verified !== false) {
+    const c = correoBienvenida(u.nombre)
+    enviarCorreo({ para: datos.email, asunto: c.asunto, html: c.html, texto: c.texto })
+  }
   return { usuario: publico(u), sesion: firmarSesion(u.id) }
 }
 
