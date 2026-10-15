@@ -148,12 +148,22 @@ export function interpretarVolcanes(xml) {
     .filter(Boolean)
 }
 
+// Copia publicada a diario por GitHub Actions (server/scripts/volcanes.mjs): el Smithsonian
+// rechaza los pedidos desde la nube de Render (403).
+const VOLCANES_RESPALDO = process.env.VOLCANES_RESPALDO ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/datos/volcanes.json'
+
 export async function volcanesActivos({ fetchFn = fetch } = {}) {
   return conCache('volcanes', 60 * 60 * 1000, async () => {
-    const r = await fetchFn('https://volcano.si.edu/news/WeeklyVolcanoRSS.xml', { headers: CABECERAS, signal: AbortSignal.timeout(20000) })
-    if (!r.ok) throw new Error(`Smithsonian respondió ${r.status}`)
-    const buf = Buffer.from(await r.arrayBuffer())
-    return interpretarVolcanes(new TextDecoder('latin1').decode(buf))
+    try {
+      const r = await fetchFn('https://volcano.si.edu/news/WeeklyVolcanoRSS.xml', { headers: CABECERAS, signal: AbortSignal.timeout(20000) })
+      if (!r.ok) throw new Error(`Smithsonian respondió ${r.status}`)
+      const buf = Buffer.from(await r.arrayBuffer())
+      return interpretarVolcanes(new TextDecoder('latin1').decode(buf))
+    } catch (e) {
+      const r = await fetchFn(VOLCANES_RESPALDO, { headers: CABECERAS, signal: AbortSignal.timeout(12000) })
+      if (!r.ok) throw new Error(`${e.message}; respaldo respondió ${r.status}`)
+      return (await r.json()).volcanes ?? []
+    }
   })
 }
 
