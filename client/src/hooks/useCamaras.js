@@ -31,3 +31,29 @@ export function useCamaras({ punto, enLinea }) {
 
   return estado
 }
+
+/** Todas las cámaras públicas de Chile (para el mapa nacional). Solo se pide si `activo`. */
+export function useCamarasChile({ activo, enLinea }) {
+  const [estado, setEstado] = useState({ total: 0, camaras: [] })
+  useEffect(() => {
+    if (!API_URL || !activo || !enLinea) return
+    let vivo = true
+    const cargar = async () => {
+      try {
+        const r = await fetch(`${API_URL}/api/camaras/chile`)
+        if (!r.ok) return
+        const d = await r.json()
+        if (vivo) setEstado({ total: d.total ?? 0, camaras: d.camaras ?? [] })
+      } catch {
+        /* sin cámaras por ahora */
+      }
+    }
+    cargar()
+    const id = setInterval(cargar, CADA)
+    return () => {
+      vivo = false
+      clearInterval(id)
+    }
+  }, [activo, enLinea])
+  return estado
+}

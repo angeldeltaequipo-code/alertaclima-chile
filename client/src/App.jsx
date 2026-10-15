@@ -13,7 +13,7 @@ import { useClima } from './hooks/useClima'
 import { useReportes } from './hooks/useReportes'
 import { useAlertas } from './hooks/useAlertas'
 import { useObservacion } from './hooks/useObservacion'
-import { useCamaras } from './hooks/useCamaras'
+import { useCamaras, useCamarasChile } from './hooks/useCamaras'
 import CamarasCercanas, { FichaCamara, VisorCamara } from './components/Camaras'
 import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
@@ -50,6 +50,12 @@ const PuertaCuenta = lazy(() => import('./components/PuertaCuenta'))
 const PantallaSOS = lazy(() => import('./components/SOS').then((m) => ({ default: m.PantallaSOS })))
 const Cargando = () => <div className="grid h-full min-h-40 place-items-center text-texto-2">Cargando…</div>
 
+/** Cámaras cercanas + las del país, sin repetir (las cercanas traen la distancia). */
+function unirCamaras(cerca = [], pais = []) {
+  const ids = new Set(cerca.map((c) => c.id))
+  return [...cerca, ...pais.filter((c) => !ids.has(c.id))]
+}
+
 export default function App() {
   const [tema, setTema, temaVisible] = useTema()
   const ahorro = useAhorro()
@@ -62,6 +68,8 @@ export default function App() {
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
+  // Todas las cámaras públicas del país (para el mapa y el contador).
+  const camarasChile = useCamarasChile({ activo: true, enLinea })
   const cuenta = useCuenta({ enLinea })
   const riesgos = useRiesgos({ enLinea })
   const [capaSismos, setCapaSismos] = useState(false)
@@ -282,7 +290,7 @@ export default function App() {
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
-                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} />}
+                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total} onVerMapa={() => setVista('radar')} />}
                 onVerRios={() => buscarRios()}
               />
             )}
@@ -307,7 +315,7 @@ export default function App() {
                   setCamaraSel(null)
                   setSeleccionado(r)
                 }}
-                camaras={camaras.camaras}
+                camaras={unirCamaras(camaras.camaras, camarasChile.camaras)}
                 onCamara={(c) => {
                   setSeleccionado(null)
                   setCamaraSel(c)

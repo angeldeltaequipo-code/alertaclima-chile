@@ -53,7 +53,7 @@ export function TarjetaCamara({ camara, onAbrir }) {
 }
 
 /** Sección de la pestaña Ahora. Si no hay clave de Windy, no aparece; si no hay cámaras, lo dice. */
-export default function CamarasCercanas({ datos, comuna, onAbrir }) {
+export default function CamarasCercanas({ datos, comuna, onAbrir, totalChile = 0, onVerMapa = null }) {
   if (!datos.disponible) return null
   const { camaras } = datos
   const cerca = camaras.filter((c) => !c.lejana)
@@ -83,6 +83,11 @@ export default function CamarasCercanas({ datos, comuna, onAbrir }) {
             </>
           )}
         </>
+      )}
+      {onVerMapa && totalChile > 0 && (
+        <button type="button" onClick={onVerMapa} className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-superficie-2 text-[15px] font-bold">
+          Ver las {totalChile} cámaras de Chile en el mapa
+        </button>
       )}
       <p className="mt-3 text-[12px] text-texto-2">{CREDITO_WINDY}</p>
     </section>

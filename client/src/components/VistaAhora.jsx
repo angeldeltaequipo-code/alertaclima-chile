@@ -78,7 +78,7 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
         {resumen}
         {invitacion}
         {reportes}
-        <div id="t-camaras" className="scroll-mt-16">{camaras}</div>
+        {camaras}
       </div>
     )
   }
@@ -139,7 +139,7 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
 
       {reportes}
 
-      <div id="t-camaras" className="scroll-mt-16">{camaras}</div>
+      {camaras}
 
       <Bloque titulo="Próximos 7 días" id="t-dias">
         <Semana dias={dias} actual={ahora.temperatura} />
