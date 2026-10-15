@@ -79,7 +79,7 @@ export async function listarReportes(db, comunaCut) {
   return rows
 }
 
-export async function crearReporte(db, datos, reporterHash, claveEdicionHash = null) {
+export async function crearReporte(db, datos, reporterHash, claveEdicionHash = null, usuarioId = null) {
   const v = validarNuevoReporte(datos)
   const cliente = await db.connect()
   try {
@@ -113,10 +113,10 @@ export async function crearReporte(db, datos, reporterHash, claveEdicionHash = n
     if (!cut) throw new ErrorValidacion('La ubicación no está dentro de ninguna comuna de Chile', 422)
 
     const { rows } = await cliente.query(
-      `INSERT INTO emergency_reports (title, category, comuna_cut, geom, description, reporter_hash, expires_at, clave_edicion_hash)
-       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326), $6, $7, now() + make_interval(hours => $8), $9)
+      `INSERT INTO emergency_reports (title, category, comuna_cut, geom, description, reporter_hash, expires_at, clave_edicion_hash, usuario_id)
+       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326), $6, $7, now() + make_interval(hours => $8), $9, $10)
        RETURNING id`,
-      [v.titulo, v.categoria, cut, v.lng, v.lat, v.descripcion, reporterHash, REGLAS.duracionInicialHoras, claveEdicionHash],
+      [v.titulo, v.categoria, cut, v.lng, v.lat, v.descripcion, reporterHash, REGLAS.duracionInicialHoras, claveEdicionHash, usuarioId],
     )
     const { rows: final } = await cliente.query(`SELECT ${CAMPOS} FROM emergency_reports r WHERE r.id = $1`, [
       rows[0].id,

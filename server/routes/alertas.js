@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { bloquearUsuario, mensajesDenunciados, moderarMensaje } from '../services/chat.js'
 import { pool } from '../db/pool.js'
 import { exigirAdmin } from '../services/autorizacion.js'
 import {
@@ -28,7 +29,7 @@ export function alertasRouter() {
 }
 
 /** Administración: crear, confirmar, editar y cancelar alertas. Todo queda en la bitácora. */
-export function adminRouter({ avisarComunas = () => {}, emitir = () => {}, enviarPush } = {}) {
+export function adminRouter({ avisarComunas = () => {}, emitir = () => {}, enviarPush, emitirChat = () => {} } = {}) {
   // Las notificaciones salen en segundo plano: la respuesta al panel no espera a que lleguen.
   const notificar = (alerta, tipo, cuerpo) => {
     if (!tipo || cuerpo?.notificar === false) return
@@ -40,6 +41,35 @@ export function adminRouter({ avisarComunas = () => {}, emitir = () => {}, envia
   r.use(exigirAdmin)
 
   r.get('/sesion', (req, res) => res.json({ ok: true }))
+
+  // ---- Moderación del chat ----
+  const registrar = (accion, detalle) => pool.query('INSERT INTO admin_log (accion, detalle) VALUES ($1, $2)', [accion, detalle])
+  r.get('/chat/denunciados', async (req, res, next) => {
+    try {
+      res.json({ mensajes: await mensajesDenunciados(pool) })
+    } catch (e) {
+      next(e)
+    }
+  })
+  r.post('/chat/mensajes/:id', async (req, res, next) => {
+    try {
+      const m = await moderarMensaje(pool, req.params.id, req.body?.ocultar !== false)
+      if (req.body?.ocultar !== false) emitirChat(m.comuna, 'chat:oculto', { id: m.id })
+      await registrar('chat:moderar', { id: m.id, ocultar: req.body?.ocultar !== false })
+      res.json({ ok: true })
+    } catch (e) {
+      next(e)
+    }
+  })
+  r.post('/usuarios/:id/bloqueo', async (req, res, next) => {
+    try {
+      await bloquearUsuario(pool, req.params.id, req.body?.bloquear !== false, req.body?.motivo)
+      await registrar('usuario:bloqueo', { id: String(req.params.id), bloquear: req.body?.bloquear !== false })
+      res.json({ ok: true })
+    } catch (e) {
+      next(e)
+    }
+  })
 
   r.get('/alertas', async (req, res, next) => {
     try {

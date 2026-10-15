@@ -26,6 +26,10 @@ services:
         generateValue: true
       - key: ALERTA_HORAS_SIN_CONFIRMAR
         value: '12'
+      - key: SESSION_SECRET # Firma de las sesiones de la app (inicio con Google). Render la genera.
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID # ID de cliente OAuth de Google (público). Sin él, el inicio de sesión queda apagado.
+        sync: false
 
 databases:
   - name: alertaclima-db

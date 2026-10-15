@@ -2,6 +2,7 @@ import express, { Router } from 'express'
 import { pool } from '../db/pool.js'
 import { hashReportante, hashVotante } from '../services/privacidad.js'
 import { crearReporte, ErrorValidacion, listarReportes, reportePorId, votar } from '../services/reportes.js'
+import { exigirCuentaSiActiva } from '../services/cuentas.js'
 import { REGLAS_FOTOS, agregarFoto, denunciarFoto, hashClave, leerFoto, nuevaClaveEdicion } from '../services/fotos.js'
 
 const dispositivoValido = (d) => typeof d === 'string' && /^[\w-]{16,64}$/.test(d)
@@ -9,6 +10,8 @@ const dispositivoValido = (d) => typeof d === 'string' && /^[\w-]{16,64}$/.test(
 // Rutas HTTP de los reportes. `emitir(evento, reporte)` avisa en tiempo real a la sala de la comuna.
 export function reportesRouter({ emitir = () => {} } = {}) {
   const r = Router()
+  // Ver reportes es libre; crear y votar exige cuenta (cuando el inicio de sesión está activado).
+  const conCuenta = exigirCuentaSiActiva(pool)
 
   r.get('/', async (req, res, next) => {
     try {
@@ -19,11 +22,11 @@ export function reportesRouter({ emitir = () => {} } = {}) {
     }
   })
 
-  r.post('/', async (req, res, next) => {
+  r.post('/', conCuenta, async (req, res, next) => {
     try {
       // La clave de edición se entrega una sola vez a quien creó el reporte (para subir la foto).
       const clave = nuevaClaveEdicion()
-      const reporte = await crearReporte(pool, req.body, hashReportante(req.ip), hashClave(clave))
+      const reporte = await crearReporte(pool, req.body, hashReportante(req.ip), hashClave(clave), req.usuario?.id ?? null)
       emitir('reporte:nuevo', reporte)
       res.status(201).json({ reporte, clave_edicion: clave })
     } catch (e) {
@@ -46,7 +49,7 @@ export function reportesRouter({ emitir = () => {} } = {}) {
     },
   )
 
-  r.post('/:id/votos', async (req, res, next) => {
+  r.post('/:id/votos', conCuenta, async (req, res, next) => {
     try {
       const { voto, dispositivo } = req.body ?? {}
       if (!dispositivoValido(dispositivo)) throw new ErrorValidacion('Falta el identificador del dispositivo')
