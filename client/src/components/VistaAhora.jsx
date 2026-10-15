@@ -86,7 +86,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
   const aluvion = <RiesgoAluvion horas={horas} onVerRios={onVerRios} />
 
   return (
-    <div className="space-y-3 px-4 pt-4 pb-6">
+    <div className="lista-entrar space-y-3 px-4 pt-4 pb-6">
       {resumen}
 
       {invitacion}

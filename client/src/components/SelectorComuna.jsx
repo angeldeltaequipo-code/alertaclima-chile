@@ -47,7 +47,7 @@ export default function SelectorComuna({ actual, onElegir, onCerrar }) {
   }
 
   return (
-    <Hoja titulo={actual ? 'Cambiar comuna' : 'Elige tu comuna'} onCerrar={onCerrar} puedeCerrar={!!actual}>
+    <Hoja titulo={actual ? 'Cambiar comuna' : 'Elige tu comuna'} onCerrar={onCerrar} puedeCerrar>
       <div className="sticky top-0 z-10 space-y-3 border-b-2 border-borde bg-fondo px-4 py-3">
         <label htmlFor="buscar-comuna" className="block text-[15px] text-texto-2">
           Escribe el nombre de tu comuna

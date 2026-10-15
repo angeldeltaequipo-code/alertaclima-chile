@@ -303,3 +303,107 @@ body {
   from { transform: translateY(0); }
   to { transform: translateY(40px); }
 }
+
+/* ---- Entrada suave de las tarjetas (se apaga con movimiento reducido o modo ahorro) ---- */
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.entrar {
+  animation: entrar 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* ---- Fichas del resumen: borde de color en degradado que da una vuelta al aparecer ---- */
+@property --giro {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes girar-borde {
+  from { --giro: 0deg; }
+  to { --giro: 360deg; }
+}
+@keyframes brillo {
+  0% { box-shadow: 0 0 0 0 var(--c1); }
+  40% { box-shadow: 0 0 22px -4px var(--c1); }
+  100% { box-shadow: 0 6px 18px -10px var(--c1); }
+}
+.ficha-resumen {
+  --c1: #38bdf8;
+  --c2: #818cf8;
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 108px;
+  padding: 12px 13px;
+  text-align: left;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--superficie), var(--superficie)) padding-box,
+    conic-gradient(from var(--giro), var(--c1), var(--c2), color-mix(in srgb, var(--c1) 25%, transparent), var(--c1)) border-box;
+  animation:
+    entrar 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    girar-borde 1.6s cubic-bezier(0.3, 0.6, 0.2, 1) 0.2s 1 both,
+    brillo 1.6s ease-out 0.2s 1 both;
+}
+.ficha-resumen:active {
+  transform: scale(0.98);
+}
+.ficha-icono {
+  color: var(--c1);
+}
+.ficha-bien { --c1: #34d399; --c2: #22d3ee; }
+.ficha-atento { --c1: #fbbf24; --c2: #fb923c; }
+.ficha-peligro { --c1: #f43f5e; --c2: #f97316; }
+.ficha-info { --c1: #38bdf8; --c2: #6366f1; }
+.ficha-neutro { --c1: #94a3b8; --c2: #818cf8; }
+
+/* ---- Bienvenida ---- */
+.bienvenida {
+  background: radial-gradient(120% 80% at 50% 0%, #1e3a8a 0%, #0f172a 55%, #020617 100%);
+}
+.bienvenida-estrellas {
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, #fff9, transparent),
+    radial-gradient(1px 1px at 72% 12%, #fff8, transparent),
+    radial-gradient(1.4px 1.4px at 40% 30%, #fffa, transparent),
+    radial-gradient(1px 1px at 86% 42%, #fff7, transparent),
+    radial-gradient(1.2px 1.2px at 22% 58%, #fff6, transparent),
+    radial-gradient(1px 1px at 58% 8%, #fff9, transparent),
+    radial-gradient(1px 1px at 92% 70%, #fff5, transparent),
+    radial-gradient(1.3px 1.3px at 6% 84%, #fff6, transparent),
+    radial-gradient(1px 1px at 48% 64%, #fff4, transparent);
+  animation: titilar 4s ease-in-out infinite alternate;
+}
+@keyframes titilar {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+.bienvenida-logo {
+  background: linear-gradient(145deg, #0ea5e9, #6366f1);
+  box-shadow: 0 0 0 6px rgb(99 102 241 / 0.18), 0 16px 40px -10px rgb(56 189 248 / 0.7);
+}
+
+/* Invitación compacta (avisos) */
+.banda-invita {
+  border-radius: 18px;
+  padding: 10px 10px 10px 12px;
+  background:
+    linear-gradient(var(--superficie), var(--superficie)) padding-box,
+    linear-gradient(120deg, #fbbf24, #f472b6 60%, #818cf8) border-box;
+  border: 1.5px solid transparent;
+}
+
+/* Las secciones de la pestaña Ahora entran una tras otra */
+.lista-entrar > * {
+  animation: entrar 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.lista-entrar > *:nth-child(2) { animation-delay: 60ms; }
+.lista-entrar > *:nth-child(3) { animation-delay: 140ms; }
+.lista-entrar > *:nth-child(4) { animation-delay: 220ms; }
+.lista-entrar > *:nth-child(5) { animation-delay: 300ms; }
+.lista-entrar > *:nth-child(6) { animation-delay: 360ms; }
+.lista-entrar > *:nth-child(n + 7) { animation-delay: 420ms; }

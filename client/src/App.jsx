@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
 import SelectorComuna from './components/SelectorComuna'
+import Bienvenida from './components/Bienvenida'
 import Ajustes from './components/Ajustes'
 import VistaAhora from './components/VistaAhora'
 import Navegacion from './components/Navegacion'
@@ -99,7 +100,7 @@ export default function App() {
 
   const [vista, setVistaState] = useState(() => leer('vista', 'ahora'))
   const [mapaMontado, setMapaMontado] = useState(vista === 'radar')
-  const [selector, setSelector] = useState(!cut)
+  const [selector, setSelector] = useState(false)
   const [ubicacion, setUbicacion] = useState(null)
   const [centrarEn, setCentrarEn] = useState(0)
   const [avisoUbicacion, setAvisoUbicacion] = useState(null)
@@ -222,8 +223,11 @@ export default function App() {
                     horas={clima.datos?.horas}
                     reportes={rep.reportes}
                     reportesDisponibles={rep.disponible}
+                    comuna={comuna}
+                    nombre={cuenta.usuario?.nombre}
                     onVerAlertas={() => setVerAlertas(true)}
                     onVerMapa={() => setVista('radar')}
+                    onIr={(id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
@@ -377,6 +381,7 @@ export default function App() {
         <DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} />
       )}
 
+      {!cut && !selector && <Bienvenida onElegir={elegirComuna} onBuscar={() => setSelector(true)} />}
       {selector && <SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} />}
     </div>
   )

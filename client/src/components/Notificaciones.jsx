@@ -124,9 +124,10 @@ export function AjustesNotificaciones({ notif, comuna }) {
 export function InvitacionNotificaciones({ notif, comuna }) {
   const [descartada, setDescartada] = useState(() => leer('notif:invitacion-descartada', false))
   const [listo, setListo] = useState(false)
+  const [guia, setGuia] = useState(false)
   if (listo)
     return (
-      <section className="tarjeta" role="status">
+      <section className="tarjeta entrar" role="status">
         <p className="text-[17px] font-bold">Listo: te avisaremos de las alertas en {comuna.nombre}.</p>
         <div className="mt-3">
           <Prueba notif={notif} />
@@ -138,57 +139,57 @@ export function InvitacionNotificaciones({ notif, comuna }) {
     guardar('notif:invitacion-descartada', true)
     setDescartada(true)
   }
+  const integrado = notif.soporte === 'integrado'
+  const ios = notif.soporte === 'ios-instalar'
+  const texto = integrado
+    ? 'Para recibir avisos, abre AlertaClima en tu navegador'
+    : notif.bloqueadas
+      ? 'Los avisos están apagados en este navegador'
+      : `Recibe avisos de alertas en ${comuna.nombre}, aunque la app esté cerrada`
   return (
-    <section aria-labelledby="t-invita" className="tarjeta">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-senal text-sobre-senal" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <section aria-label="Avisos de alertas" className="banda-invita entrar">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-senal text-sobre-senal" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" />
             <path d="M10 20a2 2 0 0 0 4 0" />
           </svg>
         </span>
-        <div className="min-w-0 flex-1">
-          <h2 id="t-invita" className="text-[18px] leading-tight font-bold">
-            Recibe las alertas aunque la app esté cerrada
-          </h2>
-          {notif.soporte === 'ios-instalar' ? (
-            <div className="mt-2">
-              <p className="mb-1 text-[15px]">En iPhone, primero agrega la app a tu pantalla de inicio:</p>
-              {PASOS_IPHONE}
-            </div>
-          ) : (
-            <p className="mt-1 text-[15px] text-texto-2">Solo alertas oficiales de {comuna.nombre}: cuando se publican, suben de nivel o terminan.</p>
-          )}
-        </div>
-      </div>
-      {notif.soporte === 'integrado' ? (
-        <div className="mt-3">
-          <AbrirEnNavegador />
-        </div>
-      ) : (
-        notif.bloqueadas && (
-          <div className="mt-3">
-            <Desbloquear notif={notif} />
-          </div>
-        )
-      )}
-      <div className="mt-2">
-        <MensajeError notif={notif} />
-      </div>
-      <div className="mt-3 flex gap-2">
-        {notif.soporte === 'ok' && !notif.bloqueadas && (
+        <p className="min-w-0 flex-1 text-[15px] leading-snug font-bold">{texto}</p>
+        {notif.soporte === 'ok' && !notif.bloqueadas ? (
           <button
             type="button"
             disabled={notif.ocupado}
             onClick={async () => (await notif.activar([comuna.cut])) && setListo(true)}
-            className="min-h-12 flex-1 rounded-full bg-senal px-4 text-[16px] font-bold text-sobre-senal disabled:opacity-60"
+            className="min-h-10 shrink-0 rounded-full bg-senal px-4 text-[15px] font-bold text-sobre-senal disabled:opacity-60"
           >
-            {notif.ocupado ? 'Activando…' : 'Activar'}
+            {notif.ocupado ? '…' : 'Activar'}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setGuia(!guia)} aria-expanded={guia} className="min-h-10 shrink-0 rounded-full bg-superficie-2 px-3 text-[14px] font-bold">
+            {guia ? 'Ocultar' : 'Cómo'}
           </button>
         )}
-        <button type="button" onClick={descartar} className="min-h-12 rounded-full px-4 text-[16px] font-bold text-texto-2">
-          Ahora no
+        <button type="button" onClick={descartar} aria-label="No mostrar más" className="grid size-9 shrink-0 place-items-center rounded-full text-texto-2">
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">
+            <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
         </button>
+      </div>
+      {guia && (
+        <div className="mt-3">
+          {integrado ? <AbrirEnNavegador /> : ios ? (
+            <>
+              <p className="mb-1 text-[15px]">En iPhone, primero agrega la app a tu pantalla de inicio:</p>
+              {PASOS_IPHONE}
+            </>
+          ) : (
+            <Desbloquear notif={notif} />
+          )}
+        </div>
+      )}
+      <div className="mt-1">
+        <MensajeError notif={notif} />
       </div>
     </section>
   )
