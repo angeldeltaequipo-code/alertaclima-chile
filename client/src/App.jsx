@@ -19,6 +19,9 @@ import CamarasCercanas, { FichaCamara, VisorCamara } from './components/Camaras'
 import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
 import { useNotificaciones } from './hooks/useNotificaciones'
+import { useCuenta } from './hooks/useCuenta'
+import PuertaCuenta from './components/PuertaCuenta'
+import VistaChat from './components/VistaChat'
 import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
@@ -48,7 +51,19 @@ export default function App() {
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
-  const notif = useNotificaciones({ enLinea })
+  const cuenta = useCuenta({ enLinea })
+  const notifBase = useNotificaciones({ enLinea })
+  // Participar (notificaciones, reportes, votos, chat) pide cuenta cuando el inicio de sesión está activo.
+  const notif = {
+    ...notifBase,
+    activar: async (cuts) => {
+      if (cuenta.activa && !cuenta.token) {
+        cuenta.pedir('notificaciones')
+        return false
+      }
+      return notifBase.activar(cuts)
+    },
+  }
   const [camaraSel, setCamaraSel] = useState(null)
   const [camaraVisor, setCamaraVisor] = useState(null)
   const [baseMapa, setBaseMapaState] = useState(() => leer('mapa:base', 'mapa'))
@@ -121,7 +136,8 @@ export default function App() {
     setVista('radar')
   }
 
-  const abrirFormulario = () => {
+  const abrirFormulario = () => cuenta.conCuenta('reportar', abrirFormularioYa)
+  const abrirFormularioYa = () => {
     const punto = ubicacion ?? (comuna ? clima.datos?.punto ?? { lat: comuna.centro[0], lng: comuna.centro[1] } : { lat: -33.45, lng: -70.66 })
     setFormulario({ punto: { lat: punto.lat, lng: punto.lng }, esGps: Boolean(ubicacion) })
   }
@@ -307,7 +323,7 @@ export default function App() {
               ) : camaraSel ? (
                 <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
-                <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={rep.votar} onCerrar={() => setSeleccionado(null)} />
+                <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={(id, voto) => (cuenta.activa && !cuenta.token ? (cuenta.pedir('votar'), Promise.resolve(null)) : rep.votar(id, voto))} onCerrar={() => setSeleccionado(null)} />
               ) : (
                 <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
               )}
@@ -315,13 +331,22 @@ export default function App() {
           </div>
         </div>
 
+        {/* Chat de la comuna */}
+        <div hidden={vista !== 'chat'} className="h-full">
+          <div className="mx-auto h-full max-w-xl">
+            <VistaChat cuenta={cuenta} comuna={comuna} enLinea={enLinea} visible={vista === 'chat'} />
+          </div>
+        </div>
+
         {/* Ajustes */}
         <div hidden={vista !== 'ajustes'} className="h-full overflow-y-auto overscroll-contain">
-          <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} />
+          <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
         </div>
       </main>
 
       <Navegacion vista={vista} onCambiar={setVista} />
+
+      {cuenta.puerta && cuenta.clientId && <PuertaCuenta cuenta={cuenta} />}
 
       {camaraVisor && <VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} />}
 

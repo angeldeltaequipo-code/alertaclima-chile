@@ -18,6 +18,7 @@ export default function DetalleReporte({ reporte, onVotar, onCerrar }) {
     setMensaje(null)
     try {
       const r = await onVotar(reporte.id, v)
+      if (!r) return // se pidió iniciar sesión
       setVoto(v)
       setMensaje(
         r.estado === 'activo'

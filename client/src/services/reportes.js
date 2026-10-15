@@ -1,6 +1,7 @@
 // Reportes ciudadanos: llamadas a la API, identificador anónimo del dispositivo
 // y cola de envíos pendientes para cuando no hay señal.
 import { guardar, leer } from './almacen'
+import { cabeceraSesion, cerrarSesion } from './sesion'
 
 // URL del servidor. Si no está configurada, la app funciona sin reportes y lo dice.
 export const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
@@ -38,12 +39,13 @@ async function pedir(ruta, opciones = {}) {
   try {
     r = await fetch(`${API_URL}${ruta}`, {
       ...opciones,
-      headers: { 'content-type': 'application/json', ...(opciones.headers ?? {}) },
+      headers: { 'content-type': 'application/json', ...cabeceraSesion(), ...(opciones.headers ?? {}) },
     })
   } catch {
     throw new ErrorApi('No hay conexión con el servidor', 0)
   }
   const cuerpo = await r.json().catch(() => ({}))
+  if (r.status === 401 && cuerpo.codigo === 'sin-sesion') cerrarSesion()
   if (!r.ok) throw new ErrorApi(cuerpo.error ?? `El servidor respondió ${r.status}`, r.status)
   return cuerpo
 }

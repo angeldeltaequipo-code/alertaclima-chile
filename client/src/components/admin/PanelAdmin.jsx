@@ -1,3 +1,4 @@
+import ModeracionChat from './ModeracionChat'
 import { useCallback, useEffect, useState } from 'react'
 import FormAlerta from './FormAlerta'
 import { actualizar, bitacora, claveGuardada, crear, guardarClave, listar, verificar } from '../../services/admin'
@@ -262,6 +263,8 @@ export default function PanelAdmin() {
             </ul>
           </section>
         )}
+
+        <ModeracionChat clave={clave} />
 
         <section>
           <h2 className="mb-2 text-[20px] font-bold">Bitácora</h2>

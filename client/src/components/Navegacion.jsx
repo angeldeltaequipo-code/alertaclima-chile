@@ -14,6 +14,12 @@ const ICONOS = {
       <circle cx="12" cy="12" r="1.2" fill="currentColor" />
     </g>
   ),
+  chat: (
+    <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M8 9.5h8M8 12.5h5" />
+    </g>
+  ),
   ajustes: (
     <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
@@ -26,14 +32,15 @@ const ICONOS = {
 const PESTANAS = [
   { id: 'ahora', etiqueta: 'Ahora' },
   { id: 'radar', etiqueta: 'Mapa' },
+  { id: 'chat', etiqueta: 'Chat' },
   { id: 'ajustes', etiqueta: 'Ajustes' },
 ]
 
-/** Barra inferior con tres destinos: al alcance del pulgar. */
+/** Barra inferior con cuatro destinos: al alcance del pulgar. */
 export default function Navegacion({ vista, onCambiar }) {
   return (
     <nav className="safe-bottom border-t border-linea bg-fondo" aria-label="Secciones">
-      <ul className="mx-auto grid max-w-xl grid-cols-3">
+      <ul className="mx-auto grid max-w-xl grid-cols-4">
         {PESTANAS.map((p) => {
           const activa = vista === p.id
           return (

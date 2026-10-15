@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useInstalar } from '../hooks/useInstalar'
 import { AjustesNotificaciones } from './Notificaciones'
+import BotonGoogle from './BotonGoogle'
 import { setVibrarActivado, vibracionSoportada, vibrar, vibrarActivado } from '../services/aviso'
 
 function AjusteVibracion() {
@@ -79,12 +80,76 @@ function Opciones({ nombre, valor, opciones, onCambiar }) {
   )
 }
 
-export default function Ajustes({ tema, setTema, ahorro, notif, comuna }) {
+function TuCuenta({ cuenta }) {
+  const [confirmar, setConfirmar] = useState(false)
+  const [error, setError] = useState(null)
+  if (cuenta.estado === 'sin-sesion')
+    return (
+      <>
+        <p className="mb-3 text-[16px]">Entra con Google para chatear con tus vecinos, reportar y recibir avisos. El clima y las alertas no lo necesitan.</p>
+        <BotonGoogle clientId={cuenta.clientId} />
+      </>
+    )
+  const u = cuenta.usuario
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        {u.foto ? (
+          <img src={u.foto} alt="" referrerPolicy="no-referrer" className="size-12 rounded-full bg-superficie-2 object-cover" />
+        ) : (
+          <span className="grid size-12 place-items-center rounded-full bg-senal font-bold text-sobre-senal">{u.nombre[0]}</span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-[18px] font-bold">{u.nombre}</p>
+          <p className="text-[14px] text-texto-2">Así te ven los demás en el chat.</p>
+        </div>
+      </div>
+      <button type="button" onClick={cuenta.salir} className="min-h-12 w-full rounded-xl bg-superficie-2 text-[16px] font-bold">
+        Cerrar sesión
+      </button>
+      {!confirmar ? (
+        <button type="button" onClick={() => setConfirmar(true)} className="min-h-11 w-full text-[15px] font-bold text-peligro underline">
+          Borrar mi cuenta
+        </button>
+      ) : (
+        <div className="rounded-xl border-2 border-peligro p-3">
+          <p className="text-[15px]">Se borrarán tu cuenta y todos tus mensajes del chat. No se puede deshacer.</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await cuenta.borrar()
+                } catch (e) {
+                  setError(e.message)
+                }
+              }}
+              className="min-h-11 flex-1 rounded-lg bg-peligro font-bold text-white"
+            >
+              Sí, borrar
+            </button>
+            <button type="button" onClick={() => setConfirmar(false)} className="min-h-11 flex-1 rounded-lg bg-superficie-2 font-bold">
+              Cancelar
+            </button>
+          </div>
+          {error && <p className="mt-2 text-[14px] font-bold text-peligro">{error}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function Ajustes({ tema, setTema, ahorro, notif, comuna, cuenta }) {
   const { instalada, puedeInstalar, esIOS, instalar } = useInstalar()
 
   return (
     <div className="mx-auto max-w-xl">
       <h2 className="sr-only">Ajustes</h2>
+      {cuenta && (cuenta.estado === 'con-sesion' || cuenta.estado === 'sin-sesion') && (
+        <Seccion titulo="Tu cuenta">
+          <TuCuenta cuenta={cuenta} />
+        </Seccion>
+      )}
       <Seccion titulo="Pantalla">
         <Opciones
           nombre="Tema"

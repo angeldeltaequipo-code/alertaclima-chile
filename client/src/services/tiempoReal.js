@@ -5,6 +5,7 @@ import { API_URL } from './reportes'
 let socket = null
 let cargando = null
 let comunaActual = null
+let chatActual = null // { cut, sesion }
 const oyentesEstado = new Set()
 
 function avisarEstado() {
@@ -19,6 +20,7 @@ async function obtener() {
       socket = io(API_URL, { transports: ['websocket', 'polling'], reconnectionDelayMax: 30000 })
       socket.on('connect', () => {
         if (comunaActual) socket.emit('seguir-comuna', comunaActual)
+        if (chatActual) socket.emit('chat:unirse', chatActual, () => {})
         avisarEstado()
       })
       socket.on('disconnect', avisarEstado)
@@ -59,4 +61,20 @@ export function desconectar() {
 
 export function reconectar() {
   socket?.connect()
+}
+
+/** Entra a la sala del chat de una comuna (exige sesión). Devuelve { ok, presentes }. */
+export async function unirseChat(cut, sesion) {
+  if (!API_URL) return { ok: false }
+  chatActual = { cut, sesion }
+  const s = await obtener()
+  if (!s.connected) return { ok: true, presentes: null }
+  return new Promise((ok) => {
+    s.timeout(8000).emit('chat:unirse', chatActual, (err, r) => ok(err ? { ok: false } : r))
+  })
+}
+
+export function salirChat() {
+  chatActual = null
+  socket?.emit('chat:salir')
 }
