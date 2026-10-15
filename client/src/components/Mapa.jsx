@@ -10,6 +10,45 @@ import { caucesCercanos } from '../services/rios'
 
 maplibregl.setWorkerUrl(urlTrabajador)
 
+// En zonas rurales Esri no tiene foto en los niveles más cercanos y entrega un cuadro gris
+// «Map data not yet available». Con blankTile=false responde error en vez del cuadro gris;
+// entonces se toma la foto del nivel anterior y se amplía el pedazo que corresponde.
+const URL_ESRI = (z, y, x) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}?blankTile=false`
+async function teselaEsri(z, y, x, signal) {
+  for (let k = 0; k <= 4 && z - k >= 0; k++) {
+    const zp = z - k
+    const yp = y >> k
+    const xp = x >> k
+    try {
+      const r = await fetch(URL_ESRI(zp, yp, xp), { signal })
+      if (!r.ok) continue
+      const blob = await r.blob()
+      if (k === 0) return await blob.arrayBuffer()
+      // Recortar y ampliar el pedazo de la foto del nivel superior.
+      const img = await createImageBitmap(blob)
+      const n = 2 ** k
+      const lado = img.width / n
+      const lienzo = new OffscreenCanvas(256, 256)
+      const ctx = lienzo.getContext('2d')
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, (x % n) * lado, (y % n) * lado, lado, lado, 0, 0, 256, 256)
+      return await (await lienzo.convertToBlob({ type: 'image/jpeg', quality: 0.9 })).arrayBuffer()
+    } catch (e) {
+      if (e.name === 'AbortError') throw e
+    }
+  }
+  throw new Error('Sin imagen satelital para esta zona')
+}
+let protocoloListo = false
+function registrarProtocolo() {
+  if (protocoloListo) return
+  protocoloListo = true
+  maplibregl.addProtocol('esri', async (params, abort) => {
+    const [z, y, x] = params.url.replace('esri://', '').split('/').map(Number)
+    return { data: await teselaEsri(z, y, x, abort.signal) }
+  })
+}
+
 // Mapa con MapLibre (el mismo tipo de motor vectorial que usan Google Maps y Apple Maps):
 // zoom suave, texto nítido a cualquier escala y rotación con dos dedos.
 //
@@ -17,7 +56,7 @@ maplibregl.setWorkerUrl(urlTrabajador)
 // Base «Satélite»: Esri World Imagery con las calles y nombres del mapa vectorial encima.
 //   Libre con atribución en etapa no comercial; para vender, usar una clave de ArcGIS Location Platform.
 const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
-const SATELITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+const SATELITE = 'esri://{z}/{y}/{x}'
 const ATRIB_ESRI = 'Imágenes © Esri, Vantor, Earthstar Geographics'
 const CHILE = [
   [-76.0, -56.0],
@@ -109,6 +148,7 @@ export default function Mapa({
 
   // ---- Crear el mapa una sola vez ----
   useEffect(() => {
+    registrarProtocolo()
     const mapa = new maplibregl.Map({
       container: caja.current,
       style: ESTILO,
