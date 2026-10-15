@@ -5,6 +5,7 @@ import Semana from './Semana'
 import Fichas from './Fichas'
 import RiesgoAluvion from './RiesgoAluvion'
 import MiraElCielo from './MiraElCielo'
+import Resguardo from './Resguardo'
 import EspacioEnVivo from './EspacioEnVivo'
 import PulsoEnVivo from './PulsoEnVivo'
 import { riesgoAluvion } from '../services/aluvion'
@@ -142,8 +143,12 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
 
       {!urgenteAluvion && aluvion}
 
-      <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
-      <EspacioEnVivo punto={datos.punto} />
+      <Resguardo>
+        <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
+      </Resguardo>
+      <Resguardo>
+        <EspacioEnVivo punto={datos.punto} />
+      </Resguardo>
 
       <h2 className="px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />

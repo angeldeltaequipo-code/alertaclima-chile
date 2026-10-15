@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { CAMARAS_CIELO, calidadNoche, faseLunar, urlFresca } from '../services/cielo'
 import { hhmm } from '../services/formato'
 import ImagenViva from './ImagenViva'
+import Resguardo from './Resguardo'
 
 /** Dibujo de la Luna tal como se ve desde Chile (hemisferio sur: crece por la izquierda). */
 export function Luna({ fase, tam = 64 }) {
@@ -169,9 +170,11 @@ export default function MiraElCielo({ horas, hoy, punto, comuna }) {
           <div className="mt-4">
             <h3 className="text-[16px] font-bold text-white">El cielo sobre {comuna ?? 'ti'}, en vivo</h3>
             <div className="mt-2">
-              <Suspense fallback={<p className="py-10 text-center text-[14px] text-white/70">Cargando el cielo…</p>}>
-                <CieloEnVivo punto={punto} comuna={comuna} />
-              </Suspense>
+              <Resguardo>
+                <Suspense fallback={<p className="py-10 text-center text-[14px] text-white/70">Cargando el cielo…</p>}>
+                  <CieloEnVivo punto={punto} comuna={comuna} />
+                </Suspense>
+              </Resguardo>
             </div>
           </div>
         )}

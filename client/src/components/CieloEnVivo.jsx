@@ -68,6 +68,16 @@ export default function CieloEnVivo({ punto, comuna }) {
     }
   }, [brujula])
 
+  // Redibuja cuando el lienzo cambia de tamaño (por ejemplo, al volver a la pestaña Ahora).
+  const [tam, setTam] = useState(0)
+  useEffect(() => {
+    const cv = lienzo.current
+    if (!cv || !('ResizeObserver' in window)) return
+    const ro = new ResizeObserver(([e]) => setTam(Math.round(e.contentRect.width)))
+    ro.observe(cv)
+    return () => ro.disconnect()
+  }, [])
+
   const fecha = useMemo(() => new Date(ahora + desfase * 3600e3), [ahora, desfase])
 
   // Posiciones del momento
@@ -97,6 +107,8 @@ export default function CieloEnVivo({ punto, comuna }) {
     if (!cv || !cielo) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const lado = cv.clientWidth
+    // Pestaña oculta o sin tamaño todavía: se dibuja cuando aparezca (ver el observador de tamaño).
+    if (lado < 80) return
     cv.width = cv.height = Math.round(lado * dpr)
     const x = cv.getContext('2d')
     x.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -248,7 +260,7 @@ export default function CieloEnVivo({ punto, comuna }) {
     x.textAlign = 'start'
     x.textBaseline = 'alphabetic'
     objetos.current = lista
-  }, [cat, cielo, giro, punto])
+  }, [cat, cielo, giro, punto, tam])
 
   if (!punto) return null
 
