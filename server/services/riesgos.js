@@ -7,6 +7,8 @@
 
 const CHILE = { minLat: -56.5, maxLat: -17, minLng: -80, maxLng: -66 }
 const cache = new Map() // clave -> { hasta, datos }
+// Algunas fuentes rechazan pedidos sin identificación: se presenta la app con un contacto.
+const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', Accept: '*/*' }
 
 async function conCache(clave, ms, fn) {
   const c = cache.get(clave)
@@ -68,7 +70,7 @@ export async function sismos({ fetchFn = fetch } = {}) {
       orderby: 'time',
       limit: 150,
     }).forEach(([k, v]) => u.searchParams.set(k, v))
-    const r = await fetchFn(u, { signal: AbortSignal.timeout(12000) })
+    const r = await fetchFn(u, { headers: CABECERAS, signal: AbortSignal.timeout(12000) })
     if (!r.ok) throw new Error(`USGS respondió ${r.status}`)
     const d = await r.json()
     return (d.features ?? []).map(interpretarSismo).filter(Boolean)
@@ -110,7 +112,7 @@ export function interpretarTsunami(xml) {
 
 export async function tsunami({ fetchFn = fetch } = {}) {
   return conCache('tsunami', 3 * 60 * 1000, async () => {
-    const r = await fetchFn('https://www.tsunami.gov/events/xml/PHEBAtom.xml', { signal: AbortSignal.timeout(12000) })
+    const r = await fetchFn('https://www.tsunami.gov/events/xml/PHEBAtom.xml', { headers: CABECERAS, signal: AbortSignal.timeout(12000) })
     if (!r.ok) throw new Error(`PTWC respondió ${r.status}`)
     const boletines = interpretarTsunami(await r.text())
     // Solo los de los últimos 2 días son relevantes.
@@ -144,7 +146,7 @@ export function interpretarVolcanes(xml) {
 
 export async function volcanesActivos({ fetchFn = fetch } = {}) {
   return conCache('volcanes', 60 * 60 * 1000, async () => {
-    const r = await fetchFn('https://volcano.si.edu/news/WeeklyVolcanoRSS.xml', { signal: AbortSignal.timeout(15000) })
+    const r = await fetchFn('https://volcano.si.edu/news/WeeklyVolcanoRSS.xml', { headers: CABECERAS, signal: AbortSignal.timeout(20000) })
     if (!r.ok) throw new Error(`Smithsonian respondió ${r.status}`)
     const buf = Buffer.from(await r.arrayBuffer())
     return interpretarVolcanes(new TextDecoder('latin1').decode(buf))
