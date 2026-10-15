@@ -1,3 +1,4 @@
+import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
@@ -70,6 +71,7 @@ function Sismo({ s, punto }) {
 /** Pestaña Riesgos: sismos de los últimos 7 días, tsunamis y volcanes cercanos. */
 export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
   const [todos, setTodos] = useState(false)
+  const entrada = useEntrada()
   const datos = riesgos.datos
   const sismos = datos?.sismos ?? []
   const fuertes = sismos.filter((s) => s.magnitud >= 4)
@@ -80,7 +82,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
   const amenaza = (datos?.tsunami ?? []).find((t) => t.nivel !== 'informacion')
 
   return (
-    <div className="lista-entrar space-y-3 px-4 pt-4 pb-8">
+    <div className={`${entrada} space-y-3 px-4 pt-4 pb-8`}>
       <Encabezado />
 
       {!datos && (

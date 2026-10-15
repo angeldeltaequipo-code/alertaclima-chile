@@ -1,3 +1,4 @@
+import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
 import GraficoHoras from './GraficoHoras'
 import Portada from './Portada'
@@ -52,6 +53,7 @@ function Cargando() {
 
 export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {} }) {
   const { datos, error, recargar } = clima
+  const entrada = useEntrada()
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
   if (!datos) {
@@ -91,7 +93,7 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
   const aluvion = <RiesgoAluvion horas={horas} onVerRios={onVerRios} />
 
   return (
-    <div className="lista-entrar space-y-3 px-4 pt-3 pb-24">
+    <div className={`${entrada} space-y-3 px-4 pt-3 pb-24`}>
       <Atajos />
       <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />
       {resumen}

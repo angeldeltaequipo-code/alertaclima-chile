@@ -33,6 +33,7 @@ import { enlaceStreetView } from './services/fotos'
 import ControlesMapa from './components/ControlesMapa'
 import PanelRios from './components/PanelRios'
 import Resguardo from './components/Resguardo'
+import TirarParaActualizar from './components/TirarParaActualizar'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazy(() => import('./components/Mapa'))
@@ -245,6 +246,12 @@ export default function App() {
 
       <main className="relative z-[1] min-h-0 flex-1">
         {/* Ahora */}
+        {vista === 'ahora' && (
+          <TirarParaActualizar
+            idContenedor="vista-ahora"
+            onActualizar={() => Promise.allSettled([clima.recargar(), alertas.recargar?.(), rep.recargar?.(), riesgos.recargar?.()])}
+          />
+        )}
         <div id="vista-ahora" hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-xl">
             {comuna && (

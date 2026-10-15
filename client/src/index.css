@@ -914,7 +914,7 @@ body {
 .zumi-busto canvas { -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, #000 78%, transparent 100%); }
 
 /* ---- Atajos fijos de la pestaña Ahora ---- */
-.atajos { background: linear-gradient(180deg, color-mix(in srgb, var(--fondo) 92%, transparent) 70%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.atajos { background: linear-gradient(180deg, var(--fondo) 0%, color-mix(in srgb, var(--fondo) 96%, transparent) 75%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 #vista-ahora [id^='t-'] { scroll-margin-top: 4.25rem; }
 #vista-ahora section:has(> h2[id^='t-']) { scroll-margin-top: 4.25rem; }
 .boton-sos-cabecera { background: linear-gradient(180deg, #ef4444, #b91c1c); box-shadow: 0 0 0 2px rgb(255 255 255 / 0.85), 0 4px 14px -4px rgb(220 38 38 / 0.8); }
