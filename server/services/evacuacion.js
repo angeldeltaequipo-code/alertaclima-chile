@@ -61,7 +61,7 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
   for (const url of SERVIDORES) {
     try {
       const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.timeout(45000) })
-      if (!r.ok) throw new Error(`Overpass respondió ${r.status}`)
+      if (!r.ok) throw new Error(`${new URL(url).host} respondió ${r.status}`)
       const datos = { ...interpretarOverpass(await r.json()), fuente: '© colaboradores de OpenStreetMap (ODbL)' }
       cache.set(zona, { hasta: Date.now() + CACHE_MS, datos })
       if (cache.size > 300) cache.delete(cache.keys().next().value)
@@ -72,5 +72,7 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
   }
   console.error('Evacuación:', ultimoError?.message)
   if (c) return c.datos
-  throw new ErrorValidacion('No se pudieron cargar las vías de evacuación. Intenta más tarde.', 503)
+  const e = new ErrorValidacion('No se pudieron cargar las vías de evacuación. Intenta más tarde.', 503)
+  e.motivo = String(ultimoError?.cause?.code ?? ultimoError?.message ?? '').slice(0, 120)
+  throw e
 }
