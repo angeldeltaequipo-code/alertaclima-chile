@@ -73,7 +73,7 @@ const PASOS = [
 ]
 
 const PREGUNTAS = [
-  ['¿Cuánto cuesta?', 'Nada. El clima, el radar y las alertas son gratis y no necesitan cuenta. La cuenta de Google solo se pide para participar: chat, reportes y notificaciones.'],
+  ['¿Qué tan confiable es la información?', 'Usamos solo fuentes oficiales y científicas, y cada dato muestra de dónde viene y a qué hora se actualizó. Los reportes de vecinos se marcan como tales y se ocultan si la comunidad los desmiente.'],
   ['¿De dónde salen los datos?', 'Alertas de SENAPRED, sismos del Servicio Geológico de EE.UU. (USGS), tsunamis del Centro de Alerta del Pacífico (NOAA), pronóstico de Open-Meteo, radar de RainViewer, imágenes de la NASA y telescopios de ESO.'],
   ['¿Reemplaza a SENAPRED?', 'No. AlertaClima te ayuda a enterarte a tiempo, pero ante una emergencia sigue siempre las instrucciones oficiales de SENAPRED, el SHOA y tu municipio.'],
   ['¿Qué hacen con mis datos?', 'Solo guardamos tu nombre con la inicial del apellido y tu foto de Google. No guardamos tu correo ni vendemos datos. Puedes borrar tu cuenta cuando quieras.'],
@@ -128,7 +128,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
   const primerNombre = cuenta?.usuario?.nombre?.split(' ')[0]
   const dice = pasoCuenta
-    ? ['¡Hola! Soy ZUMI.', 'Te aviso de la lluvia, los sismos y las alertas de tu comuna.', '¡Entra con Google y empecemos!']
+    ? ['¡Hola! Soy ZUMI.', 'Vigilo el clima, los sismos y las alertas de tu comuna para avisarte a tiempo.', '¡Entra y yo te cuido!']
     : [primerNombre ? `¡Listo, ${primerNombre}!` : '¡Perfecto!', 'Ahora dime dónde estás para cuidarte en tu comuna.']
 
   // La voz necesita un toque de la persona (los navegadores no dejan hablar solo al abrir).
@@ -169,9 +169,15 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   const accion = (segundo = false) =>
     pasoCuenta ? (
       <div className={segundo ? '' : 'entrar'} style={segundo ? undefined : { animationDelay: '450ms' }}>
+        {!segundo && <p className="mb-2 text-[15px] font-bold text-white">Activa tus alertas en un toque:</p>}
         <BotonGoogle clientId={cuenta.clientId} />
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-bold text-emerald-300/90">
+          <li>✓ Fuentes oficiales</li>
+          <li>✓ Avisos al instante</li>
+          <li>✓ Datos protegidos</li>
+        </ul>
         <p className="mt-3 text-[13px] leading-snug text-white/65">
-          Gratis. Solo mostramos tu nombre, la inicial de tu apellido y tu foto. Al continuar aceptas los{' '}
+          Sin contraseñas. Solo mostramos tu nombre, la inicial de tu apellido y tu foto. Al continuar aceptas los{' '}
           <a href="./terminos.html" target="_blank" rel="noopener" className="underline">
             términos
           </a>{' '}
@@ -183,7 +189,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
         </p>
         {!segundo && (
           <button type="button" onClick={() => setSinCuenta(true)} className="mt-2 min-h-11 text-[14px] font-bold text-white/70 underline underline-offset-2">
-            Ver el clima sin cuenta
+            Solo quiero ver el clima por ahora
           </button>
         )}
       </div>
@@ -269,13 +275,13 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
       <section className="relative mx-auto grid max-w-6xl items-center gap-2 px-5 md:grid-cols-[1.05fr_1fr] md:gap-8 md:pt-6">
         <div className="order-2 md:order-1">
           <p className="entrar inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-1 text-[13px] font-bold text-white/85 ring-1 ring-white/12">
-            <span className="size-2 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" /> Hecho en Chile · Gratis
+            <span className="size-2 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" /> Vigilancia en tiempo real · Hecho en Chile
           </p>
           <h1 id="t-bienvenida" className="entrar landing-titulo mt-3 text-white" style={{ animationDelay: '80ms' }}>
-            El clima de tu comuna, <span className="landing-acento">contado por ZUMI</span>.
+            Que la próxima emergencia te encuentre <span className="landing-acento">preparado</span>.
           </h1>
           <p className="entrar mt-3 max-w-xl text-[16px] leading-snug text-white/80 md:text-[18px]" style={{ animationDelay: '160ms' }}>
-            Alertas oficiales, radar de lluvia, sismos y tus vecinos en tiempo real, en una sola app. Para que nadie en tu familia se entere tarde.
+            AlertaClima vigila por ti las alertas oficiales, la lluvia, los sismos y lo que ven tus vecinos, y te avisa a tiempo. ZUMI te lo explica en simple y en voz alta.
           </p>
           <div className="mt-5 max-w-md md:mt-6">{accion()}</div>
         </div>
@@ -325,8 +331,8 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
       {/* Funciones */}
       <section id="l-funciones" className="relative mx-auto mt-16 max-w-6xl scroll-mt-20 px-5">
-        <h2 className="landing-h2">Todo lo que necesitas cuando el tiempo se pone feo</h2>
-        <p className="mt-2 max-w-2xl text-[17px] text-white/70">Una app pensada para Chile: temporales en el sur, aluviones en la cordillera y sismos en todo el país.</p>
+        <h2 className="landing-h2">Un paso adelante de cada emergencia</h2>
+        <p className="mt-2 max-w-2xl text-[17px] text-white/70">Pensada para Chile: temporales en el sur, aluviones en la cordillera, tsunamis en la costa y sismos en todo el país.</p>
         <ul className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {FUNCIONES.map((f) => (
             <li key={f.titulo} className="landing-tarjeta" style={{ '--c': f.color }}>
@@ -340,9 +346,29 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
         </ul>
       </section>
 
+      {/* Confianza */}
+      <section aria-labelledby="l-confianza" className="relative mx-auto mt-16 max-w-6xl px-5">
+        <h2 id="l-confianza" className="landing-h2">Información en la que puedes confiar</h2>
+        <ul className="mt-7 grid gap-3 md:grid-cols-3">
+          {[
+            ['Fuentes oficiales y científicas', 'SENAPRED, NOAA, el Servicio Geológico de EE.UU., la NASA y ESO. Cada dato muestra su fuente y su hora.', '#34d399', <path key="a" d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7zM8.5 12l2.5 2.5L15.5 10" />],
+            ['Te avisa aunque no la estés mirando', 'Notificaciones con vibración cuando hay una alerta oficial en tus comunas, incluso con la app cerrada.', '#fbbf24', <path key="b" d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0" />],
+            ['Tus datos, protegidos', 'Sin contraseñas, no guardamos tu correo y no vendemos tu información. Puedes borrar tu cuenta cuando quieras.', '#818cf8', <path key="c" d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5zM12 15v2" />],
+          ].map(([t, d, c, ic]) => (
+            <li key={t} className="landing-tarjeta" style={{ '--c': c }}>
+              <span className="grid size-11 place-items-center rounded-2xl" style={{ background: `${c}22` }}>
+                <Icono color={c} d={ic} />
+              </span>
+              <h3 className="mt-3 text-[17px] font-bold text-white">{t}</h3>
+              <p className="mt-1.5 text-[15px] leading-snug text-white/70">{d}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* Cómo funciona */}
       <section id="l-como" className="relative mx-auto mt-16 max-w-6xl scroll-mt-20 px-5">
-        <h2 className="landing-h2">Listo en menos de un minuto</h2>
+        <h2 className="landing-h2">Activa tu protección en menos de un minuto</h2>
         <ol className="mt-7 grid gap-3 md:grid-cols-3">
           {PASOS.map(([t, d], i) => (
             <li key={t} className="landing-paso">
@@ -386,8 +412,8 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
       {/* Llamado final */}
       <section className="relative mx-auto mt-16 max-w-xl px-5 text-center">
-        <h2 className="landing-h2">Que el próximo temporal no te pille desprevenido</h2>
-        <p className="mt-2 text-[17px] text-white/70">Únete gratis y deja que ZUMI cuide a tu comuna.</p>
+        <h2 className="landing-h2">Activa la protección de tu comuna</h2>
+        <p className="mt-2 text-[17px] text-white/70">Te toma menos de un minuto. Desde ahí, ZUMI vigila por ti.</p>
         <div className="mx-auto mt-6 max-w-sm text-left">{accion(true)}</div>
       </section>
 

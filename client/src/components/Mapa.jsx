@@ -127,6 +127,7 @@ export default function Mapa({
   onRios = () => {},
   rioEnfocado = null,
   sismos = null,
+  evacuacion = null,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() })
@@ -226,6 +227,21 @@ export default function Mapa({
         filter: ['>=', ['get', 'mag'], 4],
         layout: { 'text-field': ['to-string', ['get', 'mag']], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-allow-overlap': true },
         paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1 },
+      })
+      // Evacuación: rutas en verde con borde blanco y zonas de encuentro como círculos verdes.
+      mapa.addSource('evac', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      mapa.addLayer({ id: 'evac-borde', type: 'line', source: 'evac', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 7, 'line-opacity': 0.9 } })
+      mapa.addLayer({ id: 'evac-ruta', type: 'line', source: 'evac', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#16a34a', 'line-width': 4, 'line-dasharray': [2, 1] } })
+      mapa.addLayer({ id: 'evac-zona-halo', type: 'circle', source: 'evac', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 13, 'circle-color': '#22c55e', 'circle-opacity': 0.25 } })
+      mapa.addLayer({ id: 'evac-zona', type: 'circle', source: 'evac', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': '#16a34a', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5 } })
+      mapa.addLayer({
+        id: 'evac-nombre',
+        type: 'symbol',
+        source: 'evac',
+        filter: ['==', ['geometry-type'], 'Point'],
+        minzoom: 14,
+        layout: { 'text-field': ['coalesce', ['get', 'nombre'], 'Zona segura'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-offset': [0, 1.3], 'text-anchor': 'top', 'text-max-width': 10 },
+        paint: { 'text-color': '#14532d', 'text-halo-color': '#fff', 'text-halo-width': 1.6 },
       })
       ref.current.listo = true
       ref.current.pendientes.splice(0).forEach((fn) => fn(mapa))
@@ -378,6 +394,26 @@ export default function Mapa({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cuadros, indice])
+
+  // ---- Evacuación ----
+  const evacAntes = useRef(null)
+  useEffect(() => {
+    const recien = evacuacion && !evacAntes.current
+    evacAntes.current = evacuacion
+    cuandoListo((mapa) => {
+      const fs = []
+      for (const r of evacuacion?.rutas ?? []) fs.push({ type: 'Feature', properties: { tsunami: r.tsunami }, geometry: { type: 'LineString', coordinates: r.coords } })
+      for (const p of evacuacion?.puntos ?? []) fs.push({ type: 'Feature', properties: { nombre: p.nombre, tsunami: p.tsunami }, geometry: { type: 'Point', coordinates: [p.lng, p.lat] } })
+      mapa.getSource('evac').setData({ type: 'FeatureCollection', features: fs })
+      if (recien && fs.length) {
+        let o = 180, s = 90, e = -180, n = -90
+        const ver = ([x, y]) => ((o = Math.min(o, x)), (e = Math.max(e, x)), (s = Math.min(s, y)), (n = Math.max(n, y)))
+        for (const f of fs) (f.geometry.type === 'Point' ? [f.geometry.coordinates] : f.geometry.coordinates).forEach(ver)
+        mapa.fitBounds([[o, s], [e, n]], { padding: margen(mapa), maxZoom: 15, duration: 900 })
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evacuacion])
 
   // ---- Sismos ----
   const sismosAntes = useRef(null)

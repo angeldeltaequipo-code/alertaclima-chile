@@ -216,14 +216,14 @@ export function VisorCamara({ camara, onCerrar }) {
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-[12px] text-texto-2">{CREDITO_WINDY}</p>
+          <p className="text-[12px] text-texto-2">{camara.observatorio ? 'Imagen: ESO y observatorios asociados' : CREDITO_WINDY}</p>
           <a
             href={camara.enlace}
             target="_blank"
             rel="noopener"
             className="shrink-0 rounded-lg border-2 border-borde px-3 py-2 text-[14px] font-bold"
           >
-            Abrir en Windy
+            {camara.observatorio ? 'Más en ESO' : 'Abrir en Windy'}
           </a>
         </div>
       </div>

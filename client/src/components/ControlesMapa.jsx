@@ -1,8 +1,45 @@
-/** Controles sobre el mapa: tipo de mapa (Mapa / Satélite) y «Ver la calle». */
-export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, onRios, riosActivo, onSismos, sismosActivo }) {
+import { useEffect, useRef } from 'react'
+
+/**
+ * Controles sobre el mapa en una fila que se desliza sola, despacio, para mostrar todas las
+ * capas (se detiene al tocarla y vuelve a moverse después de un rato).
+ */
+export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, onRios, riosActivo, onSismos, sismosActivo, onEvac, evacActivo }) {
+  const fila = useRef(null)
+  const pausa = useRef(0)
+  useEffect(() => {
+    const calma = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (calma) return
+    let raf
+    let dir = 1
+    let x = 0
+    const paso = () => {
+      raf = requestAnimationFrame(paso)
+      const el = fila.current
+      if (!el || document.hidden || performance.now() < pausa.current) return
+      const max = el.scrollWidth - el.clientWidth
+      if (max <= 2) return
+      x = Math.max(0, Math.min(max, (Math.abs(x - el.scrollLeft) > 3 ? el.scrollLeft : x) + dir * 0.35))
+      el.scrollLeft = x
+      if (x >= max || x <= 0) {
+        dir = -dir
+        pausa.current = performance.now() + 1800
+      }
+    }
+    pausa.current = performance.now() + 2500
+    raf = requestAnimationFrame(paso)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  const detener = () => (pausa.current = performance.now() + 6000)
   return (
     <>
-      <div className="absolute top-3 right-[4.25rem] left-3 z-[500] flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+      <div
+        ref={fila}
+        onPointerDown={detener}
+        onWheel={detener}
+        onTouchStart={detener}
+        className="fila-capas absolute top-3 right-[4.25rem] left-3 z-[500] flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]"
+      >
         <div role="radiogroup" aria-label="Tipo de mapa" className="flex shrink-0 rounded-full bg-superficie/95 p-0.5 shadow-lg ring-1 ring-linea backdrop-blur">
           {[
             ['mapa', 'Mapa'],
@@ -20,6 +57,21 @@ export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, on
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          aria-pressed={evacActivo}
+          aria-label="Vías de evacuación"
+          onClick={onEvac}
+          className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-bold whitespace-nowrap shadow-lg ring-1 ring-linea backdrop-blur ${
+            evacActivo ? 'bg-[#16a34a] text-white' : 'bg-superficie/95 text-texto'
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={evacActivo ? 'currentColor' : '#16a34a'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="14" cy="4" r="2" />
+            <path d="M8 21l3-7 3 3v5M6 12l3-4h5l3 4M11 14l-1-5" />
+          </svg>
+          Evacuación
+        </button>
         <button
           type="button"
           aria-pressed={modoCalle}

@@ -32,6 +32,9 @@ import { leer, guardar } from './services/almacen'
 import { enlaceStreetView } from './services/fotos'
 import ControlesMapa from './components/ControlesMapa'
 import PanelRios from './components/PanelRios'
+import PanelEvacuacion from './components/PanelEvacuacion'
+import { obtenerEvacuacion } from './services/evacuacion'
+import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
 import TirarParaActualizar from './components/TirarParaActualizar'
 
@@ -73,6 +76,8 @@ export default function App() {
   const cuenta = useCuenta({ enLinea })
   const riesgos = useRiesgos({ enLinea })
   const [capaSismos, setCapaSismos] = useState(false)
+  // Vías de evacuación: { estado: 'cargando' | 'listo' | 'error', datos, error }
+  const [evac, setEvac] = useState(null)
   const notifBase = useNotificaciones({ enLinea })
   // Participar (notificaciones, reportes, votos, chat) pide cuenta cuando el inicio de sesión está activo.
   const notif = {
@@ -290,7 +295,7 @@ export default function App() {
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
-                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total} onVerMapa={() => setVista('radar')} />}
+                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
                 onVerRios={() => buscarRios()}
               />
             )}
@@ -315,7 +320,7 @@ export default function App() {
                   setCamaraSel(null)
                   setSeleccionado(r)
                 }}
-                camaras={unirCamaras(camaras.camaras, camarasChile.camaras)}
+                camaras={unirCamaras(camaras.camaras, [...camarasChile.camaras, ...CAMARAS_OBSERVATORIOS])}
                 onCamara={(c) => {
                   setSeleccionado(null)
                   setCamaraSel(c)
@@ -327,6 +332,7 @@ export default function App() {
                 onRios={(r) => setRios({ ...r, origen: pedirRios?.origen, comuna: comuna?.nombre, hayUbicacion: Boolean(ubicacion) })}
                 rioEnfocado={rioEnfocado}
                 sismos={capaSismos ? riesgos.datos?.sismos : null}
+                evacuacion={evac?.estado === 'listo' ? evac.datos : null}
               />
             </Suspense>
             </Resguardo>
@@ -340,6 +346,17 @@ export default function App() {
             riosActivo={Boolean(rios)}
             sismosActivo={capaSismos}
             onSismos={() => setCapaSismos(!capaSismos)}
+            evacActivo={Boolean(evac)}
+            onEvac={() => {
+              if (evac) return setEvac(null)
+              const p = ubicacion ?? clima.datos?.punto ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)
+              if (!p) return
+              setRios(null)
+              setEvac({ estado: 'cargando' })
+              obtenerEvacuacion(p)
+                .then((datos) => setEvac((e) => (e ? { estado: 'listo', datos, punto: p } : e)))
+                .catch((err) => setEvac((e) => (e ? { estado: 'error', error: err.message } : e)))
+            }}
           />
           <button
             type="button"
@@ -374,7 +391,9 @@ export default function App() {
                   {avisoUbicacion}
                 </p>
               )}
-              {rios ? (
+              {evac ? (
+                <PanelEvacuacion evac={evac} punto={evac.punto ?? ubicacion} comuna={comuna?.nombre} onCerrar={() => setEvac(null)} />
+              ) : rios ? (
                 <PanelRios
                   rios={rios}
                   enfocado={rioEnfocado}
@@ -441,7 +460,7 @@ export default function App() {
       {cuenta.puerta && cuenta.clientId && <Suspense fallback={null}><PuertaCuenta cuenta={cuenta} /></Suspense>}
 
       {sos && <Suspense fallback={null}><PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} /></Suspense>}
-      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (evac || rios || fichaActual || camaraSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
         <Suspense fallback={<div className="fixed inset-0 z-[1150] grid place-items-center bg-[#050a18] text-white/80">Llamando a ZUMI…</div>}>
           <EstudioZumi

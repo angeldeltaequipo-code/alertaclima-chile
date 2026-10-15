@@ -942,3 +942,4 @@ body {
 .landing-mision { padding: 28px; border-radius: 28px; background: radial-gradient(120% 140% at 0% 0%, rgb(251 146 60 / 0.25), transparent 55%), radial-gradient(120% 140% at 100% 100%, rgb(129 140 248 / 0.25), transparent 55%), rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
 .landing-pregunta { border-radius: 18px; background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); }
 .landing-pregunta summary::-webkit-details-marker { display: none; }
+.fila-capas { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
