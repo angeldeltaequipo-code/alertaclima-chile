@@ -51,7 +51,8 @@ export default function BotonGoogle({ clientId, onListo }) {
 
   return (
     <div>
-      <div ref={caja} className="flex min-h-11 justify-center" />
+      {/* color-scheme claro: si no, el navegador pinta un recuadro blanco detrás del botón de Google en páginas oscuras */}
+      <div ref={caja} className="flex min-h-11 justify-center" style={{ colorScheme: 'light' }} />
       {entrando && (
         <p role="status" className="mt-2 text-center text-[15px] text-texto-2">
           Entrando…
