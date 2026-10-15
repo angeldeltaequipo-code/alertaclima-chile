@@ -7,6 +7,7 @@
 
 const CHILE = { minLat: -56.5, maxLat: -17, minLng: -80, maxLng: -66 }
 const cache = new Map() // clave -> { hasta, datos }
+const fallas = new Map() // clave -> último error (para diagnosticar fuentes caídas)
 // Algunas fuentes rechazan pedidos sin identificación: se presenta la app con un contacto.
 const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', Accept: '*/*' }
 
@@ -16,9 +17,12 @@ async function conCache(clave, ms, fn) {
   try {
     const datos = await fn()
     cache.set(clave, { hasta: Date.now() + ms, datos })
+    fallas.delete(clave)
     return datos
   } catch (e) {
-    console.error(`Riesgos (${clave}):`, e.message)
+    const motivo = e.cause?.code ?? e.cause?.message ?? e.message
+    console.error(`Riesgos (${clave}):`, e.message, motivo)
+    fallas.set(clave, String(motivo).slice(0, 120))
     if (c) return c.datos // si falla, se sirve lo último que se tenía
     return null
   }
@@ -155,7 +159,7 @@ export async function volcanesActivos({ fetchFn = fetch } = {}) {
 
 export async function resumenRiesgos(opciones) {
   const [s, t, v] = await Promise.all([sismos(opciones), tsunami(opciones), volcanesActivos(opciones)])
-  return { sismos: s, tsunami: t, volcanes: v, hora: new Date().toISOString() }
+  return { sismos: s, tsunami: t, volcanes: v, hora: new Date().toISOString(), ...(fallas.size ? { fallas: Object.fromEntries(fallas) } : {}) }
 }
 
 export function limpiarCacheRiesgos() {
