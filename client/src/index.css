@@ -512,3 +512,23 @@ body {
   clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
   border-radius: 3px;
 }
+
+/* ---- Botón SOS ---- */
+.boton-sos {
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #f87171, #b91c1c 65%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 0 rgb(239 68 68 / 0.6), 0 8px 20px -6px rgb(185 28 28 / 0.9);
+  animation: sos-latido 2.6s ease-out infinite;
+}
+@keyframes sos-latido {
+  0% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.55), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
+  70% { box-shadow: 0 0 0 14px rgb(239 68 68 / 0), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
+  100% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
+}

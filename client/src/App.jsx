@@ -26,6 +26,7 @@ import VistaChat from './components/VistaChat'
 import VistaRiesgos from './components/VistaRiesgos'
 import { useRiesgos } from './hooks/useRiesgos'
 import { BotonZumi, HojaZumi } from './components/Zumi'
+import { BotonSOS, PantallaSOS } from './components/SOS'
 import { guionReporte, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
@@ -74,6 +75,7 @@ export default function App() {
   const [camaraSel, setCamaraSel] = useState(null)
   const [camaraVisor, setCamaraVisor] = useState(null)
   const [zumi, setZumi] = useState(false)
+  const [sos, setSos] = useState(false)
   const [narradoUnaVez, setNarradoUnaVez] = useState(false)
   useEffect(() => {
     if (!narradoUnaVez && modoNarrador() && clima.datos && comuna) {
@@ -384,6 +386,8 @@ export default function App() {
 
       {cuenta.puerta && cuenta.clientId && <PuertaCuenta cuenta={cuenta} />}
 
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonSOS arriba={vista === 'radar'} onAbrir={() => setSos(true)} />}
+      {sos && <PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} />}
       {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
         <HojaZumi
