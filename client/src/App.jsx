@@ -127,6 +127,8 @@ export default function App() {
     setVisitadas((v) => (v.has(vista) ? v : new Set([...v, vista])))
   }, [vista])
   const [selector, setSelector] = useState(false)
+  // Enlace directo a la página de registro: …/alertaclima-chile/?registro
+  const [verRegistro, setVerRegistro] = useState(() => new URLSearchParams(location.search).has('registro'))
   const [ubicacion, setUbicacion] = useState(null)
   const [centrarEn, setCentrarEn] = useState(0)
   const [avisoUbicacion, setAvisoUbicacion] = useState(null)
@@ -473,7 +475,21 @@ export default function App() {
         <Suspense fallback={null}><DetalleAlertas comuna={comuna} estado={alertas.estado} onCerrar={() => setVerAlertas(false)} /></Suspense>
       )}
 
-      {!cut && !selector && <Suspense fallback={null}><Bienvenida cuenta={cuenta} onElegir={elegirComuna} onBuscar={() => setSelector(true)} /></Suspense>}
+      {(!cut || verRegistro) && !selector && (
+        <Suspense fallback={null}>
+          <Bienvenida
+            cuenta={cuenta}
+            onElegir={(c, p) => {
+              setVerRegistro(false)
+              elegirComuna(c, p)
+            }}
+            onBuscar={() => {
+              setVerRegistro(false)
+              setSelector(true)
+            }}
+          />
+        </Suspense>
+      )}
       {selector && <Suspense fallback={null}><SelectorComuna actual={comuna} onElegir={elegirComuna} onCerrar={() => setSelector(false)} /></Suspense>}
     </div>
   )
