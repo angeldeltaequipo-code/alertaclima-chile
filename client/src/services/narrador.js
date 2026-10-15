@@ -83,18 +83,25 @@ export function alCambiarNarrador(fn) {
  * Lee las frases una por una (los navegadores cortan textos largos). Tono algo agudo y ritmo
  * pausado: amable, como un personaje animado.
  */
-export async function hablar(frases) {
-  const s = sintesis()
-  if (!s) return false
-  s.cancel()
-  await cuandoHayVoces()
-  const voz = elegirVoz()
+export const vozSilenciada = () => leer('zumi:silencio', false)
+export const guardarVozSilenciada = (v) => guardar('zumi:silencio', Boolean(v))
+
+export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
+  const s = silencio ? null : sintesis()
+  sintesis()?.cancel()
+  if (s) await cuandoHayVoces()
+  const voz = s ? elegirVoz() : null
   estado = { hablando: true, frase: 0, frases }
   avisar()
   for (let i = 0; i < frases.length; i++) {
     if (estado.frases !== frases) return false // se interrumpió
     estado = { ...estado, frase: i }
     avisar()
+    // Sin voz (silenciado o navegador sin lectura): avanza al ritmo de lectura de los subtítulos.
+    if (!s) {
+      await new Promise((ok) => setTimeout(ok, Math.max(2200, frases[i].length * 62)))
+      continue
+    }
     await new Promise((ok) => {
       const u = new SpeechSynthesisUtterance(paraVoz(frases[i]))
       if (voz) u.voice = voz
@@ -119,70 +126,109 @@ export function callar() {
   avisar()
 }
 
+/** «y está despejado» / «con lluvia moderada»: concuerda con el estado del cielo. */
+export function comoEsta(texto) {
+  const t = texto.toLowerCase()
+  return /^(lluvia|llovizna|chubasco|tormenta|nieve|niebla|neblina|granizo)/.test(t) ? `con ${t}` : `y está ${t}`
+}
+
 const saludoHora = () => {
   const h = new Date().getHours()
   return h < 6 ? 'Buenas noches' : h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
 }
 
 /**
- * Reporte completo, en frases cortas y en orden de importancia: primero lo que puede
+ * Reporte completo como «escenas»: cada frase trae la tarjeta holográfica que se muestra mientras
+ * ZUMI la dice y el clip del estudio que la acompaña. Orden de importancia: primero lo que puede
  * poner en riesgo a la persona, después el clima y al final algo amable.
  */
-export function guionReporte({ nombre, comuna, ahora, horas, dias, alertas, reportes, sismos }) {
+export function escenasReporte({ nombre, comuna, ahora, horas, dias, alertas, reportes, sismos }) {
   const f = []
+  const di = (texto, tarjeta = null, clip = 'pronostico') => f.push({ texto, tarjeta, clip })
   const quien = nombre ? `, ${nombre}` : ''
-  f.push(`¡${saludoHora()}${quien}! Soy ${NOMBRE}, y te cuento cómo está ${comuna?.nombre ?? 'tu comuna'}.`)
+  di(`¡${saludoHora()}${quien}! Soy ${NOMBRE}, y te cuento cómo está ${comuna?.nombre ?? 'tu comuna'}.`, { tipo: 'saludo', comuna: comuna?.nombre }, 'cerca')
 
   const p = alertas?.alertas ? alertaPrincipal(alertas.alertas) : null
   if (p) {
-    f.push(`Atención: hay ${NIVELES[p.nivel].etiqueta} por ${p.amenaza.toLowerCase()}.`)
-    if (p.instrucciones) f.push(`${p.fuente_nombre ?? 'La autoridad'} indica: ${p.instrucciones}`)
+    di(`Atención: hay ${NIVELES[p.nivel].etiqueta} por ${p.amenaza.toLowerCase()}.`, { tipo: 'alerta', nivel: p.nivel, titulo: NIVELES[p.nivel].etiqueta, texto: p.amenaza }, 'alerta')
+    if (p.instrucciones) di(`${p.fuente_nombre ?? 'La autoridad'} indica: ${p.instrucciones}`, { tipo: 'alerta', nivel: p.nivel, titulo: 'Qué hacer', texto: p.fuente_nombre ?? 'Autoridad' }, 'alerta')
   } else if (alertas?.tipo === 'ok') {
-    f.push('No hay alertas oficiales en tu comuna.')
+    di('No hay alertas oficiales en tu comuna.', { tipo: 'ok', texto: 'Sin alertas oficiales' }, 'estudio')
   }
 
   const s = sismos?.[0]
   if (s && s.magnitud >= 5 && Date.now() - s.hora < 6 * 3600e3) {
-    f.push(`Hubo un sismo de magnitud ${s.magnitud.toLocaleString('es-CL', { maximumFractionDigits: 1 })} ${s.lugar ? `cerca de ${s.lugar}` : ''}.`)
+    di(`Hubo un sismo de magnitud ${s.magnitud.toLocaleString('es-CL', { maximumFractionDigits: 1 })} ${s.lugar ? `cerca de ${s.lugar}` : ''}.`, { tipo: 'sismo', magnitud: s.magnitud, texto: s.lugar }, 'alerta')
   }
 
   if (ahora) {
-    f.push(`Ahora hay ${Math.round(ahora.temperatura)}° y está ${ahora.texto.toLowerCase()}.`)
-    if (Math.abs(ahora.sensacion - ahora.temperatura) >= 3) f.push(`Pero se siente como ${Math.round(ahora.sensacion)}°.`)
-    if (ahora.viento >= 30) f.push(`Hay viento fuerte, de ${Math.round(ahora.viento)} km/h${ahora.direccion != null ? ` desde el ${direccionViento(ahora.direccion)}` : ''}.`)
+    di(`Ahora hay ${Math.round(ahora.temperatura)}° ${comoEsta(ahora.texto)}.`, { tipo: 'temp', valor: Math.round(ahora.temperatura), texto: ahora.texto, icono: ahora.icono }, 'estudio')
+    if (Math.abs(ahora.sensacion - ahora.temperatura) >= 3) di(`Pero se siente como ${Math.round(ahora.sensacion)}°.`, { tipo: 'temp', valor: Math.round(ahora.sensacion), texto: 'Sensación térmica', icono: ahora.icono }, 'estudio')
+    if (ahora.viento >= 30)
+      di(`Hay viento fuerte, de ${Math.round(ahora.viento)} km/h${ahora.direccion != null ? ` desde el ${direccionViento(ahora.direccion)}` : ''}.`, { tipo: 'viento', valor: Math.round(ahora.viento), grados: ahora.direccion }, 'pronostico')
   }
 
   const prox = horas?.slice(0, 12) ?? []
   const primera = prox.find((h) => h.lluvia >= 0.2)
   if (!prox.length);
-  else if (!primera) f.push('No se espera lluvia en las próximas doce horas.')
+  else if (!primera) di('No se espera lluvia en las próximas doce horas.', { tipo: 'lluvia', mm: 0, barras: prox.map((h) => h.lluvia) }, 'pronostico')
   else {
     const total = prox.reduce((a, h) => a + h.lluvia, 0)
     const hh = primera.hora.getHours()
-    f.push(`${primera === prox[0] ? 'Está lloviendo' : `Va a llover desde las ${hh}:00`}, y se esperan unos ${Math.round(total)} mm.`)
+    di(`${primera === prox[0] ? 'Está lloviendo' : `Va a llover desde las ${hh}:00`}, y se esperan unos ${Math.round(total)} mm.`, { tipo: 'lluvia', mm: total, barras: prox.map((h) => h.lluvia) }, 'pronostico')
   }
 
   const r = riesgoAluvion(horas)
-  if (r?.nivel === 'alto') f.push('El riesgo de aluviones y desbordes es alto. Aléjate de quebradas y cauces, y no cruces ríos.')
-  else if (r?.nivel === 'atencion') f.push('Pon atención: hay riesgo de aluviones o desbordes. Revisa por dónde pasan las quebradas cerca de ti.')
+  if (r?.nivel === 'alto') di('El riesgo de aluviones y desbordes es alto. Aléjate de quebradas y cauces, y no cruces ríos.', { tipo: 'aluvion', nivel: 'alto' }, 'alerta')
+  else if (r?.nivel === 'atencion') di('Pon atención: hay riesgo de aluviones o desbordes. Revisa por dónde pasan las quebradas cerca de ti.', { tipo: 'aluvion', nivel: 'atencion' }, 'alerta')
 
   const hoy = dias?.[0]
-  if (hoy) f.push(`Hoy la máxima será de ${Math.round(hoy.max)}° y la mínima de ${Math.round(hoy.min)}°.`)
+  if (hoy) di(`Hoy la máxima será de ${Math.round(hoy.max)}° y la mínima de ${Math.round(hoy.min)}°.`, { tipo: 'minmax', max: Math.round(hoy.max), min: Math.round(hoy.min) }, 'pronostico')
 
-  if (reportes?.length) f.push(`Tus vecinos hicieron ${reportes.length} ${reportes.length === 1 ? 'reporte' : 'reportes'} en la comuna. Puedes verlos en el mapa.`)
+  if (reportes?.length) di(`Tus vecinos hicieron ${reportes.length} ${reportes.length === 1 ? 'reporte' : 'reportes'} en la comuna. Puedes verlos en el mapa.`, { tipo: 'vecinos', n: reportes.length }, 'estudio')
 
   const luna = faseLunar()
-  if (!ahora?.esDeDia) f.push(`Y si miras al cielo, hoy hay ${luna.nombre.toLowerCase()}.`)
+  if (ahora && !ahora.esDeDia) di(`Y si miras al cielo, hoy hay ${luna.nombre.toLowerCase()}.`, { tipo: 'luna', texto: luna.nombre, fraccion: luna.iluminacion }, 'cerca')
 
   const h = new Date().getHours()
-  f.push(
+  di(
     p || r?.nivel === 'alto'
       ? 'Cuídate mucho. Estoy aquí para avisarte si algo cambia.'
       : h >= 20 || h < 6
         ? '¡Que descanses! Aquí estaré si me necesitas.'
         : '¡Que tengas un lindo día! Aquí estaré si me necesitas.',
+    null,
+    'cerca',
   )
   return f
+}
+
+/** El mismo reporte, solo el texto de cada frase. */
+export const guionReporte = (datos) => escenasReporte(datos).map((e) => e.texto)
+
+/**
+ * Traje de ZUMI según el momento (como un personaje que se cambia de ropa):
+ * alerta → casco de emergencia, lluvia → paraguas, frío → gorro y bufanda, sol fuerte → lentes,
+ * noche despejada → casco de astronauta, y si no, audífonos de presentador.
+ */
+export function elegirTraje({ ahora, alertas, hoy, vista } = {}) {
+  const p = alertas?.alertas ? alertaPrincipal(alertas.alertas) : null
+  if (p || vista === 'riesgos') return 'casco'
+  if (!ahora) return 'presentador'
+  if (['lluvia', 'lluvia-fuerte', 'llovizna', 'tormenta'].includes(ahora.icono)) return 'paraguas'
+  if (ahora.temperatura <= 8) return 'gorro'
+  if (!ahora.esDeDia && ['despejado', 'parcial'].includes(ahora.icono)) return 'astronauta'
+  if (ahora.esDeDia && (ahora.temperatura >= 24 || (ahora.uv ?? hoy?.uv ?? 0) >= 7) && ['despejado', 'parcial'].includes(ahora.icono)) return 'lentes'
+  return 'presentador'
+}
+
+export const TRAJES = {
+  presentador: 'Presentador',
+  paraguas: 'Para la lluvia',
+  gorro: 'Para el frío',
+  lentes: 'Para el sol',
+  astronauta: 'Astronauta',
+  casco: 'Emergencias',
 }
 
 /** Lectura de una alerta oficial, para el aviso a pantalla completa. */

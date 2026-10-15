@@ -32,6 +32,8 @@ services:
         sync: false
       - key: RESEND_API_KEY # Clave de Resend para el correo de bienvenida. Sin ella no se envían correos.
         sync: false
+      - key: ANTHROPIC_API_KEY # Clave de la API de Claude para que ZUMI converse con IA. Sin ella, ZUMI usa respuestas propias.
+        sync: false
       - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"
         sync: false
 

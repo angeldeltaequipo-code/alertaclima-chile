@@ -1,3 +1,4 @@
+import { zumiRouter } from './routes/zumi.js'
 import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
@@ -37,6 +38,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/cuenta', cuentaRouter({ verificar: verificarGoogle }))
   app.use('/api/chat', chatRouter({ emitirChat }))
   app.use('/api/riesgos', riesgosRouter())
+  app.use('/api/zumi', zumiRouter())
   app.use('/api/admin', adminRouter({ avisarComunas, emitir: emitirReporte, enviarPush, emitirChat }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))

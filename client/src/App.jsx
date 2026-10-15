@@ -26,9 +26,10 @@ import PuertaCuenta from './components/PuertaCuenta'
 import VistaChat from './components/VistaChat'
 import VistaRiesgos from './components/VistaRiesgos'
 import { useRiesgos } from './hooks/useRiesgos'
-import { BotonZumi, HojaZumi } from './components/Zumi'
+import { BotonZumi } from './components/Zumi'
+import EstudioZumi from './components/EstudioZumi'
 import { BotonSOS, PantallaSOS } from './components/SOS'
-import { guionReporte, modoNarrador } from './services/narrador'
+import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
@@ -205,6 +206,16 @@ export default function App() {
     )
   }
 
+  const datosZumi = {
+    comuna,
+    ahora: condicionesActuales(clima.datos?.ahora, obs),
+    horas: clima.datos?.horas,
+    dias: clima.datos?.dias,
+    alertas: alertas.estado,
+    reportes: rep.reportes,
+    sismos: riesgos.datos?.sismos,
+  }
+  const traje = elegirTraje({ ...datosZumi, hoy: clima.datos?.dias?.[0], vista })
   const ultimoDato = [clima.datos?.obtenido, radar.ultimaCarga].filter(Boolean).sort((a, b) => b - a)[0]
 
   return (
@@ -390,23 +401,14 @@ export default function App() {
 
       {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonSOS arriba={vista === 'radar'} onAbrir={() => setSos(true)} />}
       {sos && <PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} />}
-      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi onAbrir={() => setZumi(true)} />}
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
-        <HojaZumi
+        <EstudioZumi
           nombreCuenta={cuenta.usuario?.nombre?.split(' ')[0]}
+          conCuenta={cuenta.estado === 'con-sesion'}
+          traje={traje}
           onCerrar={() => setZumi(false)}
-          guion={(nombre) =>
-            guionReporte({
-              nombre,
-              comuna,
-              ahora: condicionesActuales(clima.datos?.ahora, obs),
-              horas: clima.datos?.horas,
-              dias: clima.datos?.dias,
-              alertas: alertas.estado,
-              reportes: rep.reportes,
-              sismos: riesgos.datos?.sismos,
-            })
-          }
+          datos={datosZumi}
         />
       )}
 
