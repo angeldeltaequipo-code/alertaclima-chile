@@ -542,3 +542,80 @@ body {
   .chat-linea .chat-opciones { opacity: 0; }
   .chat-linea:hover .chat-opciones, .chat-opciones:focus-visible, .chat-opciones[aria-expanded='true'] { opacity: 1; }
 }
+
+/* ---------- Fondo «universo» contextual (Cosmos.jsx) ---------- */
+.cosmos {
+  --neb-a: #3b5bdb;
+  --neb-b: #f59e0b;
+  --neb-op: 0.34;
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* detrás de todo el contenido (la raíz de la app aísla el apilamiento) */
+  pointer-events: none;
+  overflow: hidden;
+  background: radial-gradient(130% 90% at 50% -10%, color-mix(in srgb, var(--neb-a) 22%, var(--fondo)) 0%, var(--fondo) 60%, color-mix(in srgb, #000 35%, var(--fondo)) 100%);
+  transition: background 1.2s ease;
+}
+.cosmos[data-ambiente='noche'] { --neb-a: #7c3aed; --neb-b: #2563eb; }
+.cosmos[data-ambiente='lluvia'] { --neb-a: #0891b2; --neb-b: #1d4ed8; }
+.cosmos[data-ambiente='tormenta'] { --neb-a: #9333ea; --neb-b: #db2777; }
+.cosmos[data-ambiente='nublado'] { --neb-a: #475569; --neb-b: #6366f1; --neb-op: 0.2; }
+.cosmos[data-ambiente='riesgos'] { --neb-a: #dc2626; --neb-b: #ea580c; --neb-op: 0.22; }
+.cosmos[data-ambiente='chat'] { --neb-a: #0d9488; --neb-b: #c026d3; --neb-op: 0.2; }
+.cosmos[data-ambiente='ajustes'] { --neb-a: #334155; --neb-b: #4f46e5; --neb-op: 0.16; }
+
+.cosmos-nebulosa {
+  position: absolute;
+  width: 90vmax;
+  height: 90vmax;
+  border-radius: 50%;
+  opacity: var(--neb-op);
+  filter: blur(60px);
+  transition: background 1.2s ease, opacity 1.2s ease;
+  will-change: transform;
+}
+.cosmos-nebulosa-a { top: -45vmax; left: -30vmax; background: radial-gradient(closest-side, var(--neb-a), transparent); animation: nebulosa-a 38s ease-in-out infinite alternate; }
+.cosmos-nebulosa-b { bottom: -55vmax; right: -40vmax; background: radial-gradient(closest-side, var(--neb-b), transparent); animation: nebulosa-b 46s ease-in-out infinite alternate; }
+@keyframes nebulosa-a { to { transform: translate(14vmax, 10vmax) scale(1.12); } }
+@keyframes nebulosa-b { to { transform: translate(-12vmax, -8vmax) scale(1.08); } }
+
+.cosmos-estrellas {
+  position: absolute;
+  inset: -50% 0 0 0;
+  background-image:
+    radial-gradient(1.3px 1.3px at 20px 30px, #fffc, transparent),
+    radial-gradient(1px 1px at 140px 90px, #fff9, transparent),
+    radial-gradient(1.5px 1.5px at 260px 170px, #fffd, transparent),
+    radial-gradient(1px 1px at 90px 220px, #fff8, transparent),
+    radial-gradient(1.2px 1.2px at 210px 280px, #cfe3ffcc, transparent),
+    radial-gradient(1px 1px at 330px 40px, #fff9, transparent);
+  background-size: 360px 320px;
+  opacity: 0.55;
+  animation: estrellas-deriva 160s linear infinite, estrellas-brillo 6s ease-in-out infinite alternate;
+}
+.cosmos-estrellas-lejos {
+  background-size: 220px 200px;
+  background-position: 70px 50px;
+  opacity: 0.3;
+  animation-duration: 260s, 9s;
+}
+@keyframes estrellas-deriva { to { transform: translateY(50%); } }
+@keyframes estrellas-brillo { from { opacity: 0.25; } to { opacity: 0.6; } }
+
+/* En tema claro: cielo de día suave, sin estrellas, para mantener el contraste del texto. */
+:root[data-tema='claro'] .cosmos { --neb-op: 0.14; background: linear-gradient(180deg, color-mix(in srgb, var(--neb-a) 10%, var(--fondo)), var(--fondo) 55%); }
+:root[data-tema='claro'] .cosmos-estrellas { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmos-nebulosa, .cosmos-estrellas { animation: none; }
+}
+
+/* Tarjetas tipo vidrio sobre el cosmos (90 % opacas: el contraste del texto no cambia en la práctica). */
+.con-cosmos .bg-superficie { background-color: color-mix(in srgb, var(--superficie) 90%, transparent); }
+.con-cosmos .border-linea { border-color: color-mix(in srgb, var(--texto) 12%, transparent); }
+
+.con-cosmos nav[aria-label='Secciones'] {
+  background-color: color-mix(in srgb, var(--fondo) 80%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}

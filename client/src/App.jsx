@@ -1,3 +1,4 @@
+import Cosmos from './components/Cosmos'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
@@ -207,7 +208,8 @@ export default function App() {
   const ultimoDato = [clima.datos?.obtenido, radar.ultimaCarga].filter(Boolean).sort((a, b) => b - a)[0]
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="con-cosmos relative isolate flex h-full flex-col">
+      <Cosmos vista={vista} ahora={clima.datos?.ahora} />
       {!enLinea && (
         <div role="status" className="safe-top bg-senal px-4 py-2 text-[15px] font-bold text-sobre-senal">
           Sin conexión{ultimoDato ? ` — datos de las ${hhmm(ultimoDato)}` : ' — aún no hay datos guardados'}
@@ -222,7 +224,7 @@ export default function App() {
         onVerAlertas={() => setVerAlertas(true)}
       />
 
-      <main className="relative min-h-0 flex-1">
+      <main className="relative z-[1] min-h-0 flex-1">
         {/* Ahora */}
         <div id="vista-ahora" hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-xl">
