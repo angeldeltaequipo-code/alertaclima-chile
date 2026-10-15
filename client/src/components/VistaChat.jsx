@@ -29,7 +29,7 @@ function Avatar({ autor, tam = 34 }) {
       />
     )
   return (
-    <span className="grid shrink-0 place-items-center rounded-full bg-senal text-[13px] font-bold text-sobre-senal" style={{ width: tam, height: tam }} aria-hidden="true">
+    <span className="grid shrink-0 place-items-center rounded-full bg-senal font-bold text-sobre-senal" style={{ width: tam, height: tam, fontSize: Math.round(tam * 0.42) }} aria-hidden="true">
       {iniciales(autor.nombre)}
     </span>
   )
@@ -50,7 +50,8 @@ function Reglas({ onCerrar }) {
       <ul className="mt-1 space-y-0.5 text-texto-2">
         <li>• Cuenta lo que ves tú, con lugar y hora. Nada de rumores ni cadenas.</li>
         <li>• Respeto siempre. Los mensajes con 3 denuncias se ocultan.</li>
-        <li>• No se permiten enlaces.</li>
+        <li>• Solo texto: sin enlaces ni fotos. Las groserías se tapan solas.</li>
+        <li>• No publiques teléfonos, RUT ni direcciones exactas: se ocultan para protegerte. Para avisar a tu familia usa el botón SOS.</li>
         <li>
           • Emergencias: <strong className="text-texto">133</strong> Carabineros · <strong className="text-texto">132</strong> Bomberos ·{' '}
           <strong className="text-texto">131</strong> SAMU
@@ -63,7 +64,18 @@ function Reglas({ onCerrar }) {
   )
 }
 
-function Mensaje({ m, propio, continuacion, onDenunciar, onBorrar }) {
+// Color fijo por persona (como en Kick o YouTube): misma persona, mismo color. La luminosidad
+// viene de la variable --l-nombre para que cumpla contraste en tema claro y oscuro.
+const TONOS = [4, 24, 145, 200, 220, 265, 290, 320, 340, 175, 160, 245]
+function colorNombre(id) {
+  let h = 0
+  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return `hsl(${TONOS[h % TONOS.length]} 75% var(--l-nombre))`
+}
+
+const escaparRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+function Mensaje({ m, propio, miNombre, onDenunciar, onBorrar }) {
   const [menu, setMenu] = useState(false)
   const [aviso, setAviso] = useState(null)
   const accion = async (fn, texto) => {
@@ -75,53 +87,55 @@ function Mensaje({ m, propio, continuacion, onDenunciar, onBorrar }) {
       setAviso(e.message)
     }
   }
+  // Te nombran: la línea se destaca, como una mención.
+  const mencion = !propio && miNombre && new RegExp(`(^|[^\\p{L}])@?${escaparRegex(miNombre)}([^\\p{L}]|$)`, 'iu').test(m.texto)
   return (
-    <li className={`flex gap-2 px-3 ${continuacion ? 'mt-0.5' : 'mt-3'} ${propio ? 'flex-row-reverse' : ''}`}>
-      {!propio && (continuacion ? <span className="w-[34px] shrink-0" /> : <Avatar autor={m.autor} />)}
-      <div className={`min-w-0 max-w-[80%] ${propio ? 'items-end' : 'items-start'} flex flex-col`}>
-        {!continuacion && !propio && <span className="mb-0.5 px-1 text-[13px] font-bold text-texto-2">{m.autor.nombre}</span>}
-        <div className="group relative flex items-end gap-1">
-          <p
-            className={`rounded-2xl px-3 py-2 text-[16px] leading-snug break-words whitespace-pre-wrap ${
-              propio ? 'rounded-br-md bg-senal text-sobre-senal' : 'rounded-bl-md bg-superficie'
-            }`}
-          >
-            {m.texto}
-            <span className={`ml-2 inline-block translate-y-0.5 text-[11px] tabular-nums ${propio ? 'text-sobre-senal/70' : 'text-texto-2'}`}>{hhmm(m.hora)}</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => setMenu(!menu)}
-            aria-label={propio ? 'Opciones de tu mensaje' : `Opciones del mensaje de ${m.autor.nombre}`}
-            aria-expanded={menu}
-            className="grid size-8 shrink-0 place-items-center rounded-full text-texto-2"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-              <circle cx="3" cy="8" r="1.5" fill="currentColor" />
-              <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-              <circle cx="13" cy="8" r="1.5" fill="currentColor" />
-            </svg>
-          </button>
-        </div>
-        {menu && (
-          <div className="mt-1 flex gap-1">
-            {propio ? (
-              <button type="button" onClick={() => accion(() => onBorrar(m.id), 'Mensaje borrado.')} className="min-h-10 rounded-full bg-superficie-2 px-3 text-[14px] font-bold">
-                Borrar mensaje
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => accion(() => onDenunciar(m.id), 'Gracias. Lo revisaremos.')}
-                className="min-h-10 rounded-full bg-superficie-2 px-3 text-[14px] font-bold text-peligro"
-              >
-                Denunciar (falso u ofensivo)
-              </button>
-            )}
-          </div>
-        )}
-        {aviso && <p className="mt-1 px-1 text-[13px] text-texto-2">{aviso}</p>}
+    <li className={`chat-linea relative px-3 py-1 ${mencion ? 'chat-mencion' : ''}`}>
+      <div className="flex items-start gap-1">
+        <p className="min-w-0 flex-1 text-[15.5px] leading-[1.45] break-words whitespace-pre-wrap">
+          <span className="mr-1.5 text-[11px] text-texto-2 tabular-nums">{hhmm(m.hora)}</span>
+          <span className="mr-1 inline-block translate-y-[3px]">
+            <Avatar autor={m.autor} tam={18} />
+          </span>
+          <strong className="font-bold" style={{ color: colorNombre(m.autor.id) }}>
+            {m.autor.nombre}
+          </strong>
+          {propio && <span className="ml-1 rounded bg-superficie-2 px-1 text-[10px] font-bold text-texto-2 uppercase align-middle">tú</span>}
+          <span className="text-texto-2">: </span>
+          <span>{m.texto}</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => setMenu(!menu)}
+          aria-label={propio ? 'Opciones de tu mensaje' : `Opciones del mensaje de ${m.autor.nombre}`}
+          aria-expanded={menu}
+          className="chat-opciones -my-1 grid size-8 shrink-0 place-items-center rounded-full text-texto-2"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="3" cy="8" r="1.5" fill="currentColor" />
+            <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+            <circle cx="13" cy="8" r="1.5" fill="currentColor" />
+          </svg>
+        </button>
       </div>
+      {menu && (
+        <div className="mt-1 flex gap-1 pl-10">
+          {propio ? (
+            <button type="button" onClick={() => accion(() => onBorrar(m.id), 'Mensaje borrado.')} className="min-h-10 rounded-full bg-superficie-2 px-3 text-[14px] font-bold">
+              Borrar mensaje
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => accion(() => onDenunciar(m.id), 'Gracias. Lo revisaremos.')}
+              className="min-h-10 rounded-full bg-superficie-2 px-3 text-[14px] font-bold text-peligro"
+            >
+              Denunciar (falso u ofensivo)
+            </button>
+          )}
+        </div>
+      )}
+      {aviso && <p className="mt-0.5 pl-10 text-[13px] text-texto-2">{aviso}</p>}
     </li>
   )
 }
@@ -133,14 +147,35 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const [reglas, setReglas] = useState(() => !leer('chat:reglas-vistas', false))
+  const [aviso, setAviso] = useState(null)
+  const [espera, setEspera] = useState(0)
+  const [nuevos, setNuevos] = useState(0)
   const lista = useRef(null)
   const alFondo = useRef(true)
+  const cuantos = useRef(0)
 
-  // Se mantiene abajo mientras la persona no haya subido a leer mensajes anteriores.
+  // Se mantiene abajo mientras la persona no haya subido a leer; si subió, se cuentan los nuevos.
   useLayoutEffect(() => {
     const el = lista.current
+    const n = chat.mensajes.length
     if (el && alFondo.current) el.scrollTop = el.scrollHeight
+    else if (n > cuantos.current && cuantos.current) setNuevos((x) => x + n - cuantos.current)
+    cuantos.current = n
   }, [chat.mensajes])
+
+  // Cuenta regresiva entre mensajes (más larga en modo lento).
+  useEffect(() => {
+    if (!espera) return
+    const t = setTimeout(() => setEspera((x) => Math.max(0, x - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [espera])
+
+  const bajar = () => {
+    const el = lista.current
+    alFondo.current = true
+    setNuevos(0)
+    el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }
   useEffect(() => {
     if (visible && lista.current) lista.current.scrollTop = lista.current.scrollHeight
   }, [visible])
@@ -187,9 +222,13 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
     setEnviando(true)
     setError(null)
     alFondo.current = true
+    setAviso(null)
     try {
-      await chat.enviar(t)
+      const r = await chat.enviar(t)
       setTexto('')
+      setEspera(r.lento || 4)
+      if (r.aviso.datosOcultos) setAviso('Ocultamos un teléfono, RUT o correo para protegerte. Para avisar a tu familia usa el botón SOS.')
+      else if (r.aviso.censurado) setAviso('Tapamos algunas palabras. Mantengamos el chat respetuoso.')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -198,6 +237,7 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
   }
 
   const yo = cuenta.usuario?.id
+  const miNombre = cuenta.usuario?.nombre?.split(' ')[0]
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b border-linea px-4 py-2">
@@ -219,6 +259,7 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
         onScroll={(e) => {
           const el = e.currentTarget
           alFondo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+          if (alFondo.current && nuevos) setNuevos(0)
         }}
         aria-live="polite"
       >
@@ -253,20 +294,38 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
           {chat.mensajes.map((m, i) => {
             const prev = chat.mensajes[i - 1]
             const nuevoDia = !prev || prev.hora.toDateString() !== m.hora.toDateString()
-            const continuacion = !nuevoDia && prev?.autor.id === m.autor.id && m.hora - prev.hora < 5 * 60000
             return [
               nuevoDia && (
-                <li key={`d${m.id}`} className="mt-4 text-center">
+                <li key={`d${m.id}`} className="my-3 text-center">
                   <span className="rounded-full bg-superficie px-3 py-1 text-[12px] font-bold text-texto-2 first-letter:uppercase">{etiquetaDia(m.hora)}</span>
                 </li>
               ),
-              <Mensaje key={m.id} m={m} propio={m.autor.id === yo} continuacion={continuacion} onDenunciar={chat.denunciar} onBorrar={chat.borrar} />,
+              <Mensaje key={m.id} m={m} propio={m.autor.id === yo} miNombre={miNombre} onDenunciar={chat.denunciar} onBorrar={chat.borrar} />,
             ]
           })}
         </ol>
       </div>
 
-      <form onSubmit={enviar} className="border-t border-linea bg-fondo px-3 py-2">
+      <form onSubmit={enviar} className="relative border-t border-linea bg-fondo px-3 py-2">
+        {nuevos > 0 && (
+          <button type="button" onClick={bajar} className="absolute -top-12 left-1/2 min-h-10 -translate-x-1/2 rounded-full bg-senal px-4 text-[14px] font-bold text-sobre-senal shadow-lg">
+            ↓ {nuevos} {nuevos === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
+          </button>
+        )}
+        {chat.lento > 0 && (
+          <p className="mb-1 flex items-center gap-1.5 px-1 text-[13px] font-bold text-senal-texto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l2.5 2.5M9 2h6" />
+            </svg>
+            Modo lento: hay mucha gente escribiendo, un mensaje cada {chat.lento} s.
+          </p>
+        )}
+        {aviso && (
+          <p role="status" className="mb-1 px-1 text-[13px] text-texto-2">
+            {aviso}
+          </p>
+        )}
         {error && (
           <p role="alert" className="mb-1 px-1 text-[14px] font-bold text-peligro">
             {error}
@@ -295,13 +354,13 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
           />
           <button
             type="submit"
-            disabled={!texto.trim() || enviando || !enLinea}
-            aria-label="Enviar mensaje"
-            className="grid size-12 shrink-0 place-items-center rounded-full bg-senal text-sobre-senal disabled:opacity-50"
+            disabled={!texto.trim() || enviando || !enLinea || espera > 0}
+            aria-label={espera ? `Podrás enviar en ${espera} segundos` : 'Enviar mensaje'}
+            className="grid size-12 shrink-0 place-items-center rounded-full bg-senal text-[17px] font-bold text-sobre-senal tabular-nums disabled:opacity-50"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            {espera > 0 ? espera : <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M3 20l18-8L3 4l2 7 9 1-9 1z" />
-            </svg>
+            </svg>}
           </button>
         </div>
         {texto.length > LARGO_MAXIMO - 80 && <p className="mt-1 px-2 text-right text-[12px] text-texto-2">{LARGO_MAXIMO - texto.length} caracteres</p>}

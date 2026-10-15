@@ -7,6 +7,7 @@
   Todas las combinaciones texto/fondo cumplen WCAG AA, y las críticas AAA.
 */
 :root {
+  --l-nombre: 72%; /* nombres en el chat: claros sobre fondo oscuro */
   --fondo: #0f1b26;
   --superficie: #182a3a;
   --superficie-2: #22384b;
@@ -49,6 +50,7 @@
 }
 
 :root[data-tema='claro'] {
+  --l-nombre: 36%;
   --fondo: #f3f6f9;
   --superficie: #ffffff;
   --superficie-2: #e8eef4;
@@ -531,4 +533,12 @@ body {
   0% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.55), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
   70% { box-shadow: 0 0 0 14px rgb(239 68 68 / 0), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
   100% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0), 0 8px 20px -6px rgb(185 28 28 / 0.9); }
+}
+
+/* Chat estilo transmisión en vivo: líneas compactas, opciones visibles al pasar el mouse. */
+.chat-linea:hover { background: color-mix(in srgb, var(--superficie) 70%, transparent); }
+.chat-mencion { background: color-mix(in srgb, var(--senal-texto) 14%, transparent); box-shadow: inset 3px 0 0 var(--senal-texto); }
+@media (pointer: fine) {
+  .chat-linea .chat-opciones { opacity: 0; }
+  .chat-linea:hover .chat-opciones, .chat-opciones:focus-visible, .chat-opciones[aria-expanded='true'] { opacity: 1; }
 }

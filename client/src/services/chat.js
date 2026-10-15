@@ -22,14 +22,16 @@ async function pedir(ruta, opciones = {}) {
 
 const revivir = (m) => ({ ...m, hora: new Date(m.hora) })
 
+/** Mensajes de la comuna y si está en modo lento (segundos entre mensajes; 0 = normal). */
 export async function leerMensajes(cut, antes) {
-  const { mensajes } = await pedir(`/${cut}${antes ? `?antes=${antes}` : ''}`)
-  return mensajes.map(revivir)
+  const { mensajes, lento = 0 } = await pedir(`/${cut}${antes ? `?antes=${antes}` : ''}`)
+  return { mensajes: mensajes.map(revivir), lento }
 }
 
+/** Envía un mensaje. El servidor puede tapar groserías u ocultar datos personales: lo informa en `aviso`. */
 export async function enviarMensaje(cut, texto) {
-  const { mensaje } = await pedir(`/${cut}`, { method: 'POST', body: JSON.stringify({ texto }) })
-  return revivir(mensaje)
+  const { mensaje, datosOcultos = false, censurado = false, lento = 0 } = await pedir(`/${cut}`, { method: 'POST', body: JSON.stringify({ texto }) })
+  return { mensaje: revivir(mensaje), aviso: { datosOcultos, censurado }, lento }
 }
 
 export const denunciarMensaje = (id) => pedir(`/mensajes/${id}/denunciar`, { method: 'POST' })

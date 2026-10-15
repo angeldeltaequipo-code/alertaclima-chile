@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { pool } from '../db/pool.js'
 import { exigirCuenta } from '../services/cuentas.js'
-import { borrarPropio, denunciarMensaje, listarMensajes, publicarMensaje } from '../services/chat.js'
+import { borrarPropio, denunciarMensaje, listarMensajes, modoLento, publicarMensaje } from '../services/chat.js'
 
 /** Chat por comuna. Leer y escribir exige cuenta. `emitirChat(cut, evento, datos)` avisa en tiempo real. */
 export function chatRouter({ emitirChat = () => {} } = {}) {
@@ -10,7 +10,7 @@ export function chatRouter({ emitirChat = () => {} } = {}) {
 
   r.get('/:cut', async (req, res, next) => {
     try {
-      res.set('Cache-Control', 'no-store').json({ mensajes: await listarMensajes(pool, req.params.cut, req.query.antes) })
+      res.set('Cache-Control', 'no-store').json({ mensajes: await listarMensajes(pool, req.params.cut, req.query.antes), lento: modoLento(req.params.cut) })
     } catch (e) {
       next(e)
     }
@@ -18,9 +18,9 @@ export function chatRouter({ emitirChat = () => {} } = {}) {
 
   r.post('/:cut', async (req, res, next) => {
     try {
-      const mensaje = await publicarMensaje(pool, req.params.cut, req.usuario, req.body?.texto)
+      const { mensaje, ...aviso } = await publicarMensaje(pool, req.params.cut, req.usuario, req.body?.texto)
       emitirChat(mensaje.comuna, 'chat:mensaje', mensaje)
-      res.status(201).json({ mensaje })
+      res.status(201).json({ mensaje, ...aviso })
     } catch (e) {
       next(e)
     }

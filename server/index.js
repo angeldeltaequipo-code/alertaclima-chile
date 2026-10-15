@@ -22,8 +22,14 @@ const app = crearApp({ emitir, avisarComunas, emitirChat })
 const http = createServer(app)
 
 // Tiempo real: una sala por comuna (CUT). Cada cliente sigue una sola comuna a la vez.
-io = new Server(http, { cors: { origin: origenesPermitidos() } })
+// Mensajes del socket chicos (aquí nunca viajan archivos) y con límite de ritmo por conexión:
+// un cliente que inunda de eventos se desconecta.
+io = new Server(http, { cors: { origin: origenesPermitidos() }, maxHttpBufferSize: 4e3 })
 io.on('connection', (socket) => {
+  let eventos = 0
+  const ritmo = setInterval(() => (eventos = 0), 10000)
+  socket.on('disconnect', () => clearInterval(ritmo))
+  socket.use((_, siguiente) => (++eventos > 30 ? socket.disconnect(true) : siguiente()))
   socket.on('seguir-comuna', (cut) => {
     if (typeof cut !== 'string' || !/^\d{5}$/.test(cut)) return
     for (const sala of socket.rooms) if (sala.startsWith('comuna:')) socket.leave(sala)

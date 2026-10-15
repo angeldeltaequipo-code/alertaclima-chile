@@ -9,6 +9,7 @@ export function useChat({ cut, token, activo, enLinea }) {
   const [error, setError] = useState(null)
   const [hayMas, setHayMas] = useState(false)
   const [presentes, setPresentes] = useState(null)
+  const [lento, setLento] = useState(0)
 
   useEffect(() => {
     if (!activo || !token || !cut || !enLinea) return
@@ -16,9 +17,10 @@ export function useChat({ cut, token, activo, enLinea }) {
     setEstado('cargando')
     setMensajes([])
     C.leerMensajes(cut)
-      .then((m) => {
+      .then(({ mensajes: m, lento: l }) => {
         if (!vivo) return
         setMensajes(m)
+        setLento(l)
         setHayMas(m.length >= 50)
         setEstado('listo')
       })
@@ -45,15 +47,16 @@ export function useChat({ cut, token, activo, enLinea }) {
 
   const cargarAnteriores = useCallback(async () => {
     if (!mensajes.length) return
-    const viejos = await C.leerMensajes(cut, mensajes[0].id)
+    const { mensajes: viejos } = await C.leerMensajes(cut, mensajes[0].id)
     setHayMas(viejos.length >= 50)
     setMensajes((prev) => [...viejos.filter((v) => !prev.some((p) => p.id === v.id)), ...prev])
   }, [cut, mensajes])
 
   const enviar = async (texto) => {
-    const m = await C.enviarMensaje(cut, texto)
+    const { mensaje: m, aviso, lento: l } = await C.enviarMensaje(cut, texto)
+    setLento(l)
     setMensajes((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
-    return m
+    return { mensaje: m, aviso, lento: l }
   }
 
   const denunciar = async (id) => {
@@ -67,5 +70,5 @@ export function useChat({ cut, token, activo, enLinea }) {
     setMensajes((prev) => prev.filter((x) => x.id !== id))
   }
 
-  return { mensajes, estado, error, hayMas, presentes, cargarAnteriores, enviar, denunciar, borrar }
+  return { mensajes, estado, error, hayMas, presentes, lento, cargarAnteriores, enviar, denunciar, borrar }
 }
