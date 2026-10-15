@@ -14,6 +14,11 @@ const ICONOS = {
       <circle cx="12" cy="12" r="1.2" fill="currentColor" />
     </g>
   ),
+  riesgos: (
+    <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12h4l2-6 3 12 3-9 2 3h6" />
+    </g>
+  ),
   chat: (
     <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
       <path d="M4 5h16v11H9l-5 4z" />
@@ -32,6 +37,7 @@ const ICONOS = {
 const PESTANAS = [
   { id: 'ahora', etiqueta: 'Ahora' },
   { id: 'radar', etiqueta: 'Mapa' },
+  { id: 'riesgos', etiqueta: 'Riesgos' },
   { id: 'chat', etiqueta: 'Chat' },
   { id: 'ajustes', etiqueta: 'Ajustes' },
 ]
@@ -40,7 +46,7 @@ const PESTANAS = [
 export default function Navegacion({ vista, onCambiar }) {
   return (
     <nav className="safe-bottom border-t border-linea bg-fondo" aria-label="Secciones">
-      <ul className="mx-auto grid max-w-xl grid-cols-4">
+      <ul className="mx-auto grid max-w-xl grid-cols-5">
         {PESTANAS.map((p) => {
           const activa = vista === p.id
           return (
@@ -49,7 +55,7 @@ export default function Navegacion({ vista, onCambiar }) {
                 type="button"
                 onClick={() => onCambiar(p.id)}
                 aria-current={activa ? 'page' : undefined}
-                className={`flex min-h-14 w-full flex-col items-center justify-center gap-0.5 text-[14px] font-bold ${
+                className={`flex min-h-14 w-full flex-col items-center justify-center gap-0.5 text-[13px] font-bold ${
                   activa ? 'text-senal-texto' : 'text-texto-2'
                 }`}
               >

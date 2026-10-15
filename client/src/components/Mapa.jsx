@@ -126,6 +126,7 @@ export default function Mapa({
   pedirRios = null,
   onRios = () => {},
   rioEnfocado = null,
+  sismos = null,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() })
@@ -204,6 +205,28 @@ export default function Mapa({
 
       // La atribución parte plegada (botón «i») para no tapar el mapa en pantallas chicas.
       caja.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show')
+      // Sismos: círculos con tamaño y color según la magnitud.
+      mapa.addSource('sismos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      mapa.addLayer({
+        id: 'sismos',
+        type: 'circle',
+        source: 'sismos',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['get', 'mag'], 2.5, 4, 4, 8, 5, 13, 6, 20, 7, 30],
+          'circle-color': ['step', ['get', 'mag'], '#94a3b8', 3, '#38bdf8', 4, '#f59e0b', 5, '#f97316', 6, '#e11d48'],
+          'circle-opacity': ['interpolate', ['linear'], ['get', 'edadH'], 0, 0.85, 168, 0.35],
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 1.5,
+        },
+      })
+      mapa.addLayer({
+        id: 'sismos-mag',
+        type: 'symbol',
+        source: 'sismos',
+        filter: ['>=', ['get', 'mag'], 4],
+        layout: { 'text-field': ['to-string', ['get', 'mag']], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-allow-overlap': true },
+        paint: { 'text-color': '#fff', 'text-halo-color': '#000', 'text-halo-width': 1 },
+      })
       ref.current.listo = true
       ref.current.pendientes.splice(0).forEach((fn) => fn(mapa))
     })
@@ -355,6 +378,27 @@ export default function Mapa({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cuadros, indice])
+
+  // ---- Sismos ----
+  const sismosAntes = useRef(null)
+  useEffect(() => {
+    const recienActivada = sismos && !sismosAntes.current
+    sismosAntes.current = sismos
+    cuandoListo((mapa) => {
+      const ahora = Date.now()
+      mapa.getSource('sismos').setData({
+        type: 'FeatureCollection',
+        features: (sismos ?? []).map((s) => ({
+          type: 'Feature',
+          properties: { mag: s.magnitud, edadH: (ahora - s.hora) / 3600e3 },
+          geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+        })),
+      })
+      // Al activar la capa se muestra todo Chile; en las actualizaciones no se mueve el mapa.
+      if (recienActivada) mapa.flyTo({ center: [-71, -32], zoom: 3.6 })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sismos])
 
   // ---- Ríos y quebradas cercanos ----
   useEffect(() => {

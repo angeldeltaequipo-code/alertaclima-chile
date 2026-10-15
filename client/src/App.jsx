@@ -23,6 +23,8 @@ import { useNotificaciones } from './hooks/useNotificaciones'
 import { useCuenta } from './hooks/useCuenta'
 import PuertaCuenta from './components/PuertaCuenta'
 import VistaChat from './components/VistaChat'
+import VistaRiesgos from './components/VistaRiesgos'
+import { useRiesgos } from './hooks/useRiesgos'
 import { BotonZumi, HojaZumi } from './components/Zumi'
 import { guionReporte, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
@@ -55,6 +57,8 @@ export default function App() {
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
   const cuenta = useCuenta({ enLinea })
+  const riesgos = useRiesgos({ enLinea })
+  const [capaSismos, setCapaSismos] = useState(false)
   const notifBase = useNotificaciones({ enLinea })
   // Participar (notificaciones, reportes, votos, chat) pide cuenta cuando el inicio de sesión está activo.
   const notif = {
@@ -278,6 +282,7 @@ export default function App() {
                 pedirRios={pedirRios}
                 onRios={(r) => setRios({ ...r, origen: pedirRios?.origen, comuna: comuna?.nombre, hayUbicacion: Boolean(ubicacion) })}
                 rioEnfocado={rioEnfocado}
+                sismos={capaSismos ? riesgos.datos?.sismos : null}
               />
             </Suspense>
             </Resguardo>
@@ -289,6 +294,8 @@ export default function App() {
             onModoCalle={setModoCalle}
             onRios={rios ? () => setRios(null) : () => buscarRios()}
             riosActivo={Boolean(rios)}
+            sismosActivo={capaSismos}
+            onSismos={() => setCapaSismos(!capaSismos)}
           />
           <button
             type="button"
@@ -345,6 +352,21 @@ export default function App() {
           </div>
         </div>
 
+        {/* Riesgos: sismos, tsunamis y volcanes */}
+        <div hidden={vista !== 'riesgos'} className="h-full overflow-y-auto overscroll-contain">
+          <div className="mx-auto max-w-xl">
+            <VistaRiesgos
+              riesgos={riesgos}
+              comuna={comuna}
+              punto={clima.datos?.punto ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)}
+              onVerMapa={() => {
+                setCapaSismos(true)
+                setVista('radar')
+              }}
+            />
+          </div>
+        </div>
+
         {/* Chat de la comuna */}
         <div hidden={vista !== 'chat'} className="h-full">
           <div className="mx-auto h-full max-w-xl">
@@ -376,6 +398,7 @@ export default function App() {
               dias: clima.datos?.dias,
               alertas: alertas.estado,
               reportes: rep.reportes,
+              sismos: riesgos.datos?.sismos,
             })
           }
         />

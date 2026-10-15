@@ -486,3 +486,29 @@ body {
   0%, 100% { height: 6px; }
   50% { height: 22px; }
 }
+
+/* ---- Riesgos: la Tierra vista desde el espacio ---- */
+.riesgos-tierra {
+  background: radial-gradient(130% 90% at 50% 0%, #0f172a 0%, #050816 70%);
+}
+.tierra-limbo {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -330px;
+  height: 400px;
+  border-radius: 50%;
+  background:
+    radial-gradient(60% 40% at 40% 20%, rgb(34 197 94 / 0.35), transparent 60%),
+    radial-gradient(50% 35% at 70% 25%, rgb(250 204 21 / 0.18), transparent 60%),
+    radial-gradient(circle at 50% 0%, #2563eb 0%, #1e3a8a 40%, #0b1a3d 75%);
+  box-shadow: 0 -10px 40px 6px rgb(56 189 248 / 0.55), 0 -2px 0 2px rgb(125 211 252 / 0.6);
+}
+.volcan-icono {
+  width: 28px;
+  height: 24px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #f97316 0 18%, #78350f 18% 100%);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  border-radius: 3px;
+}
