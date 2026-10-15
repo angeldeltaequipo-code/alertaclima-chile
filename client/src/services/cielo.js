@@ -85,5 +85,5 @@ export const CAMARAS_CIELO = [
   },
 ]
 
-/** URL con un parámetro que cambia cada 5 minutos, para traer la imagen nueva. */
-export const urlFresca = (url) => `${url}${url.includes('?') ? '&' : '?'}t=${Math.floor(Date.now() / 300000)}`
+/** URL con un parámetro que cambia cada minuto, para traer la imagen nueva (las cámaras se renuevan cada 1 a 5 min). */
+export const urlFresca = (url) => `${url}${url.includes('?') ? '&' : '?'}t=${Math.floor(Date.now() / 60000)}`

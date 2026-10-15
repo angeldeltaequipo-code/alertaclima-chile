@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { CAMARAS_CIELO, calidadNoche, faseLunar, urlFresca } from '../services/cielo'
 import { hhmm } from '../services/formato'
+import ImagenViva from './ImagenViva'
 
 /** Dibujo de la Luna tal como se ve desde Chile (hemisferio sur: crece por la izquierda). */
 export function Luna({ fase, tam = 64 }) {
@@ -22,6 +23,46 @@ export function Luna({ fase, tam = 64 }) {
       <path d={d} fill="#fef3c7" transform={fase.creciente ? 'translate(100 0) scale(-1 1)' : undefined} />
       <circle cx="50" cy="50" r={r} fill="none" stroke="#fef3c7" strokeOpacity="0.3" />
     </svg>
+  )
+}
+
+/** Panorámica de 360° que gira sola (y se puede arrastrar), con la imagen renovada cada pocos minutos. */
+function Panorama({ camara, onError }) {
+  const caja = useRef(null)
+  const tocando = useRef(false)
+  const [url, setUrl] = useState(() => urlFresca(camara.url))
+  useEffect(() => {
+    const id = setInterval(() => setUrl(urlFresca(camara.url)), 120000)
+    return () => clearInterval(id)
+  }, [camara.url])
+  useEffect(() => {
+    let raf
+    let x = 0
+    const paso = () => {
+      const el = caja.current
+      if (el && !tocando.current && el.scrollWidth > el.clientWidth) {
+        x = el.scrollLeft + 0.6
+        if (x >= el.scrollWidth - el.clientWidth - 1) x = 0
+        el.scrollLeft = x
+      }
+      raf = requestAnimationFrame(paso)
+    }
+    raf = requestAnimationFrame(paso)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  return (
+    <div
+      ref={caja}
+      className="relative overflow-x-auto [scrollbar-width:none]"
+      onPointerDown={() => (tocando.current = true)}
+      onPointerUp={() => setTimeout(() => (tocando.current = false), 2500)}
+      onPointerCancel={() => (tocando.current = false)}
+    >
+      <img src={url} alt={`Panorámica en vivo: ${camara.nombre}`} onError={onError} className="block h-[46vh] max-h-[420px] w-auto max-w-none" />
+      <span className="sticky top-2 left-2 ml-2 -mt-[calc(46vh-0.5rem)] inline-flex items-center gap-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-bold text-white">
+        <span className="size-1.5 animate-pulse rounded-full bg-red-500" aria-hidden="true" /> EN VIVO · 360°
+      </span>
+    </div>
   )
 }
 
@@ -61,19 +102,16 @@ function Visor({ camara, onCerrar }) {
             </svg>
           </button>
         </div>
-        <div className={`overflow-hidden rounded-2xl bg-black ${pano ? 'overflow-x-auto' : ''}`}>
+        <div className="overflow-hidden rounded-2xl bg-black">
           {error ? (
             <p className="grid aspect-video place-items-center p-4 text-center text-[15px] text-white/70">La cámara no respondió. Prueba en unos minutos.</p>
+          ) : pano ? (
+            <Panorama camara={camara} onError={() => setError(true)} />
           ) : (
-            <img
-              src={urlFresca(camara.url)}
-              alt={`Imagen en vivo: ${camara.nombre}`}
-              onError={() => setError(true)}
-              className={pano ? 'block h-[46vh] max-h-[420px] w-auto max-w-none' : 'mx-auto block max-h-[60vh] w-auto max-w-full'}
-            />
+            <ImagenViva src={camara.url} fresca={urlFresca} cada={60000} alt={`Imagen en vivo: ${camara.nombre}`} className="mx-auto aspect-square max-h-[60vh]" imgClassName="h-full w-full object-contain" onError={() => setError(true)} />
           )}
         </div>
-        {pano && !error && <p className="mt-1 text-center text-[13px] text-white/60">← Desliza para mirar alrededor →</p>}
+        {pano && !error && <p className="mt-1 text-center text-[13px] text-white/60">Gira sola. Arrástrala para mirar alrededor.</p>}
         <p className="mt-2 text-[15px] leading-snug text-white/85">{camara.descripcion}</p>
         <p className="mt-2 text-[12px] text-white/60">
           Imagen: {camara.credito} ·{' '}
@@ -87,7 +125,9 @@ function Visor({ camara, onCerrar }) {
 }
 
 /** Tarjeta «Mira el cielo»: la Luna, cómo viene la noche y los observatorios de Chile en vivo. */
-export default function MiraElCielo({ horas, hoy }) {
+const CieloEnVivo = lazy(() => import('./CieloEnVivo'))
+
+export default function MiraElCielo({ horas, hoy, punto, comuna }) {
   const [abierta, setAbierta] = useState(null)
   const fase = faseLunar()
   const noche = calidadNoche(horas)
@@ -125,15 +165,23 @@ export default function MiraElCielo({ horas, hoy }) {
             </p>
           </div>
         )}
+        {punto && (
+          <div className="mt-4">
+            <h3 className="text-[16px] font-bold text-white">El cielo sobre {comuna ?? 'ti'}, en vivo</h3>
+            <div className="mt-2">
+              <Suspense fallback={<p className="py-10 text-center text-[14px] text-white/70">Cargando el cielo…</p>}>
+                <CieloEnVivo punto={punto} comuna={comuna} />
+              </Suspense>
+            </div>
+          </div>
+        )}
 
         <h3 className="mt-4 text-[16px] font-bold text-white">Observatorios de Chile en vivo</h3>
         <ul className="-mx-4 mt-2 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           {CAMARAS_CIELO.map((c) => (
             <li key={c.id} className="w-44 shrink-0 snap-start">
               <button type="button" onClick={() => setAbierta(c)} className="block w-full text-left" aria-label={`Ver ${c.nombre}`}>
-                <span className="block aspect-square overflow-hidden rounded-2xl bg-black ring-1 ring-white/15">
-                  <img src={urlFresca(c.url)} alt="" loading="lazy" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.opacity = '0.2')} />
-                </span>
+                <ImagenViva src={c.url} fresca={urlFresca} cada={120000} movimiento className="aspect-square rounded-2xl bg-black ring-1 ring-white/15" onError={(e) => (e.currentTarget.style.opacity = '0.2')} />
                 <span className="mt-1 block text-[14px] leading-tight font-bold text-white">{c.nombre}</span>
                 <span className="block truncate text-[12px] text-white/65">{c.lugar}</span>
               </button>

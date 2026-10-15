@@ -5,6 +5,8 @@ import Semana from './Semana'
 import Fichas from './Fichas'
 import RiesgoAluvion from './RiesgoAluvion'
 import MiraElCielo from './MiraElCielo'
+import EspacioEnVivo from './EspacioEnVivo'
+import PulsoEnVivo from './PulsoEnVivo'
 import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
@@ -46,7 +48,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, onVerRios = () => {} }) {
+export default function VistaAhora({ clima, comuna, enLinea, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {} }) {
   const { datos, error, recargar } = clima
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
@@ -89,6 +91,7 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
   return (
     <div className="lista-entrar space-y-3 px-4 pt-4 pb-6">
       {resumen}
+      <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
 
       {invitacion}
 
@@ -139,7 +142,8 @@ export default function VistaAhora({ clima, comuna, enLinea, resumen = null, inv
 
       {!urgenteAluvion && aluvion}
 
-      <MiraElCielo horas={horas} hoy={dias[0]} />
+      <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
+      <EspacioEnVivo punto={datos.punto} />
 
       <h2 className="px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />

@@ -242,6 +242,8 @@ export default function App() {
             {comuna && (
               <VistaAhora
                 clima={clima}
+                sismos={riesgos.datos?.sismos}
+                reportesLista={rep.reportes}
                 comuna={comuna}
                 enLinea={enLinea}
                 obs={obs}

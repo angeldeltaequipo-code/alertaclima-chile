@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { hace } from '../services/reportes'
+import ImagenViva from './ImagenViva'
 
 export const CREDITO_WINDY = (
   <>
@@ -17,7 +18,7 @@ const reciente = (iso) => iso && Date.now() - new Date(iso).getTime() < 3 * 3600
 function Etiqueta({ children, viva = false }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[12px] font-bold text-white backdrop-blur-sm">
-      {viva && <span className="size-2 rounded-full bg-[#4ade80]" aria-hidden="true" />}
+      {viva && <span className="size-2 animate-pulse rounded-full bg-[#4ade80]" aria-hidden="true" />}
       {children}
     </span>
   )
@@ -28,7 +29,7 @@ export function TarjetaCamara({ camara, onAbrir }) {
   return (
     <button type="button" onClick={() => onAbrir(camara)} className="group block w-full text-left" aria-label={`Ver la cámara ${camara.titulo}`}>
       <span className="relative block overflow-hidden rounded-2xl bg-superficie-2">
-        <img src={camara.miniatura} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+        <ImagenViva src={camara.miniatura} etiqueta={false} className="aspect-video w-full" />
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-8 pb-2">
           <span className="block truncate text-[15px] font-bold text-white">{camara.titulo.split(':').pop().trim()}</span>
           <span className="block truncate text-[12px] text-white/85">{camara.lugar ?? camara.titulo}</span>
@@ -106,7 +107,8 @@ function Carrusel({ camaras, onAbrir }) {
  * enlaza a su reproductor o a su página, y se muestra sin agrandarla.
  */
 export function VisorCamara({ camara, onCerrar }) {
-  const [modo, setModo] = useState('imagen')
+  // Si Windy tiene la secuencia del día, se abre directo en ella: se ve el movimiento de las nubes y la luz.
+  const [modo, setModo] = useState(camara.reproductor ? 'dia' : 'imagen')
   const [cargado, setCargado] = useState(false)
   const ref = useRef(null)
 
@@ -157,8 +159,8 @@ export function VisorCamara({ camara, onCerrar }) {
         {camara.reproductor && (
           <div role="tablist" aria-label="Qué ver" className="mb-3 grid grid-cols-2 rounded-xl bg-superficie-2 p-1">
             {[
+              ['dia', '▶ Animación de hoy'],
               ['imagen', 'Imagen actual'],
-              ['dia', 'Cómo cambió hoy'],
             ].map(([k, t]) => (
               <button
                 key={k}

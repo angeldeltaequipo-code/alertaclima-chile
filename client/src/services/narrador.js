@@ -9,6 +9,7 @@ import { NIVELES, alertaPrincipal } from './alertas'
 import { riesgoAluvion } from './aluvion'
 import { faseLunar } from './cielo'
 import { direccionViento } from './clima'
+import * as labios from './labios'
 
 export const NOMBRE = 'ZUMI'
 
@@ -99,17 +100,30 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
     avisar()
     // Sin voz (silenciado o navegador sin lectura): avanza al ritmo de lectura de los subtítulos.
     if (!s) {
-      await new Promise((ok) => setTimeout(ok, Math.max(2200, frases[i].length * 62)))
+      const ms = Math.max(2200, frases[i].length * 62)
+      labios.empezar(frases[i], { cps: (frases[i].length / ms) * 1000 * 0.92 })
+      await new Promise((ok) => setTimeout(ok, ms))
+      labios.terminar()
       continue
     }
     await new Promise((ok) => {
-      const u = new SpeechSynthesisUtterance(paraVoz(frases[i]))
+      const dicho = paraVoz(frases[i])
+      const u = new SpeechSynthesisUtterance(dicho)
+      // La boca de ZUMI sigue lo que dice: arranca con la voz y se ajusta en cada palabra.
+      let partio = false
+      u.onstart = () => {
+        partio = true
+        labios.empezar(dicho, { cps: 14.5 })
+      }
+      // Algunas voces no avisan el inicio: se arranca igual tras un instante.
+      setTimeout(() => !partio && estado.frases === frases && labios.empezar(dicho, { cps: 14.5 }), 450)
+      u.onboundary = (ev) => (ev.name === 'word' || ev.name == null) && labios.sincronizar(ev.charIndex)
       if (voz) u.voice = voz
       u.lang = voz?.lang ?? 'es-419'
       u.pitch = 1.35
       u.rate = 0.98
-      u.onend = ok
-      u.onerror = ok
+      u.onend = () => (labios.terminar(), ok())
+      u.onerror = () => (labios.terminar(), ok())
       s.speak(u)
     })
   }
@@ -122,6 +136,7 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
 
 export function callar() {
   sintesis()?.cancel()
+  labios.terminar()
   estado = { hablando: false, frase: -1, frases: [] }
   avisar()
 }

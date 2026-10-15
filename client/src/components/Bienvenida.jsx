@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { alCambiarNarrador, callar, hablar } from '../services/narrador'
 
-const BASE = import.meta.env.BASE_URL
 import { comunaEnPunto } from '../services/comunas'
 import BotonGoogle from './BotonGoogle'
+import EscenarioZumi from './EscenarioZumi'
+import ZumiVivo from './ZumiVivo'
 
 const PUNTOS = [
   {
@@ -39,6 +40,13 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   const [buscando, setBuscando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [hablandoZumi, setHablandoZumi] = useState(false)
+  const [saludo, setSaludo] = useState(false)
+  const altoZumi = Math.round(Math.min(window.innerHeight * 0.46, 420))
+  // ZUMI saluda con la mano al aparecer y cada vez que habla.
+  useEffect(() => {
+    const t = setTimeout(() => setSaludo(true), 600)
+    return () => clearTimeout(t)
+  }, [])
   useEffect(() => {
     const quitar = alCambiarNarrador((e) => setHablandoZumi(e.hablando))
     return () => {
@@ -47,7 +55,12 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
     }
   }, [])
   // La voz necesita un toque de la persona (los navegadores no dejan hablar solo al abrir).
-  const escuchar = () => (hablandoZumi ? callar() : hablar(dice, { silencio: false }))
+  const escuchar = () => {
+    if (hablandoZumi) return callar()
+    setSaludo(false)
+    requestAnimationFrame(() => setSaludo(true))
+    hablar(dice, { silencio: false })
+  }
 
   const ubicarme = () => {
     if (!navigator.geolocation) return onBuscar()
@@ -94,18 +107,10 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
         {/* ZUMI en su estudio, hablándole a la persona */}
         <div className="bienvenida-zumi relative h-[56dvh] min-h-[330px] w-full">
           <div className="absolute inset-0 overflow-hidden">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster={`${BASE}zumi/zumi-v-cerca.jpg`}
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover object-[50%_20%]"
-            >
-              <source src={`${BASE}zumi/zumi-v-cerca.webm`} type="video/webm" />
-              <source src={`${BASE}zumi/zumi-v-cerca.mp4`} type="video/mp4" />
-            </video>
+            <EscenarioZumi />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+              <ZumiVivo alto={altoZumi} saludar={saludo} encuadre="busto" />
+            </div>
             <div className="bienvenida-zumi-velo absolute inset-0" aria-hidden="true" />
           </div>
           <div className="safe-top absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-4">

@@ -8,12 +8,28 @@ function Paraguas() {
     <g>
       <g className="zumi-lluvia">
         {[40, 110, 440, 480, 70, 420].map((x, i) => (
-          <line key={i} x1={x} y1={200 + (i % 3) * 70} x2={x - 8} y2={232 + (i % 3) * 70} stroke="#bae6fd" strokeWidth="6" strokeLinecap="round" style={{ animationDelay: `${i * 0.23}s` }} />
+          <line
+            key={i}
+            x1={x}
+            y1={200 + (i % 3) * 70}
+            x2={x - 8}
+            y2={232 + (i % 3) * 70}
+            stroke="#bae6fd"
+            strokeWidth="6"
+            strokeLinecap="round"
+            style={{ animationDelay: `${i * 0.23}s` }}
+          />
         ))}
       </g>
       <g transform="rotate(-10 256 90)">
         <path d="M30 120 Q256 -70 482 120 Z" fill="url(#zp-tela)" />
-        <path d="M30 120 q37 -22 75 0 q38 -22 75 0 q38 -22 76 0 q38 -22 75 0 q38 -22 75 0 q38 -22 76 0" fill="none" stroke="#7c2d12" strokeWidth="5" opacity=".35" />
+        <path
+          d="M30 120 q37 -22 75 0 q38 -22 75 0 q38 -22 76 0 q38 -22 75 0 q38 -22 75 0 q38 -22 76 0"
+          fill="none"
+          stroke="#7c2d12"
+          strokeWidth="5"
+          opacity=".35"
+        />
         <path d="M256 25 L256 120 M143 40 L180 120 M369 40 L332 120" stroke="#7c2d12" strokeWidth="4" opacity=".35" />
         <circle cx="256" cy="20" r="9" fill="#78350f" />
         <path d="M256 120 L256 140" stroke="#44403c" strokeWidth="9" strokeLinecap="round" />
@@ -34,21 +50,35 @@ function Lentes() {
   )
 }
 
-function Gorro() {
+function Gorro({ soloCabeza }) {
   return (
     <g>
       <path d="M108 150 C108 40 404 30 414 146 Z" fill="#0d9488" />
       <path d="M150 60 C200 40 320 38 370 62" stroke="#14b8a6" strokeWidth="10" fill="none" opacity=".6" />
       <rect x="96" y="128" width="330" height="46" rx="22" fill="#0f766e" />
       {Array.from({ length: 10 }, (_, i) => (
-        <line key={i} x1={116 + i * 32} y1={134} x2={116 + i * 32} y2={168} stroke="#115e59" strokeWidth="6" strokeLinecap="round" />
+        <line
+          key={i}
+          x1={116 + i * 32}
+          y1={134}
+          x2={116 + i * 32}
+          y2={168}
+          stroke="#115e59"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
       ))}
       <circle cx="262" cy="34" r="30" fill="#f8fafc" />
       <circle cx="252" cy="26" r="10" fill="#fff" />
       {/* bufanda */}
       <path d="M118 372 C200 410 320 410 398 368 L404 420 C320 462 196 462 112 424 Z" fill="#dc2626" />
-      <path d="M150 396 l0 40 M190 404 l0 44 M230 408 l0 44 M270 408 l0 44 M310 404 l0 44 M350 396 l0 40" stroke="#fca5a5" strokeWidth="7" opacity=".55" />
-      <path d="M330 420 L360 512 L410 512 L384 414 Z" fill="#b91c1c" />
+      <path
+        d="M150 396 l0 40 M190 404 l0 44 M230 408 l0 44 M270 408 l0 44 M310 404 l0 44 M350 396 l0 40"
+        stroke="#fca5a5"
+        strokeWidth="7"
+        opacity=".55"
+      />
+      {!soloCabeza && <path d="M330 420 L360 512 L410 512 L384 414 Z" fill="#b91c1c" />}
     </g>
   )
 }
@@ -57,8 +87,22 @@ function Astronauta() {
   return (
     <g>
       <circle cx="256" cy="256" r="236" fill="url(#zp-casco)" stroke="#e2e8f0" strokeWidth="18" />
-      <path d="M86 150 A190 190 0 0 1 200 66" stroke="#fff" strokeWidth="16" strokeLinecap="round" fill="none" opacity=".55" />
-      <path d="M110 190 A160 160 0 0 1 140 140" stroke="#fff" strokeWidth="10" strokeLinecap="round" fill="none" opacity=".4" />
+      <path
+        d="M86 150 A190 190 0 0 1 200 66"
+        stroke="#fff"
+        strokeWidth="16"
+        strokeLinecap="round"
+        fill="none"
+        opacity=".55"
+      />
+      <path
+        d="M110 190 A160 160 0 0 1 140 140"
+        stroke="#fff"
+        strokeWidth="10"
+        strokeLinecap="round"
+        fill="none"
+        opacity=".4"
+      />
       <path d="M40 420 Q256 520 472 420 L512 512 L0 512 Z" fill="#f1f5f9" />
       <rect x="208" y="452" width="96" height="40" rx="10" fill="#1d4ed8" />
       <circle cx="232" cy="472" r="7" fill="#f87171" />
@@ -68,16 +112,30 @@ function Astronauta() {
   )
 }
 
-function Casco() {
+function Casco({ soloCabeza }) {
   return (
     <g>
       <path d="M112 150 C112 40 404 34 412 150 Z" fill="url(#zp-amarillo)" />
       <path d="M248 46 L248 150 M276 46 L276 150" stroke="#ca8a04" strokeWidth="10" />
       <path d="M82 158 Q256 120 440 156 Q446 176 430 180 Q256 150 92 184 Q74 178 82 158 Z" fill="#eab308" />
-      <path d="M150 70 C190 54 230 50 240 52" stroke="#fef9c3" strokeWidth="9" strokeLinecap="round" fill="none" opacity=".8" />
-      {/* chaleco reflectante */}
-      <path d="M60 470 Q120 400 190 410 L210 512 L40 512 Z M452 470 Q392 400 322 410 L302 512 L472 512 Z" fill="#f97316" />
-      <path d="M70 470 L196 452 M444 470 L316 452" stroke="#e2e8f0" strokeWidth="14" />
+      <path
+        d="M150 70 C190 54 230 50 240 52"
+        stroke="#fef9c3"
+        strokeWidth="9"
+        strokeLinecap="round"
+        fill="none"
+        opacity=".8"
+      />
+      {/* chaleco reflectante (solo en el portal: en el cuerpo entero quedaría flotando) */}
+      {!soloCabeza && (
+        <>
+          <path
+            d="M60 470 Q120 400 190 410 L210 512 L40 512 Z M452 470 Q392 400 322 410 L302 512 L472 512 Z"
+            fill="#f97316"
+          />
+          <path d="M70 470 L196 452 M444 470 L316 452" stroke="#e2e8f0" strokeWidth="14" />
+        </>
+      )}
     </g>
   )
 }
@@ -96,7 +154,56 @@ function Presentador() {
   )
 }
 
-const TRAJE = { paraguas: Paraguas, lentes: Lentes, gorro: Gorro, astronauta: Astronauta, casco: Casco, presentador: Presentador }
+function Definiciones() {
+  return (
+    <defs>
+      <linearGradient id="zp-tela" x1="0" x2="1">
+        <stop offset="0" stopColor="#facc15" />
+        <stop offset=".5" stopColor="#f97316" />
+        <stop offset="1" stopColor="#ef4444" />
+      </linearGradient>
+      <linearGradient id="zp-vidrio" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#1e293b" />
+        <stop offset=".6" stopColor="#0f172a" />
+        <stop offset="1" stopColor="#7c3aed" />
+      </linearGradient>
+      <radialGradient id="zp-casco" cx=".35" cy=".3" r=".8">
+        <stop offset="0" stopColor="#bae6fd" stopOpacity=".18" />
+        <stop offset=".7" stopColor="#38bdf8" stopOpacity=".06" />
+        <stop offset="1" stopColor="#0ea5e9" stopOpacity=".3" />
+      </radialGradient>
+      <linearGradient id="zp-amarillo" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#fde047" />
+        <stop offset="1" stopColor="#eab308" />
+      </linearGradient>
+      <linearGradient id="zp-parpado" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#9a4a26" />
+        <stop offset="1" stopColor="#c9703f" />
+      </linearGradient>
+    </defs>
+  )
+}
+
+/** Solo el traje, como SVG independiente (para dibujarlo sobre ZUMI en 3D). */
+export function TrajeSVG({ traje, refSvg, soloCabeza = false }) {
+  const Traje = TRAJE[traje]
+  if (!Traje) return null
+  return (
+    <svg ref={refSvg} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+      <Definiciones />
+      <Traje soloCabeza={soloCabeza} />
+    </svg>
+  )
+}
+
+const TRAJE = {
+  paraguas: Paraguas,
+  lentes: Lentes,
+  gorro: Gorro,
+  astronauta: Astronauta,
+  casco: Casco,
+  presentador: Presentador,
+}
 
 /**
  * @param traje presentador | paraguas | gorro | lentes | astronauta | casco
@@ -105,36 +212,20 @@ const TRAJE = { paraguas: Paraguas, lentes: Lentes, gorro: Gorro, astronauta: As
 export default function PortalZumi({ tam = 200, traje = 'presentador', hablando = false, className = '' }) {
   const Traje = TRAJE[traje] ?? Presentador
   return (
-    <span className={`portal-zumi ${hablando ? 'hablando' : ''} ${className}`} style={{ width: tam, height: tam }} aria-hidden="true">
+    <span
+      className={`portal-zumi ${hablando ? 'hablando' : ''} ${className}`}
+      style={{ width: tam, height: tam }}
+      aria-hidden="true"
+    >
       <span className="portal-zumi-lente">
         <span key={traje} className="portal-zumi-escena">
-          <img src={`${BASE}zumi/${tam > 140 ? 'zumi-portal.webp' : 'zumi-portal-256.webp'}`} alt="" draggable="false" />
+          <img
+            src={`${BASE}zumi/${tam > 140 ? 'zumi-portal.webp' : 'zumi-portal-256.webp'}`}
+            alt=""
+            draggable="false"
+          />
           <svg viewBox="0 0 512 512" className="portal-zumi-traje">
-            <defs>
-              <linearGradient id="zp-tela" x1="0" x2="1">
-                <stop offset="0" stopColor="#facc15" />
-                <stop offset=".5" stopColor="#f97316" />
-                <stop offset="1" stopColor="#ef4444" />
-              </linearGradient>
-              <linearGradient id="zp-vidrio" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#1e293b" />
-                <stop offset=".6" stopColor="#0f172a" />
-                <stop offset="1" stopColor="#7c3aed" />
-              </linearGradient>
-              <radialGradient id="zp-casco" cx=".35" cy=".3" r=".8">
-                <stop offset="0" stopColor="#bae6fd" stopOpacity=".18" />
-                <stop offset=".7" stopColor="#38bdf8" stopOpacity=".06" />
-                <stop offset="1" stopColor="#0ea5e9" stopOpacity=".3" />
-              </radialGradient>
-              <linearGradient id="zp-amarillo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#fde047" />
-                <stop offset="1" stopColor="#eab308" />
-              </linearGradient>
-              <linearGradient id="zp-parpado" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#9a4a26" />
-                <stop offset="1" stopColor="#c9703f" />
-              </linearGradient>
-            </defs>
+            <Definiciones />
             {/* párpados: parpadea cada pocos segundos */}
             <g className="zumi-parpados">
               <ellipse cx="198" cy="210" rx="31" ry="29" fill="url(#zp-parpado)" />

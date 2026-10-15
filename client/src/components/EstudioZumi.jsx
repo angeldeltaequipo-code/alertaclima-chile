@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import IconoClima from './IconoClima'
 import PortalZumi from './PortalZumi'
+import ZumiVivo from './ZumiVivo'
+import EscenarioZumi from './EscenarioZumi'
 import {
   NOMBRE,
   TRAJES,
@@ -24,47 +26,23 @@ import {
 import { SUGERENCIAS, preguntarZumi } from '../services/zumiCerebro'
 import { NIVELES } from '../services/alertas'
 
-const BASE = import.meta.env.BASE_URL
-const CLIPS = ['estudio', 'pronostico', 'alerta', 'cerca']
+
+/** Alto de ZUMI según la pantalla: grande, pero dejando sitio a los datos y a los subtítulos. */
+function useAltoZumi() {
+  const calc = () => Math.round(Math.min(window.innerHeight * 0.56, 540, window.innerWidth * 1.15))
+  const [alto, setAlto] = useState(calc)
+  useEffect(() => {
+    const f = () => setAlto(calc())
+    window.addEventListener('resize', f)
+    return () => window.removeEventListener('resize', f)
+  }, [])
+  return alto
+}
 
 function useNarrador() {
   const [e, setE] = useState({ hablando: false, frase: -1, frases: [] })
   useEffect(() => alCambiarNarrador(setE), [])
   return e
-}
-
-/** Los 4 clips del estudio montados a la vez; se ve (y reproduce) solo el de la escena. */
-function VideoEstudio({ clip }) {
-  const refs = useRef({})
-  useEffect(() => {
-    for (const c of CLIPS) {
-      const v = refs.current[c]
-      if (!v) continue
-      if (c === clip) v.play?.().catch(() => {})
-      else v.pause?.()
-    }
-  }, [clip])
-  return (
-    <div className="absolute inset-0" aria-hidden="true">
-      {CLIPS.map((c) => (
-        <video
-          key={c}
-          ref={(el) => (refs.current[c] = el)}
-          poster={`${BASE}zumi/zumi-v-${c}.jpg`}
-          muted
-          loop
-          playsInline
-          preload={c === clip ? 'auto' : 'metadata'}
-          autoPlay={c === clip}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${c === clip ? 'opacity-100' : 'opacity-0'}`}
-        >
-          {/* WebM para Chrome/Android/Firefox, MP4 (H.264) para iPhone y Safari */}
-          <source src={`${BASE}zumi/zumi-v-${c}.webm`} type="video/webm" />
-          <source src={`${BASE}zumi/zumi-v-${c}.mp4`} type="video/mp4" />
-        </video>
-      ))}
-    </div>
-  )
 }
 
 const fmt = (n, d = 0) => Number(n).toLocaleString('es-CL', { maximumFractionDigits: d })
@@ -235,7 +213,6 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const escena = i >= 0 ? escenas[i] : null
   const respondiendo = ultima && e.frases.length === 1 && e.frases[0] === ultima.texto && e.hablando
   const terminado = !e.hablando
-  const clip = escena?.clip ?? (respondiendo || pensando ? 'cerca' : conversa ? 'cerca' : 'estudio')
 
   useEffect(() => {
     const previo = document.activeElement
@@ -313,6 +290,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       ? ultima?.texto
       : (escena?.texto ?? (conversa && !e.hablando ? `¿Te ayudo con algo más${quien ? `, ${quien}` : ''}? Pregúntame lo que quieras.` : null))
   const alerta = escena?.clip === 'alerta'
+  const altoZumi = useAltoZumi()
 
   return (
     <div
@@ -324,10 +302,14 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       className={`estudio-zumi fixed inset-0 z-[1150] flex justify-center overflow-hidden bg-black text-white ${alerta ? 'en-alerta' : ''}`}
     >
       {/* Fondo desenfocado para pantallas anchas */}
-      <img src={`${BASE}zumi/zumi-v-${clip}.jpg`} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
+      <div className="absolute inset-0 bg-[#050a18]" aria-hidden="true" />
 
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
-        <VideoEstudio clip={clip} />
+        <EscenarioZumi comuna={datos.comuna} ahora={datos.ahora} horas={datos.horas} alerta={alerta} />
+        {/* ZUMI en 3D, parado en la plataforma del estudio */}
+        <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '26%' }}>
+          <ZumiVivo alto={altoZumi} traje={traje === 'presentador' ? null : traje} saludar={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta))} luz={alerta ? 'alerta' : 'normal'} />
+        </div>
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
 
         {/* Barra superior */}
