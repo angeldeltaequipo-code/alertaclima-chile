@@ -6,7 +6,8 @@ export async function obtenerRiesgos({ signal } = {}) {
   const r = await fetch(`${API_URL}/api/riesgos`, { signal })
   if (!r.ok) throw new Error('No se pudo consultar la información de riesgos')
   const d = await r.json()
-  return { ...d, sismos: d.sismos ?? [], tsunami: d.tsunami ?? [], volcanes: d.volcanes ?? [] }
+  // volcanesConocidos: false cuando la fuente semanal no respondió (no es lo mismo que «sin actividad»).
+  return { ...d, sismos: d.sismos ?? [], tsunami: d.tsunami ?? [], volcanes: d.volcanes ?? [], volcanesConocidos: d.volcanes != null }
 }
 
 export function distanciaKm(a, b) {

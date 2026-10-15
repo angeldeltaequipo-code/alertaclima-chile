@@ -177,7 +177,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] font-bold">{v.nombre}</span>
                     <span className="block text-[13px] text-texto-2">
-                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : 'Sin actividad destacada esta semana'}
+                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : datos.volcanesConocidos ? 'Sin actividad destacada esta semana' : 'Revisa su nivel en SERNAGEOMIN'}
                     </span>
                   </span>
                   <span className="shrink-0 text-[14px] font-bold tabular-nums">{v.distanciaKm} km</span>
@@ -191,7 +191,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
               </p>
             )}
             <p className="mt-2 text-[12px] text-texto-2">
-              Fuente: reporte semanal del Smithsonian, que cita a SERNAGEOMIN. Niveles oficiales en la{' '}
+              {datos.volcanesConocidos ? 'Fuente: reporte semanal del Smithsonian, que cita a SERNAGEOMIN.' : 'No pudimos consultar el reporte semanal de actividad.'} Niveles oficiales en la{' '}
               <a href="https://rnvv.sernageomin.cl/" target="_blank" rel="noopener" className="underline">
                 Red Nacional de Vigilancia Volcánica
               </a>
