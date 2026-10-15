@@ -23,6 +23,8 @@ import { useNotificaciones } from './hooks/useNotificaciones'
 import { useCuenta } from './hooks/useCuenta'
 import PuertaCuenta from './components/PuertaCuenta'
 import VistaChat from './components/VistaChat'
+import { BotonZumi, HojaZumi } from './components/Zumi'
+import { guionReporte, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
 import { alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
@@ -67,6 +69,14 @@ export default function App() {
   }
   const [camaraSel, setCamaraSel] = useState(null)
   const [camaraVisor, setCamaraVisor] = useState(null)
+  const [zumi, setZumi] = useState(false)
+  const [narradoUnaVez, setNarradoUnaVez] = useState(false)
+  useEffect(() => {
+    if (!narradoUnaVez && modoNarrador() && clima.datos && comuna) {
+      setNarradoUnaVez(true)
+      setZumi(true)
+    }
+  }, [clima.datos, comuna, narradoUnaVez])
   const [baseMapa, setBaseMapaState] = useState(() => leer('mapa:base', 'mapa'))
   const setBaseMapa = (b) => {
     setBaseMapaState(b)
@@ -352,6 +362,25 @@ export default function App() {
 
       {cuenta.puerta && cuenta.clientId && <PuertaCuenta cuenta={cuenta} />}
 
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && <BotonZumi onAbrir={() => setZumi(true)} />}
+      {zumi && comuna && (
+        <HojaZumi
+          nombreCuenta={cuenta.usuario?.nombre?.split(' ')[0]}
+          onCerrar={() => setZumi(false)}
+          guion={(nombre) =>
+            guionReporte({
+              nombre,
+              comuna,
+              ahora: condicionesActuales(clima.datos?.ahora, obs),
+              horas: clima.datos?.horas,
+              dias: clima.datos?.dias,
+              alertas: alertas.estado,
+              reportes: rep.reportes,
+            })
+          }
+        />
+      )}
+
       {camaraVisor && <VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} />}
 
       {aviso && (
@@ -372,6 +401,7 @@ export default function App() {
         <AvisoAlerta
           alerta={avisoPendiente}
           comuna={comuna}
+          nombre={cuenta.usuario?.nombre?.split(' ')[0]}
           onVerDetalle={() => cerrarAviso(true)}
           onEntendido={() => cerrarAviso(false)}
         />

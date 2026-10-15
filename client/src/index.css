@@ -431,3 +431,58 @@ body {
     radial-gradient(1px 1px at 40% 86%, #fff4, transparent);
   animation: titilar 3.5s ease-in-out infinite alternate;
 }
+
+/* ---- ZUMI ---- */
+.avatar-zumi {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  padding: 3px;
+  background: conic-gradient(from var(--giro), #fb923c, #f472b6, #818cf8, #22d3ee, #fb923c);
+  animation: girar-borde 6s linear infinite;
+  box-shadow: 0 8px 24px -6px rgb(251 146 60 / 0.65);
+}
+.avatar-zumi img {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid #0b1020;
+}
+.avatar-zumi.hablando {
+  animation: girar-borde 1.5s linear infinite, latido 0.9s ease-in-out infinite;
+}
+@keyframes latido {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+.globo-zumi {
+  background: linear-gradient(135deg, #fff7ed, #fde68a);
+  color: #431407;
+  box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.5);
+  animation: entrar 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hoja-zumi {
+  background: radial-gradient(120% 70% at 50% 0%, #1e1b4b 0%, #0b1020 60%, #050816 100%);
+  box-shadow: 0 -10px 40px -10px rgb(99 102 241 / 0.5);
+}
+.ondas-voz {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+.ondas-voz i {
+  width: 4px;
+  border-radius: 4px;
+  background: #fde68a;
+  animation: onda 0.9s ease-in-out infinite;
+}
+.ondas-voz i:nth-child(2) { animation-delay: 0.15s; }
+.ondas-voz i:nth-child(3) { animation-delay: 0.3s; }
+.ondas-voz i:nth-child(4) { animation-delay: 0.45s; }
+@keyframes onda {
+  0%, 100% { height: 6px; }
+  50% { height: 22px; }
+}
