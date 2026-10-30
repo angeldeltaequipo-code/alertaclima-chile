@@ -34,6 +34,12 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY # Clave de la API de Claude para que ZUMI converse con IA. Sin ella, ZUMI usa respuestas propias.
         sync: false
+      - key: REDDIT_CLIENT_ID # App gratuita de Reddit (tipo script) para leer r/chile desde el servidor. Opcional.
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: X_BEARER_TOKEN # API de X (Twitter), de pago. Opcional.
+        sync: false
       - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"
         sync: false
 

@@ -34,7 +34,7 @@ const PALABRAS = Object.entries(TIPOS).map(([tipo, d]) => [tipo, d.palabras.map(
 export function clasificar(texto) {
   const t = quitarTildes(texto)
   // Ruido común: deportes («terremoto en el estadio»), política, farándula, tragos («terremoto» es un trago chileno).
-  if (/(futbol|gol |golazo|partido|colo.colo|la roja|tragos?|pipeño|helado de pina|elecciones?|candidat|reality|farandula)/.test(t)) return null
+  if (/(futbol|gol |golazo|partido|colo.colo|la roja|tragos?|pipeno|helado de pina|elecciones?|candidat|reality|farandula|codelco|desvincul|directorio|bolsa|dolar|mercado|vidente|profec|predic|aroldo|maciel|horoscopo|tarot|politic|gabinete|senado|diputad)/.test(t)) return null
   for (const [tipo, res] of PALABRAS) if (res.some((r) => r.test(t))) return tipo
   return null
 }
@@ -129,8 +129,8 @@ export function fuentes() {
   const lista = [
     { id: 'google', nombre: 'Google Noticias', url: `https://news.google.com/rss/search?q=${enc(`${CONSULTA} Chile when:1d`)}&hl=es-419&gl=CL&ceid=CL:es-419`, tipo: 'xml', leer: interpretarRSS },
     { id: 'gdelt', nombre: 'GDELT', url: `https://api.gdeltproject.org/api/v2/doc/doc?query=${enc(`${CONSULTA} sourcecountry:CI`)}&mode=artlist&format=json&maxrecords=60&timespan=24h&sort=datedesc`, tipo: 'json', leer: interpretarGDELT },
-    { id: 'reddit', nombre: 'Reddit', url: `https://www.reddit.com/r/chile+Santiago+chilecomunidad/search.json?q=${enc('sismo OR temblor OR terremoto OR tsunami OR incendio OR lluvia OR temporal OR inundación OR volcán OR "sin luz"')}&restrict_sr=1&sort=new&t=day&limit=50&raw_json=1`, tipo: 'json', leer: interpretarReddit },
-    { id: 'bluesky', nombre: 'Bluesky', url: `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${enc('temblor chile')}&lang=es&sort=latest&limit=50`, tipo: 'json', leer: interpretarBluesky },
+    { id: 'reddit', nombre: 'Reddit', reddit: true, url: `https://www.reddit.com/r/chile+Santiago+chilecomunidad/search.json?q=${enc('sismo OR temblor OR terremoto OR tsunami OR incendio OR lluvia OR temporal OR inundación OR volcán OR "sin luz"')}&restrict_sr=1&sort=new&t=day&limit=50&raw_json=1`, tipo: 'json', leer: interpretarReddit },
+    { id: 'bluesky', nombre: 'Bluesky', url: `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${enc('temblor chile')}&lang=es&sort=latest&limit=50`, tipo: 'json', leer: interpretarBluesky },
     { id: 'mastodon', nombre: 'Mastodon', url: 'https://mastodon.social/api/v1/timelines/tag/temblor?limit=40', tipo: 'json', leer: interpretarMastodon },
   ]
   if (process.env.X_BEARER_TOKEN) {
@@ -184,6 +184,27 @@ export function tendencias(items, ahora = Date.now()) {
   return t
 }
 
+// Reddit bloquea a los servidores en la nube sin identificación. Con una app gratuita de Reddit
+// (REDDIT_CLIENT_ID y REDDIT_CLIENT_SECRET, tipo «script») se usa su API oficial con permiso.
+let tokenReddit = null // { valor, hasta }
+async function cabecerasReddit(fetchFn) {
+  const id = process.env.REDDIT_CLIENT_ID
+  const secreto = process.env.REDDIT_CLIENT_SECRET
+  if (!id || !secreto) return null
+  if (!tokenReddit || Date.now() > tokenReddit.hasta) {
+    const r = await fetchFn('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: { ...CABECERAS, Authorization: `Basic ${Buffer.from(`${id}:${secreto}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=client_credentials',
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!r.ok) throw new Error(`token Reddit HTTP ${r.status}`)
+    const d = await r.json()
+    tokenReddit = { valor: d.access_token, hasta: Date.now() + (d.expires_in - 120) * 1000 }
+  }
+  return { Authorization: `Bearer ${tokenReddit.valor}` }
+}
+
 let cache = null // { hasta, datos }
 let enCurso = null
 
@@ -195,7 +216,16 @@ export async function loQueSeComenta({ fetchFn = fetch, ahora = Date.now() } = {
     const listas = await Promise.all(
       fuentes().map(async (f) => {
         try {
-          const r = await fetchFn(f.url, { headers: { ...CABECERAS, ...(f.cabeceras ?? {}) }, signal: AbortSignal.timeout(12000) })
+          let url = f.url
+          let extra = f.cabeceras ?? {}
+          if (f.reddit) {
+            const h = await cabecerasReddit(fetchFn)
+            if (h) {
+              url = url.replace('https://www.reddit.com/', 'https://oauth.reddit.com/')
+              extra = h
+            }
+          }
+          const r = await fetchFn(url, { headers: { ...CABECERAS, ...extra }, signal: AbortSignal.timeout(12000) })
           if (!r.ok) throw new Error(`HTTP ${r.status}`)
           const datos = f.tipo === 'xml' ? await r.text() : await r.json()
           const items = f.leer(datos)
