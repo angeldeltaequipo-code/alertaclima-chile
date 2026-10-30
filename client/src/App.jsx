@@ -25,6 +25,8 @@ import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
 import ZumiTeCuenta from './components/ZumiTeCuenta'
 import MiFamilia from './components/MiFamilia'
+import { usePlan } from './hooks/usePlan'
+const Planes = lazy(() => import('./components/Planes'))
 import { BotonZumi } from './components/Zumi'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
@@ -81,6 +83,22 @@ export default function App() {
   const camarasChile = useCamarasChile({ activo: true, enLinea })
   const camarasMapa = useMemo(() => unirCamaras(camaras.camaras, [...camarasChile.camaras, ...CAMARAS_OBSERVATORIOS]), [camaras.camaras, camarasChile.camaras])
   const cuenta = useCuenta({ enLinea })
+  // Plan Familia (SaaS): límites, precios y la pantalla de planes.
+  const plan = usePlan({ enLinea, token: cuenta.token })
+  const [planes, setPlanes] = useState(null) // null | motivo
+  const [reabrirPlanes, setReabrirPlanes] = useState(null)
+  useEffect(() => {
+    const abrir = (e) => setPlanes(e.detail ?? 'general')
+    window.addEventListener('ac:abrir-planes', abrir)
+    return () => window.removeEventListener('ac:abrir-planes', abrir)
+  }, [])
+  // Si pidió el plan sin cuenta: al terminar de iniciar sesión vuelve a la pantalla de planes.
+  useEffect(() => {
+    if (cuenta.token && reabrirPlanes) {
+      setPlanes(reabrirPlanes)
+      setReabrirPlanes(null)
+    }
+  }, [cuenta.token, reabrirPlanes])
   const riesgos = useRiesgos({ enLinea })
   const [capaSismos, setCapaSismos] = useState(false)
   const comunidad = useComunidad({ enLinea })
@@ -315,7 +333,7 @@ export default function App() {
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 zumi={clima.datos && <ZumiTeCuenta datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }} onEscuchar={() => setZumi(true)} />}
-                familia={<MiFamilia />}
+                familia={<MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
                 onVerRios={() => buscarRios()}
@@ -506,7 +524,7 @@ export default function App() {
           {visitadas.has('ajustes') && (
             <Suspense fallback={<Cargando />}>
               <div className="escala-letra">
-                <Ajustes tema={tema} setTema={setTema} letra={letra} setLetra={setLetra} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
+                <Ajustes tema={tema} setTema={setTema} letra={letra} setLetra={setLetra} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} plan={plan} onPlanes={() => setPlanes('general')} />
               </div>
             </Suspense>
           )}
@@ -517,6 +535,24 @@ export default function App() {
 
       {cuenta.puerta && cuenta.clientId && <Suspense fallback={null}><PuertaCuenta cuenta={cuenta} /></Suspense>}
 
+      {planes && (
+        <Suspense fallback={null}>
+          <Planes
+            abierto
+            motivo={planes}
+            plan={plan}
+            cuenta={{
+              ...cuenta,
+              pedir: (motivo) => {
+                setReabrirPlanes(planes)
+                setPlanes(null)
+                cuenta.pedir(motivo)
+              },
+            }}
+            onCerrar={() => setPlanes(null)}
+          />
+        </Suspense>
+      )}
       {sos && <Suspense fallback={null}><PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} /></Suspense>}
       {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (evac || rios || fichaActual || camaraSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (

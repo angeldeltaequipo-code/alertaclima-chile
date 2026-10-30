@@ -37,6 +37,9 @@ jobs:
         working-directory: client
         env:
           VITE_API_URL: ${{ vars.API_URL || 'https://alertaclima-api.onrender.com' }}
+          # Claves públicas del SDK de RevenueCat (compras dentro de la app de iPhone y Android).
+          VITE_RC_IOS: ${{ vars.REVENUECAT_IOS }}
+          VITE_RC_ANDROID: ${{ vars.REVENUECAT_ANDROID }}
       - run: npx cap sync android
         working-directory: client
       - name: Firebase (notificaciones)

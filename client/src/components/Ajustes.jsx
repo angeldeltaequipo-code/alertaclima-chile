@@ -101,7 +101,7 @@ function TuCuenta({ cuenta }) {
         )}
         <div className="min-w-0">
           <p className="truncate text-[18px] font-bold">{u.nombre}</p>
-          <p className="text-[14px] text-texto-2">Así te ven los demás en el chat.</p>
+          <p className="text-[14px] text-texto-2">Así te ven los demás en el chat. N.º de cuenta: {u.id}</p>
         </div>
       </div>
       <button type="button" onClick={cuenta.salir} className="min-h-12 w-full rounded-xl bg-superficie-2 text-[16px] font-bold">
@@ -139,12 +139,28 @@ function TuCuenta({ cuenta }) {
   )
 }
 
-export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif, comuna, cuenta }) {
+export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif, comuna, cuenta, plan, onPlanes }) {
   const { instalada, puedeInstalar, esIOS, instalar } = useInstalar()
 
   return (
     <div className="mx-auto max-w-xl">
       <h2 className="sr-only">Ajustes</h2>
+      {plan?.cobro && (
+        <Seccion titulo="Tu plan">
+          <button type="button" onClick={onPlanes} className="flex w-full items-center gap-3 rounded-2xl bg-superficie-2 p-3 text-left">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-senal/20 text-[24px]" aria-hidden="true">
+              {plan.familia ? '💛' : '🎁'}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[18px] font-bold">{plan.familia ? 'Plan Familia' : 'Plan gratis'}</span>
+              <span className="block text-[15px] text-texto-2">
+                {plan.familia ? 'Ver detalles, renovación o cancelar' : 'Conoce el plan Familia: 5 familiares, 5 comunas y ZUMI sin límite'}
+              </span>
+            </span>
+            <span aria-hidden="true" className="text-[22px]">›</span>
+          </button>
+        </Seccion>
+      )}
       {cuenta && (cuenta.estado === 'con-sesion' || cuenta.estado === 'sin-sesion') && (
         <Seccion titulo="Tu cuenta">
           <TuCuenta cuenta={cuenta} />

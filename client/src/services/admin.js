@@ -47,3 +47,7 @@ export const chatDenunciados = (clave) => pedir('/chat/denunciados', clave)
 export const moderarMensaje = (clave, id, ocultar) => pedir(`/chat/mensajes/${id}`, clave, { method: 'POST', body: JSON.stringify({ ocultar }) })
 export const bloquearUsuario = (clave, id, bloquear, motivo) =>
   pedir(`/usuarios/${id}/bloqueo`, clave, { method: 'POST', body: JSON.stringify({ bloquear, motivo }) })
+
+// ---- Ingresos (plan Familia) ----
+export const metricasPlanes = (clave) => pedir('/planes/metricas', clave)
+export const regalarPlan = (clave, usuarioId, dias) => pedir('/planes/cortesia', clave, { method: 'POST', body: JSON.stringify({ usuarioId, dias }) })

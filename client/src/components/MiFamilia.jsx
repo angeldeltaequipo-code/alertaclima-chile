@@ -147,7 +147,7 @@ function Agregar({ onAgregar, onCancelar }) {
  * «Mi familia»: cómo están las comunas de los seres queridos, de un vistazo.
  * Se guarda solo en este teléfono (no se envía a ningún servidor).
  */
-export default function MiFamilia() {
+export default function MiFamilia({ limite = MAX, onLimite = () => {} }) {
   const [lista, setLista] = useListaFamilia()
   const [agregando, setAgregando] = useState(false)
   const [editando, setEditando] = useState(false)
@@ -193,7 +193,8 @@ export default function MiFamilia() {
         !editando && (
           <button
             type="button"
-            onClick={() => setAgregando(true)}
+            // Plan gratis: 1 familiar; el plan Familia permite hasta 5.
+            onClick={() => (lista.length >= limite ? onLimite() : setAgregando(true))}
             className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-senal text-[18px] font-bold text-senal-texto"
           >
             <span className="text-[24px] leading-none" aria-hidden="true">+</span>

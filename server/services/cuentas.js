@@ -120,3 +120,17 @@ export function exigirCuentaSiActiva(pool) {
   const exigir = exigirCuenta(pool)
   return (req, res, next) => (cuentasActivas() ? exigir(req, res, next) : next())
 }
+
+/** Si viene una sesión válida deja req.usuario; si no, sigue sin cuenta (no exige nada). */
+export function cuentaOpcional(pool) {
+  return async (req, res, next) => {
+    try {
+      const id = leerSesion((req.get('authorization') ?? '').replace(/^Bearer\s+/i, ''))
+      const u = id && (await usuarioPorId(pool, id))
+      if (u && !u.bloqueado) req.usuario = u
+      next()
+    } catch (e) {
+      next(e)
+    }
+  }
+}

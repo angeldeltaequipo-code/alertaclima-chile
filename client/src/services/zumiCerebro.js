@@ -75,7 +75,12 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
         signal: AbortSignal.timeout(22000),
       })
       if (r.ok) return { texto: (await r.json()).respuesta, fuente: 'ia' }
-      if (r.status === 429) return { texto: (await r.json()).error, fuente: 'zumi' }
+      if (r.status === 429) {
+        const d = await r.json()
+        // Llegó al límite diario del plan gratis: ZUMI lo dice y luego se muestra el plan Familia.
+        if (d.motivo === 'limite-plan') setTimeout(() => window.dispatchEvent(new CustomEvent('ac:abrir-planes', { detail: 'zumi' })), 4500)
+        return { texto: d.error, fuente: 'zumi' }
+      }
     } catch {
       /* sin red o lento: responde ZUMI solo */
     }

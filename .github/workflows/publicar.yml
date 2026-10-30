@@ -32,6 +32,9 @@ jobs:
         env:
           # Dirección del servidor de reportes (variable API_URL del repositorio; si no existe, la de Render).
           VITE_API_URL: ${{ vars.API_URL || 'https://alertaclima-api.onrender.com' }}
+          # Claves públicas del SDK de RevenueCat (compras dentro de la app de iPhone y Android).
+          VITE_RC_IOS: ${{ vars.REVENUECAT_IOS }}
+          VITE_RC_ANDROID: ${{ vars.REVENUECAT_ANDROID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: client/dist

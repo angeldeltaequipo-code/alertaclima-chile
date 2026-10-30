@@ -1,4 +1,5 @@
 import ModeracionChat from './ModeracionChat'
+import Ingresos from './Ingresos'
 import { useCallback, useEffect, useState } from 'react'
 import FormAlerta from './FormAlerta'
 import { actualizar, bitacora, claveGuardada, crear, guardarClave, listar, verificar } from '../../services/admin'
@@ -263,6 +264,8 @@ export default function PanelAdmin() {
             </ul>
           </section>
         )}
+
+        <Ingresos clave={clave} />
 
         <ModeracionChat clave={clave} />
 

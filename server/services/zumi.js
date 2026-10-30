@@ -13,9 +13,18 @@ const MODELO = () => process.env.ZUMI_MODELO || 'claude-haiku-5-5'
 export const LIMITES_ZUMI = { pregunta: 300, contexto: 9000, porHora: 30, historial: 6 }
 
 const usos = new Map() // clave -> [horas]
-export function revisarCupo(clave, ahora = Date.now()) {
-  const l = (usos.get(clave) ?? []).filter((t) => ahora - t < 3600e3)
-  if (l.length >= LIMITES_ZUMI.porHora) throw new ErrorValidacion('Conversamos harto esta hora. Vuelve a preguntarme en un rato.', 429)
+/**
+ * Cupo de preguntas: máximo por hora (abuso) y por día (según el plan; ver services/planes.js).
+ * Al pasar el diario se responde con motivo «limite-plan» para que la app ofrezca el plan Familia.
+ */
+export function revisarCupo(clave, ahora = Date.now(), { porDia = Infinity } = {}) {
+  const l = (usos.get(clave) ?? []).filter((t) => ahora - t < 24 * 3600e3)
+  if (l.filter((t) => ahora - t < 3600e3).length >= LIMITES_ZUMI.porHora) throw new ErrorValidacion('Conversamos harto esta hora. Vuelve a preguntarme en un rato.', 429)
+  if (l.length >= porDia) {
+    const e = new ErrorValidacion(`Ya usaste tus ${porDia} preguntas de hoy. Con el plan Familia puedes conversar conmigo sin límite.`, 429)
+    e.motivo = 'limite-plan'
+    throw e
+  }
   l.push(ahora)
   usos.set(clave, l)
   if (usos.size > 20000) usos.delete(usos.keys().next().value)

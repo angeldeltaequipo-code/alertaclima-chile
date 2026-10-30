@@ -6,6 +6,7 @@ const MOTIVOS = {
   reportar: 'Para reportar lo que pasa en tu calle.',
   votar: 'Para confirmar o desmentir reportes de vecinos.',
   notificaciones: 'Para recibir avisos de alertas en tu teléfono.',
+  plan: 'Para activar el plan Familia y que tu suscripción quede guardada en tu cuenta.',
 }
 
 /** Hoja inferior: «Inicia sesión para participar», con el botón de Google. */

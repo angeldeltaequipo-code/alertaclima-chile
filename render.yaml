@@ -40,6 +40,20 @@ services:
         sync: false
       - key: FCM_CREDENCIALES # JSON de cuenta de servicio de Firebase: notificaciones de la app de App Store y Google Play.
         sync: false
+      - key: COBRO_ACTIVO # "true" muestra precios y límites del plan Familia. Mientras no, todo funciona como siempre.
+        value: "false"
+      - key: PRECIO_MENSUAL_CLP
+        value: "1990"
+      - key: PRECIO_ANUAL_CLP
+        value: "14990"
+      - key: PRUEBA_DIAS
+        value: "7"
+      - key: MP_ACCESS_TOKEN # Mercado Pago → Tus integraciones → Credenciales de producción (Access Token)
+        sync: false
+      - key: MP_WEBHOOK_SECRET # Mercado Pago → Webhooks → clave secreta (para verificar los avisos de pago)
+        sync: false
+      - key: REVENUECAT_WEBHOOK_SECRET # El mismo texto que pongas como "Authorization header" en el webhook de RevenueCat
+        sync: false
       - key: X_BEARER_TOKEN # API de X (Twitter), de pago. Opcional.
         sync: false
       - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"

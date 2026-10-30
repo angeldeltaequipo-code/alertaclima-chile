@@ -4,6 +4,7 @@
 import { API_URL } from './reportes'
 import { guardar, leer } from './almacen'
 import { bajaNativa, esNativa, tokenNativo } from './nativo'
+import { cabeceraSesion } from './sesion'
 
 const ua = () => navigator.userAgent
 const esIOS = () => /iphone|ipad|ipod/i.test(ua()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -87,13 +88,18 @@ async function enviar(ruta, cuerpo) {
   try {
     r = await fetch(`${API_URL}/api/push${ruta}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      // Con sesión, el servidor sabe el plan (gratis: 1 comuna; Familia: hasta 5).
+      headers: { 'content-type': 'application/json', ...cabeceraSesion() },
       body: JSON.stringify(cuerpo),
     })
   } catch {
     throw new ErrorNotificacion('No hay conexión. Revisa tu señal y vuelve a intentarlo.', 'red')
   }
   const d = await r.json().catch(() => ({}))
+  if (r.status === 402 && d.motivo === 'limite-plan') {
+    window.dispatchEvent(new CustomEvent('ac:abrir-planes', { detail: 'comunas' }))
+    throw new ErrorNotificacion(d.error, 'limite-plan')
+  }
   if (!r.ok) throw new ErrorNotificacion(d.error ?? `El servidor respondió ${r.status}`, 'servidor')
   return d
 }
