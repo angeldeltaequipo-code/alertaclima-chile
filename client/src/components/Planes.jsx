@@ -98,7 +98,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
         className="hoja-capas safe-bottom max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-t-[32px] px-5 pt-4 pb-6 shadow-2xl sm:rounded-[32px]"
       >
         <div className="flex items-start justify-between">
-          <img src={poseZumi('corazon')} alt="" width="96" height="128" className="zumi-pose -mb-2 h-28 w-auto" />
+          <img src={poseZumi(plan.familia ? 'celebrando' : 'corazon')} alt="" width="96" height="128" className="zumi-pose -mb-2 h-28 w-auto" />
           <button type="button" onClick={onCerrar} aria-label="Cerrar" className="grid size-12 place-items-center rounded-full text-[28px]">
             ×
           </button>

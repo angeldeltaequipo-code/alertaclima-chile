@@ -5,10 +5,12 @@ const BASE = import.meta.env.BASE_URL
 export const poseZumi = (nombre) => `${BASE}zumi/poses/${nombre}.webp`
 
 /** Qué pose usa ZUMI según cómo está el día. */
-function elegirPose({ alertas, horas }) {
-  if (alertas?.alertas && alertaPrincipal(alertas.alertas)) return 'paraguas'
+export function elegirPose({ alertas, horas, ahora }, hora = new Date().getHours()) {
+  if (alertas?.alertas && alertaPrincipal(alertas.alertas)) return 'alerta'
   if ((horas ?? []).slice(0, 12).some((h) => h.lluvia >= 0.5)) return 'paraguas'
-  return new Date().getHours() < 12 ? 'saludo' : 'ok'
+  if (hora >= 21 || hora < 6) return 'noche'
+  if (ahora?.temperatura >= 27) return 'verano'
+  return hora < 12 ? 'saludo' : 'ok'
 }
 
 /**

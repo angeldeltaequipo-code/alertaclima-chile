@@ -1,3 +1,4 @@
+import { poseZumi } from './ZumiTeCuenta'
 import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
@@ -42,7 +43,8 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }
   return (
     <section aria-labelledby="t-resumen-riesgos" className="riesgos-tierra relative overflow-hidden rounded-[28px] px-4 pt-5 pb-4 text-white">
       <div className="cielo-estrellas" aria-hidden="true" />
-      <div className="relative">
+      <img src={poseZumi(filas.every((f) => f.ok) ? 'ok' : 'alerta')} alt="" width="64" height="76" className="zumi-pose absolute top-3 right-3 h-[76px] w-auto" />
+      <div className="relative pr-16">
         <p className="text-[12px] font-bold tracking-[0.2em] text-sky-200/90 uppercase">Planeta en vivo</p>
         <h2 id="t-resumen-riesgos" className="mt-0.5 text-[24px] leading-tight font-bold">
           Riesgos {comuna ? `para ${comuna.nombre}` : 'en Chile'}

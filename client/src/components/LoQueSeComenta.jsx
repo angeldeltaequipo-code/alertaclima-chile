@@ -1,3 +1,4 @@
+import { poseZumi } from './ZumiTeCuenta'
 import { useState } from 'react'
 import { FUENTES, TIPOS, ordenarParaMi, picos } from '../services/comunidad'
 import { hace } from '../services/reportes'
@@ -15,7 +16,10 @@ export default function LoQueSeComenta({ comunidad, items, comuna, max = 8 }) {
     return (
       <section aria-labelledby="t-comunidad" className="tarjeta">
         <h2 id="t-comunidad" className="titulo-tarjeta">Lo que se comenta</h2>
-        <p className="mt-2 text-texto-2">Revisando prensa y redes…</p>
+        <div className="mt-2 flex items-center gap-3">
+          <img src={poseZumi('leyendo')} alt="" width="56" height="64" className="zumi-pose h-16 w-auto shrink-0" />
+          <p className="text-texto-2">ZUMI está revisando prensa y redes…</p>
+        </div>
       </section>
     )
   }
