@@ -4,8 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import IconoClima from './IconoClima'
 import PortalZumi from './PortalZumi'
-import ZumiPersonaje from './ZumiPersonaje'
-import EscenarioZumi from './EscenarioZumi'
+import ZumiVideo from './ZumiVideo'
 import {
   NOMBRE,
   TRAJES,
@@ -28,17 +27,6 @@ import { NIVELES } from '../services/alertas'
 
 
 /** Alto de ZUMI según la pantalla: grande, pero dejando sitio a los datos y a los subtítulos. */
-function useAltoZumi() {
-  const calc = () => Math.round(Math.min(window.innerHeight * 0.56, 540, window.innerWidth * 1.15))
-  const [alto, setAlto] = useState(calc)
-  useEffect(() => {
-    const f = () => setAlto(calc())
-    window.addEventListener('resize', f)
-    return () => window.removeEventListener('resize', f)
-  }, [])
-  return alto
-}
-
 function useNarrador() {
   const [e, setE] = useState({ hablando: false, frase: -1, frases: [] })
   useEffect(() => alCambiarNarrador(setE), [])
@@ -290,7 +278,6 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       ? ultima?.texto
       : (escena?.texto ?? (conversa && !e.hablando ? `¿Te ayudo con algo más${quien ? `, ${quien}` : ''}? Pregúntame lo que quieras.` : null))
   const alerta = escena?.clip === 'alerta'
-  const altoZumi = useAltoZumi()
 
   return (
     <div
@@ -305,17 +292,13 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       <div className="absolute inset-0 bg-[#050a18]" aria-hidden="true" />
 
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
-        <EscenarioZumi comuna={datos.comuna} ahora={datos.ahora} horas={datos.horas} alerta={alerta} />
-        {/* ZUMI en 3D, parado en la plataforma del estudio */}
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '26%' }}>
-          <ZumiPersonaje
-            alto={altoZumi}
-            traje={traje === 'presentador' ? null : traje}
-            estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
-            gesto={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta)) ? 'saludo' : escena?.tarjeta?.tipo === 'ok' ? 'celebrar' : null}
-            luz={alerta ? 'alerta' : 'normal'}
-          />
-        </div>
+        {/* ZUMI en su estudio: video con calidad de película animada, que cambia según lo que pasa */}
+        <ZumiVideo
+          estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
+          gesto={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta)) ? 'saludo' : escena?.tarjeta?.tipo === 'ok' ? 'celebrar' : null}
+          luz={alerta ? 'alerta' : 'normal'}
+          posicion="center 30%"
+        />
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
 
         {/* Barra superior */}

@@ -7,8 +7,7 @@ import { alCambiarNarrador, callar, hablar } from '../services/narrador'
 import { comunaEnPunto } from '../services/comunas'
 import { obtenerRiesgos } from '../services/riesgos'
 import BotonGoogle from './BotonGoogle'
-import EscenarioZumi from './EscenarioZumi'
-import ZumiPersonaje from './ZumiPersonaje'
+import ZumiVideo from './ZumiVideo'
 
 const Icono = ({ d, color, tam = 24 }) => (
   <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -293,10 +292,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
         <div className="relative order-1 md:order-2">
           <div className="landing-escenario relative mx-auto w-full overflow-hidden" style={{ height: altoZumi + (escritorio ? 40 : 10) }}>
-            <EscenarioZumi />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
-              <ZumiPersonaje alto={altoZumi} gesto={saludo ? 'saludo' : null} encuadre="busto" />
-            </div>
+            <ZumiVideo gesto={saludo ? 'saludo' : null} posicion="center 32%" className="rounded-[inherit]" />
             <div className="bienvenida-zumi-velo absolute inset-0" aria-hidden="true" />
           </div>
           <p className="entrar globo-bienvenida relative z-10 mx-2 -mt-10 text-[15px] md:-mt-14 md:text-[17px] leading-snug font-bold md:mx-8" style={{ animationDelay: '250ms' }} aria-live="polite">
