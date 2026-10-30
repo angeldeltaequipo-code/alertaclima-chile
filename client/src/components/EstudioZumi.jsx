@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import IconoClima from './IconoClima'
 import PortalZumi from './PortalZumi'
-import ZumiVivo from './ZumiVivo'
+import ZumiPersonaje from './ZumiPersonaje'
 import EscenarioZumi from './EscenarioZumi'
 import {
   NOMBRE,
@@ -308,7 +308,13 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
         <EscenarioZumi comuna={datos.comuna} ahora={datos.ahora} horas={datos.horas} alerta={alerta} />
         {/* ZUMI en 3D, parado en la plataforma del estudio */}
         <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '26%' }}>
-          <ZumiVivo alto={altoZumi} traje={traje === 'presentador' ? null : traje} saludar={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta))} luz={alerta ? 'alerta' : 'normal'} />
+          <ZumiPersonaje
+            alto={altoZumi}
+            traje={traje === 'presentador' ? null : traje}
+            estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
+            gesto={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta)) ? 'saludo' : escena?.tarjeta?.tipo === 'ok' ? 'celebrar' : null}
+            luz={alerta ? 'alerta' : 'normal'}
+          />
         </div>
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
 

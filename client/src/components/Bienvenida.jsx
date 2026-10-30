@@ -8,7 +8,7 @@ import { comunaEnPunto } from '../services/comunas'
 import { obtenerRiesgos } from '../services/riesgos'
 import BotonGoogle from './BotonGoogle'
 import EscenarioZumi from './EscenarioZumi'
-import ZumiVivo from './ZumiVivo'
+import ZumiPersonaje from './ZumiPersonaje'
 
 const Icono = ({ d, color, tam = 24 }) => (
   <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -295,7 +295,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
           <div className="landing-escenario relative mx-auto w-full overflow-hidden" style={{ height: altoZumi + (escritorio ? 40 : 10) }}>
             <EscenarioZumi />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
-              <ZumiVivo alto={altoZumi} saludar={saludo} encuadre="busto" />
+              <ZumiPersonaje alto={altoZumi} gesto={saludo ? 'saludo' : null} encuadre="busto" />
             </div>
             <div className="bienvenida-zumi-velo absolute inset-0" aria-hidden="true" />
           </div>
