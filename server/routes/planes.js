@@ -1,22 +1,23 @@
-import { Router } from 'express'
+import express, { Router } from 'express'
 import { pool } from '../db/pool.js'
 import { exigirCuenta } from '../services/cuentas.js'
 import { exigirAdmin } from '../services/autorizacion.js'
 import {
   LIMITES,
   autorizacionRevenueCat,
-  avisoMercadoPago,
+  avisoFlow,
   cancelarWeb,
   cobroActivo,
   eventoRevenueCat,
-  firmaMercadoPagoValida,
   limitesDe,
-  mercadoPagoActivo,
+  flowActivo,
   metricas,
   planDe,
   precios,
   regalarPlan,
+  sincronizarFlow,
   suscribirWeb,
+  tarjetaRegistrada,
 } from '../services/planes.js'
 
 /** GET /api/planes (público), /yo, /web, /cancelar. */
@@ -27,11 +28,13 @@ export function planesRouter() {
       cobroActivo: cobroActivo(),
       precios: precios(),
       limites: LIMITES,
-      pagos: { web: cobroActivo() && mercadoPagoActivo(), app: cobroActivo() },
+      pagos: { web: cobroActivo() && flowActivo(), app: cobroActivo() },
     })
   })
   r.get('/yo', exigirCuenta(pool), async (req, res, next) => {
     try {
+      // Si pagó en la web, se confirma con Flow de vez en cuando (por si se perdió un aviso).
+      await sincronizarFlow(pool, req.usuario.id, { soloViejas: true }).catch((e) => console.error('Sincronizar Flow:', e.message))
       const p = await planDe(pool, req.usuario.id)
       res.set('Cache-Control', 'no-store').json({ ...p, limites: limitesDe(p.plan), cobroActivo: cobroActivo() })
     } catch (e) {
@@ -58,17 +61,24 @@ export function planesRouter() {
 /** Avisos de los proveedores de pago (webhooks). Responden rápido y nunca filtran detalles. */
 export function pagosRouter() {
   const r = Router()
-  r.post('/mercadopago', async (req, res) => {
-    const id = req.body?.data?.id ?? req.query['data.id'] ?? req.query.id
-    const tipo = req.body?.type ?? req.query.type ?? req.query.topic
-    if (!firmaMercadoPagoValida({ firma: req.get('x-signature'), requestId: req.get('x-request-id'), dataId: req.query['data.id'] ?? id })) {
-      return res.status(401).json({ ok: false })
-    }
+  // Flow envía formularios (application/x-www-form-urlencoded) con un token; todo se verifica consultando a Flow.
+  r.use(express.urlencoded({ extended: false, limit: '10kb' }))
+  r.post('/flow/tarjeta', async (req, res) => {
+    let destino
     try {
-      await avisoMercadoPago(pool, { tipo, id })
+      destino = await tarjetaRegistrada(pool, { token: req.body?.token, periodo: req.query.p })
     } catch (e) {
-      console.error('Aviso Mercado Pago:', e.message)
-      return res.status(500).json({ ok: false }) // Mercado Pago reintenta
+      console.error('Registro de tarjeta Flow:', e.message)
+      destino = `${process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'}?plan=error`
+    }
+    res.redirect(303, destino)
+  })
+  r.post('/flow', async (req, res) => {
+    try {
+      await avisoFlow(pool, { token: req.body?.token })
+    } catch (e) {
+      console.error('Aviso Flow:', e.message)
+      return res.status(500).json({ ok: false }) // Flow reintenta
     }
     res.json({ ok: true })
   })

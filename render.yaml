@@ -48,9 +48,11 @@ services:
         value: "14990"
       - key: PRUEBA_DIAS
         value: "7"
-      - key: MP_ACCESS_TOKEN # Mercado Pago → Tus integraciones → Credenciales de producción (Access Token)
+      - key: FLOW_API_KEY # flow.cl → Mis datos → Integración → API Key (cobro web del plan Familia)
         sync: false
-      - key: MP_WEBHOOK_SECRET # Mercado Pago → Webhooks → clave secreta (para verificar los avisos de pago)
+      - key: FLOW_SECRET_KEY # flow.cl → Mis datos → Integración → Secret Key
+        sync: false
+      - key: FLOW_SANDBOX # "true" para probar con sandbox.flow.cl (tarjetas de prueba); quítalo en producción
         sync: false
       - key: REVENUECAT_WEBHOOK_SECRET # El mismo texto que pongas como "Authorization header" en el webhook de RevenueCat
         sync: false

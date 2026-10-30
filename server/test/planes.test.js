@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
-import { avisoMercadoPago, autorizacionRevenueCat, eventoRevenueCat, firmaMercadoPagoValida, limitesDe, suscribirWeb } from '../services/planes.js'
+import { autorizacionRevenueCat, estadoFlow, eventoRevenueCat, firmaFlow, limitesDe, suscribirWeb, tarjetaRegistrada } from '../services/planes.js'
 import { revisarCupo } from '../services/zumi.js'
 
 // Base de datos falsa: anota las consultas y responde lo mínimo.
@@ -25,36 +25,76 @@ test('sin cobro activo todos tienen los límites del plan Familia', () => {
   assert.equal(limitesDe('familia').familiares, 5)
 })
 
-test('verifica la firma de los avisos de Mercado Pago', () => {
-  const secreto = 'abc'
-  const v1 = createHmac('sha256', secreto).update('id:123;request-id:r1;ts:99;').digest('hex')
-  assert.equal(firmaMercadoPagoValida({ firma: `ts=99,v1=${v1}`, requestId: 'r1', dataId: '123' }, secreto), true)
-  assert.equal(firmaMercadoPagoValida({ firma: `ts=99,v1=${v1}`, requestId: 'r2', dataId: '123' }, secreto), false)
-  assert.equal(firmaMercadoPagoValida({ firma: 'nada' }, secreto), false)
+test('firma de Flow: parámetros ordenados, nombre+valor, HMAC-SHA256', () => {
+  const esperada = createHmac('sha256', 'sec').update('amount1990apiKeyKplanIdp1').digest('hex')
+  assert.equal(firmaFlow({ planId: 'p1', apiKey: 'K', amount: '1990' }, 'sec'), esperada)
 })
 
-test('crea la suscripción web con prueba gratis y guarda el enlace', async () => {
+// Flow falso: responde según la ruta y anota lo que se le pidió.
+function flowFalso(respuestas) {
+  const llamadas = []
+  const f = async (url, o = {}) => {
+    const u = new URL(url)
+    const ruta = u.pathname.replace(/^\/api/, '')
+    const params = Object.fromEntries(o.body ? new URLSearchParams(o.body) : u.searchParams)
+    llamadas.push({ ruta, params })
+    const r = respuestas[ruta]
+    if (r === undefined) return { ok: false, status: 400, json: async () => ({ code: 1, message: 'no existe' }) }
+    return { ok: true, json: async () => (typeof r === 'function' ? r(params) : r) }
+  }
+  return { f, llamadas }
+}
+
+test('suscripción web con Flow: crea cliente y devuelve el enlace para registrar la tarjeta', async () => {
   process.env.COBRO_ACTIVO = 'true'
-  process.env.MP_ACCESS_TOKEN = 'TEST'
-  let cuerpo
-  const f = async (url, o) => ((cuerpo = JSON.parse(o.body)), { ok: true, json: async () => ({ id: 'pre1', init_point: 'https://mp/pagar' }) })
+  process.env.FLOW_API_KEY = 'K'
+  process.env.FLOW_SECRET_KEY = 'S'
+  const { f, llamadas } = flowFalso({
+    '/plans/get': { planId: 'x' },
+    '/customer/create': { customerId: 'cus_1' },
+    '/customer/register': { url: 'https://flow/registrar', token: 'tok1' },
+  })
   const db = dbFalsa()
-  const r = await suscribirWeb(db, { id: 5 }, { periodo: 'anual', correo: 'ana@correo.cl' }, { fetchFn: f })
-  assert.equal(r.url, 'https://mp/pagar')
-  assert.equal(cuerpo.external_reference, 'u:5')
-  assert.equal(cuerpo.auto_recurring.frequency, 12)
-  assert.equal(cuerpo.auto_recurring.currency_id, 'CLP')
-  assert.equal(cuerpo.auto_recurring.free_trial.frequency, 7)
+  const r = await suscribirWeb(db, { id: 5, nombre: 'Rosa M.' }, { periodo: 'anual', correo: 'ana@correo.cl' }, { fetchFn: f })
+  assert.equal(r.url, 'https://flow/registrar?token=tok1')
+  const crear = llamadas.find((l) => l.ruta === '/customer/create')
+  assert.equal(crear.params.externalId, 'u:5')
+  assert.equal(crear.params.s, firmaFlow(Object.fromEntries(Object.entries(crear.params).filter(([k]) => k !== 's')), 'S'))
+  assert.match(llamadas.find((l) => l.ruta === '/customer/register').params.url_return, /\/api\/pagos\/flow\/tarjeta\?p=anual$/)
   await assert.rejects(suscribirWeb(db, { id: 5 }, { periodo: 'anual', correo: 'malo' }, { fetchFn: f }), /correo/)
 })
 
-test('aviso de Mercado Pago: autorizada sin cobros = en prueba; cancelada', async () => {
-  const db = dbFalsa()
-  const resp = (status, cobros) => async () => ({ ok: true, json: async () => ({ id: 'pre1', status, external_reference: 'u:5', next_payment_date: '2026-12-01T00:00:00Z', summarized: { charged_quantity: cobros }, auto_recurring: { frequency: 1, transaction_amount: 1990, free_trial: { frequency: 7 } } }) })
-  assert.equal((await avisoMercadoPago(db, { tipo: 'subscription_preapproval', id: 'pre1' }, { fetchFn: resp('authorized', 0) })).estado, 'prueba')
-  assert.equal((await avisoMercadoPago(db, { tipo: 'subscription_preapproval', id: 'pre1' }, { fetchFn: resp('authorized', 2) })).estado, 'activa')
-  assert.equal((await avisoMercadoPago(db, { tipo: 'subscription_preapproval', id: 'pre1' }, { fetchFn: resp('cancelled', 2) })).estado, 'cancelada')
-  assert.equal((await avisoMercadoPago(db, { tipo: 'payment', id: '9' })).ignorado, true)
+test('al volver de Flow con la tarjeta registrada se crea la suscripción', async () => {
+  const { f, llamadas } = flowFalso({
+    '/customer/getRegisterStatus': { status: '1', customerId: 'cus_1' },
+    '/subscription/create': (p) => ({ subscriptionId: 'sus_1', planId: p.planId, status: 2, trial_end: '2026-11-06 10:00:00' }),
+  })
+  const db = {
+    q: [],
+    query: async (sql, p) => {
+      db.q.push({ sql, p })
+      if (/FROM usuarios WHERE flow_cliente/.test(sql)) return { rows: [{ id: 5 }] }
+      if (/INSERT INTO suscripciones/.test(sql)) return { rows: [{ id: 7, nueva: true }] }
+      return { rows: [] }
+    },
+  }
+  const destino = await tarjetaRegistrada(db, { token: 't', periodo: 'mensual' }, { fetchFn: f })
+  assert.match(destino, /\?plan=gracias$/)
+  assert.equal(llamadas.find((l) => l.ruta === '/subscription/create').params.planId, 'alertaclima_familia_mensual')
+  const ins = db.q.find((x) => /INSERT INTO suscripciones/.test(x.sql))
+  assert.deepEqual([ins.p[1], ins.p[2], ins.p[4]], ['flow', 'sus_1', 'prueba'])
+  const { f: f2 } = flowFalso({ '/customer/getRegisterStatus': { status: '0' } })
+  assert.match(await tarjetaRegistrada(db, { token: 't' }, { fetchFn: f2 }), /plan=cancelado/)
+})
+
+test('estados de Flow: prueba, activa, morosa y cancelada al final del periodo', () => {
+  assert.equal(estadoFlow({ status: 2 }).estado, 'prueba')
+  assert.equal(estadoFlow({ status: 1, morose: 0, period_end: '2026-12-01 00:00:00' }).estado, 'activa')
+  assert.equal(estadoFlow({ status: 1, morose: 1 }).estado, 'problema_pago')
+  const c = estadoFlow({ status: 1, cancel_at_period_end: 1, period_end: '2026-12-01 00:00:00' })
+  assert.equal(c.estado, 'cancelada')
+  assert.equal(c.venceEn.toISOString(), '2026-12-01T03:00:00.000Z')
+  assert.equal(estadoFlow({ status: 4 }).estado, 'cancelada')
 })
 
 test('eventos de RevenueCat: compra, prueba, vencimiento y autorización', async () => {

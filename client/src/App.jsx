@@ -85,7 +85,11 @@ export default function App() {
   const cuenta = useCuenta({ enLinea })
   // Plan Familia (SaaS): límites, precios y la pantalla de planes.
   const plan = usePlan({ enLinea, token: cuenta.token })
-  const [planes, setPlanes] = useState(null) // null | motivo
+  // Al volver de Flow (?plan=gracias|cancelado|error) se abre la pantalla de planes con el resultado.
+  const [planes, setPlanes] = useState(() => {
+    const r = new URLSearchParams(location.search).get('plan')
+    return { gracias: 'pago-gracias', cancelado: 'pago-cancelado', error: 'pago-error' }[r] ?? null
+  }) // null | motivo
   const [reabrirPlanes, setReabrirPlanes] = useState(null)
   useEffect(() => {
     const abrir = (e) => setPlanes(e.detail ?? 'general')

@@ -11,6 +11,9 @@ const MOTIVOS = {
   comunas: 'Para recibir avisos de más de una comuna necesitas el plan Familia.',
   zumi: 'Usaste tus preguntas de hoy a ZUMI. Con el plan Familia conversas sin límite.',
   general: null,
+  'pago-gracias': '¡Listo! Estamos confirmando tu suscripción, tarda unos segundos.',
+  'pago-cancelado': 'No se registró la tarjeta. Puedes intentarlo de nuevo cuando quieras.',
+  'pago-error': 'Hubo un problema con el pago. No se te cobró nada; inténtalo de nuevo en un momento.',
 }
 
 const BENEFICIOS = [
@@ -160,7 +163,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                   placeholder="nombre@correo.cl"
                   className="mt-1 min-h-12 w-full rounded-xl border-2 border-borde bg-superficie px-3 text-[17px]"
                 />
-                <p className="mt-1 text-[13px] text-texto-2">Lo usa Mercado Pago para enviarte los comprobantes. No lo usamos para nada más.</p>
+                <p className="mt-1 text-[13px] text-texto-2">Lo usa Flow, nuestro sistema de pago chileno, para enviarte los comprobantes. No lo usamos para nada más.</p>
               </div>
             )}
 
@@ -183,7 +186,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                   : !disponible
                     ? 'Muy pronto disponible'
                     : pidiendoCorreo
-                      ? 'Ir a pagar con Mercado Pago'
+                      ? 'Registrar mi tarjeta en Flow'
                       : p.pruebaDias > 0
                         ? `Probar ${p.pruebaDias} días gratis`
                         : 'Activar el plan Familia'}
@@ -259,7 +262,7 @@ function TuPlan({ plan, onCerrar }) {
         )}
         <div className="flex justify-between gap-3">
           <dt className="text-texto-2">Pago</dt>
-          <dd className="text-right font-bold">{{ mercadopago: 'Mercado Pago', apple: 'App Store', google: 'Google Play', cortesia: 'Regalo de AlertaClima' }[m.origen] ?? '—'}</dd>
+          <dd className="text-right font-bold">{{ flow: 'Web (Flow)', mercadopago: 'Mercado Pago', apple: 'App Store', google: 'Google Play', cortesia: 'Regalo de AlertaClima' }[m.origen] ?? '—'}</dd>
         </div>
       </dl>
       {msg && <p className="mt-3 text-[15px]">{msg}</p>}
@@ -268,7 +271,7 @@ function TuPlan({ plan, onCerrar }) {
           Cambiar o cancelar en la tienda
         </button>
       )}
-      {m.origen === 'mercadopago' && m.estado !== 'cancelada' && !esNativa() && (
+      {['flow', 'mercadopago'].includes(m.origen) && m.estado !== 'cancelada' && !esNativa() && (
         <button
           type="button"
           disabled={ocupado}

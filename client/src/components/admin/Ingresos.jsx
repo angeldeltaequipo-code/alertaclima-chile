@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { metricasPlanes, regalarPlan } from '../../services/admin'
 
 const clp = (n) => `$${Math.round(n ?? 0).toLocaleString('es-CL')}`
-const ORIGEN = { mercadopago: 'Web (Mercado Pago)', apple: 'App Store', google: 'Google Play', cortesia: 'Cortesía' }
+const ORIGEN = { flow: 'Web (Flow)', mercadopago: 'Web (Mercado Pago)', apple: 'App Store', google: 'Google Play', cortesia: 'Cortesía' }
 
 /** Panel de ingresos del plan Familia: MRR, suscriptores, pruebas, cancelaciones y regalar el plan. */
 export default function Ingresos({ clave }) {

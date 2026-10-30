@@ -4,7 +4,7 @@
 // - «AlertaClima Familia»: más comunas con avisos, más familiares y ZUMI con IA sin límite.
 //
 // Cobro:
-// - Web: suscripción de Mercado Pago (pesos chilenos, débito automático). MP_ACCESS_TOKEN.
+// - Web: suscripción de Flow.cl (pesos chilenos, tarjetas, cobro automático). FLOW_API_KEY y FLOW_SECRET_KEY.
 // - App de iPhone / Android: compras dentro de la app, unificadas por RevenueCat (webhook).
 // - Cortesía: el equipo regala el plan (pruebas, prensa, municipios).
 //
@@ -57,30 +57,40 @@ export async function guardarSuscripcion(db, { usuarioId, origen, externoId, per
   return { id: String(rows[0].id), nueva: rows[0].nueva }
 }
 
-// ---------------- Mercado Pago (web) ----------------
-const MP = 'https://api.mercadopago.com'
-export const mercadoPagoActivo = () => Boolean(process.env.MP_ACCESS_TOKEN)
+// ---------------- Flow (web, Chile) ----------------
+// Flujo: cliente en Flow → la persona registra su tarjeta en Flow → se crea la suscripción al plan.
+// Flow cobra solo cada mes o año y avisa a /api/pagos/flow; además se resincroniza al consultar el plan.
+// Credenciales: FLOW_API_KEY y FLOW_SECRET_KEY (flow.cl → Mis datos → Integración). FLOW_SANDBOX=true para pruebas.
+export const flowActivo = () => Boolean(process.env.FLOW_API_KEY && process.env.FLOW_SECRET_KEY)
+const flowBase = () => (process.env.FLOW_SANDBOX === 'true' ? 'https://sandbox.flow.cl/api' : 'https://www.flow.cl/api')
 const appUrl = () => process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
+const apiUrl = () => (process.env.API_PUBLICA ?? process.env.RENDER_EXTERNAL_URL ?? 'https://alertaclima-api.onrender.com').replace(/\/$/, '')
+export const PLANES_FLOW = { mensual: () => process.env.FLOW_PLAN_MENSUAL ?? 'alertaclima_familia_mensual', anual: () => process.env.FLOW_PLAN_ANUAL ?? 'alertaclima_familia_anual' }
 
-async function mp(ruta, opciones = {}, fetchFn = fetch) {
+/** Firma de Flow: parámetros ordenados por nombre, «nombre+valor» concatenados, HMAC-SHA256 con la clave secreta. */
+export function firmaFlow(params, secreto = process.env.FLOW_SECRET_KEY) {
+  const texto = Object.keys(params).sort().map((k) => `${k}${params[k]}`).join('')
+  return createHmac('sha256', secreto).update(texto).digest('hex')
+}
+
+async function flow(ruta, params = {}, { metodo = 'POST', fetchFn = fetch } = {}) {
+  const p = Object.fromEntries(Object.entries({ apiKey: process.env.FLOW_API_KEY, ...params }).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
+  const cuerpo = new URLSearchParams({ ...p, s: firmaFlow(p) })
   let r
   try {
-    r = await fetchFn(`${MP}${ruta}`, {
-      ...opciones,
-      headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`, 'content-type': 'application/json', ...(opciones.headers ?? {}) },
-      signal: AbortSignal.timeout(20000),
-    })
+    r = metodo === 'GET'
+      ? await fetchFn(`${flowBase()}${ruta}?${cuerpo}`, { signal: AbortSignal.timeout(20000) })
+      : await fetchFn(`${flowBase()}${ruta}`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: cuerpo.toString(), signal: AbortSignal.timeout(20000) })
   } catch (err) {
-    console.error('Mercado Pago sin respuesta:', err.cause?.code ?? err.message)
-    const e = new ErrorValidacion('No pudimos conectar con Mercado Pago. Inténtalo en un momento.', 502)
-    e.motivo = String(err.cause?.code ?? err.message).slice(0, 120)
-    throw e
+    console.error('Flow sin respuesta:', err.cause?.code ?? err.message)
+    throw new ErrorValidacion('No pudimos conectar con el sistema de pago. Inténtalo en un momento.', 502)
   }
   const d = await r.json().catch(() => ({}))
   if (!r.ok) {
-    console.error('Mercado Pago', r.status, JSON.stringify(d).slice(0, 300))
-    const e = new ErrorValidacion('No pudimos conectar con Mercado Pago. Inténtalo en un momento.', 502)
-    e.motivo = String(d.message ?? r.status).slice(0, 120)
+    const e = new ErrorValidacion('No pudimos conectar con el sistema de pago. Inténtalo en un momento.', 502)
+    e.codigoFlow = d.code
+    e.motivo = String(d.message ?? r.status).slice(0, 160)
+    console.error('Flow', ruta, r.status, e.motivo)
     throw e
   }
   return d
@@ -88,83 +98,130 @@ async function mp(ruta, opciones = {}, fetchFn = fetch) {
 
 const correoValido = (c) => typeof c === 'string' && c.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c)
 
-/** Crea la suscripción en Mercado Pago y devuelve el enlace de pago. */
+/** Crea los planes en Flow si aún no existen (una vez por arranque). */
+let planesListos = null
+export async function asegurarPlanesFlow({ fetchFn = fetch } = {}) {
+  planesListos ??= (async () => {
+    const p = precios()
+    for (const periodo of ['mensual', 'anual']) {
+      const planId = PLANES_FLOW[periodo]()
+      try {
+        await flow('/plans/get', { planId }, { metodo: 'GET', fetchFn })
+      } catch {
+        await flow('/plans/create', {
+          planId,
+          name: `AlertaClima Familia (${periodo})`,
+          currency: 'CLP',
+          amount: periodo === 'anual' ? p.anual : p.mensual,
+          interval: periodo === 'anual' ? 4 : 3,
+          interval_count: 1,
+          trial_period_days: p.pruebaDias,
+          urlCallback: `${apiUrl()}/api/pagos/flow`,
+        }, { fetchFn })
+      }
+    }
+  })().catch((e) => {
+    planesListos = null
+    throw e
+  })
+  return planesListos
+}
+
+/** Paso 1: cliente en Flow y enlace para registrar la tarjeta. Devuelve { url } para abrir. */
 export async function suscribirWeb(db, usuario, { periodo, correo }, { fetchFn = fetch } = {}) {
-  if (!cobroActivo() || !mercadoPagoActivo()) throw new ErrorValidacion('Los pagos en la web aún no están disponibles.', 503)
+  if (!cobroActivo() || !flowActivo()) throw new ErrorValidacion('Los pagos en la web aún no están disponibles.', 503)
   if (periodo !== 'mensual' && periodo !== 'anual') throw new ErrorValidacion('Elige mensual o anual')
   if (!correoValido(correo)) throw new ErrorValidacion('Escribe un correo válido para el comprobante de pago')
+  await asegurarPlanesFlow({ fetchFn })
+  const { rows } = await db.query('SELECT flow_cliente FROM usuarios WHERE id = $1', [usuario.id])
+  let cliente = rows[0]?.flow_cliente
+  if (!cliente) {
+    const c = await flow('/customer/create', { name: String(usuario.nombre ?? 'Cliente AlertaClima').slice(0, 80), email: correo, externalId: `u:${usuario.id}` }, { fetchFn })
+    cliente = c.customerId
+  }
+  await db.query('UPDATE usuarios SET correo_cobro = $2, flow_cliente = $3 WHERE id = $1', [usuario.id, correo, cliente])
+  const reg = await flow('/customer/register', { customerId: cliente, url_return: `${apiUrl()}/api/pagos/flow/tarjeta?p=${periodo}` }, { fetchFn })
+  return { url: `${reg.url}?token=${encodeURIComponent(reg.token)}` }
+}
+
+/** Fecha de Flow («2026-11-30 10:00:00», hora de Chile) a Date. */
+const fechaFlow = (t) => (t ? new Date(`${String(t).replace(' ', 'T')}-03:00`) : null)
+
+/** Estado de Flow → estado propio. status: 1 activa, 2 en prueba, 4 cancelada; morose: 1 o 2 = cobro pendiente. */
+export function estadoFlow(s) {
+  const st = Number(s.status)
+  let estado = st === 2 ? 'prueba' : st === 1 ? 'activa' : st === 4 ? 'cancelada' : 'pendiente'
+  if (estado === 'activa' && Number(s.morose) > 0) estado = 'problema_pago'
+  if ((estado === 'activa' || estado === 'prueba') && Number(s.cancel_at_period_end) === 1) estado = 'cancelada'
+  const fin = fechaFlow(s.period_end ?? s.trial_end ?? s.next_invoice_date)
+  const venceEn = fin ? new Date(fin.getTime() + (estado === 'cancelada' ? 0 : 3 * 86400e3)) : estado === 'cancelada' ? new Date() : null
+  return { estado, venceEn }
+}
+
+/** Guarda una suscripción de Flow con su estado actual. */
+async function guardarFlow(db, usuarioId, s) {
+  const { estado, venceEn } = estadoFlow(s)
+  const anual = s.planId === PLANES_FLOW.anual()
   const p = precios()
-  const monto = periodo === 'anual' ? p.anual : p.mensual
-  const d = await mp(
-    '/preapproval',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        reason: `AlertaClima Familia (${periodo})`,
-        external_reference: `u:${usuario.id}`,
-        payer_email: correo,
-        back_url: `${appUrl()}?plan=gracias`,
-        status: 'pending',
-        auto_recurring: {
-          frequency: periodo === 'anual' ? 12 : 1,
-          frequency_type: 'months',
-          transaction_amount: monto,
-          currency_id: 'CLP',
-          ...(p.pruebaDias > 0 ? { free_trial: { frequency: p.pruebaDias, frequency_type: 'days' } } : {}),
-        },
-      }),
-    },
-    fetchFn,
-  )
-  await db.query('UPDATE usuarios SET correo_cobro = $2 WHERE id = $1', [usuario.id, correo])
-  await guardarSuscripcion(db, { usuarioId: usuario.id, origen: 'mercadopago', externoId: d.id, periodo, estado: 'pendiente', montoClp: monto })
-  return { url: d.init_point, id: d.id }
-}
-
-/** Firma de los avisos de Mercado Pago (x-signature: ts=…,v1=…). Sin MP_WEBHOOK_SECRET no se verifica. */
-export function firmaMercadoPagoValida({ firma, requestId, dataId }, secreto = process.env.MP_WEBHOOK_SECRET) {
-  if (!secreto) return true
-  const partes = Object.fromEntries(String(firma ?? '').split(',').map((p) => p.trim().split('=')))
-  if (!partes.ts || !partes.v1) return false
-  const manifiesto = `id:${String(dataId ?? '').toLowerCase()};request-id:${requestId ?? ''};ts:${partes.ts};`
-  const esperada = Buffer.from(createHmac('sha256', secreto).update(manifiesto).digest('hex'))
-  const recibida = Buffer.from(partes.v1)
-  return esperada.length === recibida.length && timingSafeEqual(esperada, recibida)
-}
-
-const ESTADO_MP = { authorized: 'activa', paused: 'problema_pago', cancelled: 'cancelada', pending: 'pendiente' }
-
-/** Aviso de Mercado Pago: se consulta la suscripción y se actualiza su estado. */
-export async function avisoMercadoPago(db, { tipo, id }, { fetchFn = fetch } = {}) {
-  if (!id || !/preapproval/.test(String(tipo ?? ''))) return { ignorado: true }
-  const s = await mp(`/preapproval/${encodeURIComponent(id)}`, {}, fetchFn)
-  const m = /^u:(\d+)$/.exec(s.external_reference ?? '')
-  if (!m) return { ignorado: true }
-  let estado = ESTADO_MP[s.status] ?? 'pendiente'
-  // Autorizada pero aún sin cobros: está en los días de prueba.
-  if (estado === 'activa' && (s.summarized?.charged_quantity ?? 0) === 0 && s.auto_recurring?.free_trial) estado = 'prueba'
-  const proximo = s.next_payment_date ? new Date(s.next_payment_date) : null
-  // 3 días de gracia por si el cobro se atrasa; cancelada = vale hasta el fin del periodo pagado.
-  const venceEn = proximo ? new Date(proximo.getTime() + (estado === 'cancelada' ? 0 : 3 * 86400e3)) : estado === 'cancelada' ? new Date() : null
-  const periodo = s.auto_recurring?.frequency === 12 ? 'anual' : 'mensual'
   await guardarSuscripcion(db, {
-    usuarioId: m[1],
-    origen: 'mercadopago',
-    externoId: s.id,
-    periodo,
+    usuarioId,
+    origen: 'flow',
+    externoId: String(s.subscriptionId),
+    periodo: anual ? 'anual' : 'mensual',
     estado,
-    montoClp: Math.round(s.auto_recurring?.transaction_amount ?? 0) || null,
+    montoClp: anual ? p.anual : p.mensual,
     venceEn,
-    detalle: { status: s.status, cobros: s.summarized?.charged_quantity ?? null },
+    detalle: { status: s.status, morose: s.morose ?? null },
   })
-  return { estado }
+  return estado
+}
+
+/** Paso 2 (Flow vuelve con el token del registro de tarjeta): crea la suscripción. Devuelve a dónde redirigir. */
+export async function tarjetaRegistrada(db, { token, periodo }, { fetchFn = fetch } = {}) {
+  if (!token) return `${appUrl()}?plan=error`
+  const r = await flow('/customer/getRegisterStatus', { token }, { metodo: 'GET', fetchFn })
+  if (String(r.status) !== '1') return `${appUrl()}?plan=cancelado`
+  const { rows } = await db.query('SELECT id FROM usuarios WHERE flow_cliente = $1', [r.customerId])
+  if (!rows[0]) return `${appUrl()}?plan=error`
+  const usuarioId = rows[0].id
+  // ¿Ya tiene una vigente en Flow? (por si recarga la página)
+  const { rows: ya } = await db.query(`SELECT 1 FROM suscripciones WHERE usuario_id = $1 AND origen = 'flow' AND estado IN ('prueba', 'activa', 'problema_pago')`, [usuarioId])
+  if (!ya.length) {
+    const s = await flow('/subscription/create', { planId: PLANES_FLOW[periodo === 'anual' ? 'anual' : 'mensual'](), customerId: r.customerId }, { fetchFn })
+    await guardarFlow(db, usuarioId, s)
+  }
+  return `${appUrl()}?plan=gracias`
+}
+
+/** Resincroniza las suscripciones de Flow de una persona (consulta su estado real en Flow). */
+export async function sincronizarFlow(db, usuarioId, { fetchFn = fetch, soloViejas = false } = {}) {
+  if (!flowActivo()) return 0
+  const { rows } = await db.query(
+    `SELECT usuario_id, externo_id FROM suscripciones WHERE usuario_id = $1 AND origen = 'flow' AND estado IN ('prueba', 'activa', 'problema_pago', 'cancelada', 'pendiente')
+     ${soloViejas ? "AND actualizada_en < now() - interval '6 hours'" : ''}`,
+    [usuarioId],
+  )
+  for (const r of rows) await guardarFlow(db, r.usuario_id, await flow('/subscription/get', { subscriptionId: r.externo_id }, { metodo: 'GET', fetchFn }))
+  return rows.length
+}
+
+/** Aviso de Flow por un cobro del plan: se verifica el pago con Flow y se resincroniza a quien pagó. */
+export async function avisoFlow(db, { token }, { fetchFn = fetch } = {}) {
+  if (!token) return { ignorado: true }
+  const pago = await flow('/payment/getStatus', { token }, { metodo: 'GET', fetchFn })
+  const correo = pago.payer
+  if (!correo) return { ignorado: true }
+  const { rows } = await db.query('SELECT id FROM usuarios WHERE lower(correo_cobro) = lower($1)', [correo])
+  for (const u of rows) await sincronizarFlow(db, u.id, { fetchFn })
+  return { usuarios: rows.length, estadoPago: pago.status }
 }
 
 export async function cancelarWeb(db, usuario, { fetchFn = fetch } = {}) {
-  const { rows } = await db.query(`SELECT externo_id FROM suscripciones WHERE usuario_id = $1 AND origen = 'mercadopago' AND estado IN ('prueba', 'activa', 'problema_pago', 'pendiente')`, [usuario.id])
+  const { rows } = await db.query(`SELECT externo_id FROM suscripciones WHERE usuario_id = $1 AND origen = 'flow' AND estado IN ('prueba', 'activa', 'problema_pago', 'pendiente')`, [usuario.id])
   for (const r of rows) {
-    await mp(`/preapproval/${encodeURIComponent(r.externo_id)}`, { method: 'PUT', body: JSON.stringify({ status: 'cancelled' }) }, fetchFn)
-    await avisoMercadoPago(db, { tipo: 'subscription_preapproval', id: r.externo_id }, { fetchFn })
+    // Al final del periodo: sigue teniendo el plan hasta la fecha que ya pagó.
+    const s = await flow('/subscription/cancel', { subscriptionId: r.externo_id, at_period_end: 1 }, { fetchFn })
+    await guardarFlow(db, usuario.id, s)
   }
   return { canceladas: rows.length }
 }

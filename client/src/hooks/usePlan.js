@@ -17,7 +17,7 @@ export function usePlan({ enLinea, token }) {
     if (token && config?.cobroActivo) refrescar()
     else setMio(null)
   }, [token, config?.cobroActivo, refrescar])
-  // Al volver de pagar en Mercado Pago (?plan=gracias) se consulta varias veces, hasta que llegue el aviso del pago.
+  // Al volver de Flow (?plan=gracias) se consulta varias veces, hasta que llegue el aviso del pago.
   useEffect(() => {
     if (!token || !new URLSearchParams(location.search).has('plan')) return
     let n = 0

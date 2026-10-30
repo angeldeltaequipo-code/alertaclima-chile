@@ -1,5 +1,5 @@
 // Planes: Gratis y «AlertaClima Familia». El servidor decide los límites y si el cobro está activo.
-// Cobro en la web: Mercado Pago. En la app de iPhone y Android: compras de la tienda (RevenueCat).
+// Cobro en la web: Flow.cl (tarjetas y Webpay). En la app de iPhone y Android: compras de la tienda (RevenueCat).
 import { API_URL } from './reportes'
 import { sesionActual } from './sesion'
 import { esNativa, plataforma } from './nativo'
@@ -32,7 +32,7 @@ async function enviar(ruta, cuerpo) {
   return d
 }
 
-/** Web: crea la suscripción en Mercado Pago y abre su página de pago. */
+/** Web: abre la página de Flow para registrar la tarjeta; al volver, la suscripción queda creada. */
 export async function pagarEnWeb(periodo, correo) {
   const { url } = await enviar('/web', { periodo, correo })
   window.location.href = url
