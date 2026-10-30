@@ -1,0 +1,38 @@
+# Recorta las poses de ZUMI (hojas de Higgsfield listadas en client/zumi/hojas.json),
+# las guarda en el repositorio y vuelve a publicar la app.
+name: ZUMI
+
+on:
+  push:
+    branches: [main]
+    paths: ['client/zumi/hojas.json', 'client/scripts/zumi-poses.mjs']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  poses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm i --no-save --no-package-lock sharp@0.34
+        working-directory: client
+      - run: node scripts/zumi-poses.mjs
+        working-directory: client
+      - name: Guardar las poses
+        run: |
+          git config user.name "zumi-bot"
+          git config user.email "zumi-bot@users.noreply.github.com"
+          git add client/public/zumi/poses
+          if git diff --cached --quiet; then echo "Sin cambios"; exit 0; fi
+          git commit -m "ZUMI: poses nuevas desde Higgsfield"
+          git push
+      - name: Publicar la app con las poses nuevas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publicar.yml --ref main
