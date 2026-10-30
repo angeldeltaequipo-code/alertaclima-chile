@@ -540,12 +540,12 @@ export default function Mapa({
     const recien = volcanes && !volcanesAntes.current
     volcanesAntes.current = volcanes
     cuandoListo((mapa) => {
-      const ORDEN = { Roja: 0, Naranja: 1, Amarilla: 2, Verde: 3, sin: 4 }
+      const ORDEN = { Roja: 0, Naranja: 1, Amarilla: 2, noticia: 3, Verde: 4, sin: 5 }
       mapa.getSource('volcanes').setData({
         type: 'FeatureCollection',
         features: (volcanes ?? []).map((v) => ({
           type: 'Feature',
-          properties: { nombre: v.nombre, nivel: v.nivel ?? 'sin', orden: ORDEN[v.nivel ?? 'sin'] ?? 4 },
+          properties: { nombre: v.nombre, nivel: v.nivel ?? (v.noticia ? 'noticia' : 'sin'), orden: ORDEN[v.nivel ?? (v.noticia ? 'noticia' : 'sin')] ?? 5 },
           geometry: { type: 'Point', coordinates: [v.lng, v.lat] },
         })),
       })
