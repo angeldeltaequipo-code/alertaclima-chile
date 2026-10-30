@@ -57,20 +57,34 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
   const c = cache.get(zona)
   if (c && Date.now() < c.hasta) return c.datos
   const caja = [zlat - 0.35, zlng - 0.4, zlat + 0.35, zlng + 0.4].map((x) => x.toFixed(3))
-  let ultimoError
-  for (const url of SERVIDORES) {
+  // Se consulta a todos los servidores a la vez y se usa la primera respuesta buena:
+  // Overpass suele tardar 15-25 s en zonas grandes y el hosting corta pedidos muy largos.
+  const control = new AbortController()
+  const errores = []
+  const pedir = async (url) => {
     try {
-      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.timeout(30000) })
+      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.any([control.signal, AbortSignal.timeout(40000)]) })
       if (!r.ok) throw new Error(`${new URL(url).host} respondió ${r.status}`)
-      const datos = { ...interpretarOverpass(await r.json()), fuente: '© colaboradores de OpenStreetMap (ODbL)' }
-      cache.set(zona, { hasta: Date.now() + CACHE_MS, datos })
-      if (cache.size > 300) cache.delete(cache.keys().next().value)
-      return datos
+      const d = await r.json()
+      if (d.remark && !d.elements?.length) throw new Error(`${new URL(url).host}: ${String(d.remark).slice(0, 60)}`)
+      return d
     } catch (e) {
-      ultimoError = e
+      errores.push(e)
       console.error('Evacuación:', url, e.cause?.code ?? e.message)
+      throw e
     }
   }
+  try {
+    const d = await Promise.any(SERVIDORES.map(pedir))
+    control.abort()
+    const datos = { ...interpretarOverpass(d), fuente: '© colaboradores de OpenStreetMap (ODbL)' }
+    cache.set(zona, { hasta: Date.now() + CACHE_MS, datos })
+    if (cache.size > 300) cache.delete(cache.keys().next().value)
+    return datos
+  } catch {
+    /* todos fallaron */
+  }
+  const ultimoError = errores.at(-1)
   console.error('Evacuación:', ultimoError?.message)
   if (c) return c.datos
   const e = new ErrorValidacion('No se pudieron cargar las vías de evacuación. Intenta más tarde.', 503)

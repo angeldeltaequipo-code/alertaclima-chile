@@ -21,13 +21,14 @@ test('interpreta zonas de encuentro y rutas de evacuación', () => {
   assert.deepEqual(r.rutas[0].coords[0], [-71.63, -33.05])
 })
 
-test('consulta Overpass, usa otro servidor si falla y guarda en caché', async () => {
+test('consulta varios servidores Overpass a la vez, tolera fallas y guarda en caché', async () => {
   const urls = []
   const f = async (url) => (urls.push(url), urls.length === 1 ? { ok: false, status: 504 } : { ok: true, json: async () => respuesta })
   const r = await evacuacionCerca({ lat: -33.04, lng: -71.62 }, { fetchFn: f })
   assert.equal(r.puntos.length, 2)
-  assert.equal(urls.length, 2)
+  const n = urls.length
+  assert.ok(n >= 2)
   await evacuacionCerca({ lat: -33.05, lng: -71.61 }, { fetchFn: f })
-  assert.equal(urls.length, 2)
+  assert.equal(urls.length, n)
   await assert.rejects(evacuacionCerca({ lat: 10, lng: 10 }, { fetchFn: f }), /inválida/)
 })
