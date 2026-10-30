@@ -43,7 +43,7 @@ async function pedir(ruta, opciones = {}) {
     throw new Error('No hay conexión. Revisa tu señal y vuelve a intentarlo.')
   }
   const d = await r.json().catch(() => ({}))
-  if (r.status === 401 && ruta !== '/google') cerrarSesion()
+  if (r.status === 401 && ruta !== '/google' && ruta !== '/apple') cerrarSesion()
   if (!r.ok) throw new Error(d.error ?? `El servidor respondió ${r.status}`)
   return d
 }
@@ -55,6 +55,52 @@ export async function ingresar(credencial) {
   return usuario
 }
 
+// ---------------- App nativa (iPhone y Android) ----------------
+// Google no permite su botón web dentro de una app, y Apple exige «Iniciar sesión con Apple»
+// si se ofrece Google. Aquí se usan los inicios de sesión nativos del teléfono.
+let socialListo = null
+async function social() {
+  const { SocialLogin } = await import('@capgo/capacitor-social-login')
+  socialListo ??= (async () => {
+    const c = await configCuenta()
+    const ios = (await import('./nativo')).plataforma() === 'ios'
+    await SocialLogin.initialize({
+      google: { webClientId: c.googleClientId, iOSClientId: c.googleClientIdIos ?? undefined, iOSServerClientId: c.googleClientId, mode: 'online' },
+      ...(ios ? { apple: { clientId: 'cl.alertaclima.app' } } : {}),
+    })
+  })().catch((e) => {
+    socialListo = null
+    throw e
+  })
+  await socialListo
+  return SocialLogin
+}
+
+const cancelo = (e) => /cancel|canceled|cancelled|1001|12501|dismiss/i.test(String(e?.message ?? e?.code ?? e))
+
+/** Inicia sesión con Google o Apple usando la pantalla nativa del teléfono. Devuelve el usuario o null si canceló. */
+export async function ingresarNativo(proveedor) {
+  const SocialLogin = await social()
+  let r
+  try {
+    r = await SocialLogin.login(
+      proveedor === 'apple' ? { provider: 'apple', options: { scopes: ['email', 'name'] } } : { provider: 'google', options: { scopes: ['email', 'profile'] } },
+    )
+  } catch (e) {
+    if (cancelo(e)) return null
+    throw new Error(proveedor === 'apple' ? 'No se pudo iniciar sesión con Apple. Inténtalo de nuevo.' : 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.')
+  }
+  const idToken = r?.result?.idToken
+  if (!idToken) throw new Error('No recibimos la confirmación de tu cuenta. Inténtalo de nuevo.')
+  const cuerpo =
+    proveedor === 'apple'
+      ? { credencial: idToken, nombre: r.result.profile?.givenName ?? undefined, apellido: r.result.profile?.familyName ?? undefined }
+      : { credencial: idToken }
+  const { usuario, sesion } = await pedir(`/${proveedor === 'apple' ? 'apple' : 'google'}`, { method: 'POST', body: JSON.stringify(cuerpo) })
+  guardarSesion(sesion, usuario)
+  return usuario
+}
+
 /** Confirma que la sesión guardada sigue siendo válida (la cuenta pudo ser borrada o bloqueada). */
 export async function confirmarSesion() {
   const { usuario } = await pedir('/yo')
@@ -62,6 +108,7 @@ export async function confirmarSesion() {
 }
 
 export function salir() {
+  import('./nativo').then(({ esNativa }) => esNativa() && social().then((S) => S.logout({ provider: 'google' })).catch(() => {}))
   try {
     window.google?.accounts?.id?.disableAutoSelect()
   } catch {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Notificaciones push (Xcode lo cambia a "production" al exportar para la App Store). -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Iniciar sesión con Apple. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!-- Grupo compartido con el widget de la pantalla de inicio. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.cl.alertaclima.app</string>
+	</array>
+</dict>
+</plist>

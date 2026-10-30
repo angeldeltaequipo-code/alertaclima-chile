@@ -14,7 +14,20 @@
       "androidScaleType": "CENTER_CROP"
     },
     "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "SocialLogin": {
+      "providers": {
+        "google": true,
+        "facebook": false,
+        "apple": true,
+        "twitter": false
+      },
+      "logLevel": 1
     }
   },
   "android": {

@@ -6,7 +6,7 @@
 // - La sesión es un texto firmado con HMAC (no hay contraseñas ni cookies de terceros).
 //   Dura 60 días; se renueva sola cada vez que la persona vuelve a entrar con Google.
 import { correoBienvenida, enviarCorreo } from './correo.js'
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac, createPublicKey, timingSafeEqual, verify } from 'node:crypto'
 import { OAuth2Client } from 'google-auth-library'
 import { ErrorValidacion } from './reportes.js'
 
@@ -49,10 +49,14 @@ export function nombreMostrado({ given_name: nombre, family_name: apellido, name
   return (inicial ? `${pila} ${inicial.toUpperCase()}.` : pila).slice(0, 40)
 }
 
+/** IDs de cliente de Google aceptados: el de la web y, si existe, el de la app de iPhone. */
+export const audienciasGoogle = () =>
+  [process.env.GOOGLE_CLIENT_ID, ...String(process.env.GOOGLE_CLIENT_ID_IOS ?? '').split(',')].map((x) => x?.trim()).filter(Boolean)
+
 let cliente = null
 async function verificarConGoogle(credencial) {
   cliente ??= new OAuth2Client()
-  const ticket = await cliente.verifyIdToken({ idToken: credencial, audience: process.env.GOOGLE_CLIENT_ID })
+  const ticket = await cliente.verifyIdToken({ idToken: credencial, audience: audienciasGoogle() })
   return ticket.getPayload()
 }
 
@@ -81,6 +85,65 @@ export async function ingresarConGoogle(pool, credencial, { verificar = verifica
   if (u.bloqueado) throw new ErrorValidacion('Esta cuenta fue bloqueada por no respetar las reglas de la comunidad.', 403)
   // Bienvenida por correo solo al crear la cuenta. El correo se usa aquí y no se guarda.
   if (u.nueva && datos.email && datos.email_verified !== false) {
+    const c = correoBienvenida(u.nombre)
+    enviarCorreo({ para: datos.email, asunto: c.asunto, html: c.html, texto: c.texto })
+  }
+  return { usuario: publico(u), sesion: firmarSesion(u.id) }
+}
+
+// ---------------- Iniciar sesión con Apple ----------------
+// La app de iPhone recibe de Apple un «identity token» (JWT RS256). Se verifica con las llaves públicas
+// de Apple, que sea para nuestra app (APPLE_BUNDLE_ID) y que no haya vencido.
+const APPLE_ISS = 'https://appleid.apple.com'
+export const audienciasApple = () => String(process.env.APPLE_BUNDLE_ID ?? 'cl.alertaclima.app').split(',').map((x) => x.trim()).filter(Boolean)
+let llavesApple = { en: 0, llaves: [] }
+async function llavePublicaApple(kid, fetchFn) {
+  if (Date.now() - llavesApple.en > 6 * 3600e3 || !llavesApple.llaves.some((k) => k.kid === kid)) {
+    const r = await fetchFn(`${APPLE_ISS}/auth/keys`, { signal: AbortSignal.timeout(10000) })
+    if (!r.ok) throw new Error(`Apple keys ${r.status}`)
+    llavesApple = { en: Date.now(), llaves: (await r.json()).keys ?? [] }
+  }
+  const jwk = llavesApple.llaves.find((k) => k.kid === kid)
+  if (!jwk) throw new Error('Llave de Apple desconocida')
+  return createPublicKey({ key: jwk, format: 'jwk' })
+}
+
+/** Verifica el identity token de Apple y devuelve su contenido ({ sub, email, ... }). */
+export async function verificarConApple(token, { fetchFn = fetch, ahora = Date.now() } = {}) {
+  const [h, p, f] = String(token).split('.')
+  if (!h || !p || !f) throw new Error('Token mal formado')
+  const cab = JSON.parse(Buffer.from(h, 'base64url').toString())
+  if (cab.alg !== 'RS256') throw new Error('Algoritmo no permitido')
+  const llave = await llavePublicaApple(cab.kid, fetchFn)
+  if (!verify('RSA-SHA256', Buffer.from(`${h}.${p}`), llave, Buffer.from(f, 'base64url'))) throw new Error('Firma inválida')
+  const d = JSON.parse(Buffer.from(p, 'base64url').toString())
+  if (d.iss !== APPLE_ISS) throw new Error('Emisor inválido')
+  if (!audienciasApple().includes(d.aud)) throw new Error('Audiencia inválida')
+  if (!d.exp || d.exp * 1000 < ahora - 60e3) throw new Error('Token vencido')
+  return d
+}
+
+/** Inicia sesión con Apple. Apple entrega el nombre solo la primera vez: lo manda la app. */
+export async function ingresarConApple(pool, { credencial, nombre, apellido }, { verificar = verificarConApple } = {}) {
+  if (typeof credencial !== 'string' || credencial.length > 4000) throw new ErrorValidacion('Credencial inválida')
+  let datos
+  try {
+    datos = await verificar(credencial)
+  } catch {
+    throw new ErrorValidacion('No se pudo confirmar tu cuenta de Apple. Intenta de nuevo.', 401)
+  }
+  if (!datos?.sub) throw new ErrorValidacion('Cuenta de Apple no válida', 401)
+  const limpio = (x) => (typeof x === 'string' ? x.trim().slice(0, 60) : '')
+  const nombreDado = limpio(nombre) ? nombreMostrado({ given_name: limpio(nombre), family_name: limpio(apellido) }) : null
+  const { rows } = await pool.query(
+    `INSERT INTO usuarios (apple_sub, nombre) VALUES ($1, $2)
+     ON CONFLICT (apple_sub) DO UPDATE SET nombre = COALESCE($3, usuarios.nombre), ultimo_ingreso = now()
+     RETURNING id, nombre, foto_url, bloqueado, creado_en, (xmax = 0) AS nueva`,
+    [datos.sub, nombreDado ?? 'Vecino', nombreDado],
+  )
+  const u = rows[0]
+  if (u.bloqueado) throw new ErrorValidacion('Esta cuenta fue bloqueada por no respetar las reglas de la comunidad.', 403)
+  if (u.nueva && datos.email && String(datos.email_verified) !== 'false') {
     const c = correoBienvenida(u.nombre)
     enviarCorreo({ para: datos.email, asunto: c.asunto, html: c.html, texto: c.texto })
   }
