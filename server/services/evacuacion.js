@@ -5,14 +5,14 @@
 // Ojo: el mapa no reemplaza la señalética ni las instrucciones oficiales; la app lo dice siempre.
 import { ErrorValidacion } from './reportes.js'
 
-const SERVIDORES = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']
+const SERVIDORES = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']
 const CACHE_MS = 24 * 3600e3
 const cache = new Map() // zona -> { hasta, datos }
 const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', 'content-type': 'application/x-www-form-urlencoded' }
 
 export function consultaOverpass([s, o, n, e]) {
   const caja = `(${s},${o},${n},${e})`
-  return `[out:json][timeout:40];
+  return `[out:json][timeout:25];
 (
   nwr["emergency"="assembly_point"]${caja};
   way["evacuation_route"]${caja};
@@ -60,7 +60,7 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
   let ultimoError
   for (const url of SERVIDORES) {
     try {
-      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.timeout(45000) })
+      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.timeout(30000) })
       if (!r.ok) throw new Error(`${new URL(url).host} respondió ${r.status}`)
       const datos = { ...interpretarOverpass(await r.json()), fuente: '© colaboradores de OpenStreetMap (ODbL)' }
       cache.set(zona, { hasta: Date.now() + CACHE_MS, datos })
@@ -68,6 +68,7 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
       return datos
     } catch (e) {
       ultimoError = e
+      console.error('Evacuación:', url, e.cause?.code ?? e.message)
     }
   }
   console.error('Evacuación:', ultimoError?.message)

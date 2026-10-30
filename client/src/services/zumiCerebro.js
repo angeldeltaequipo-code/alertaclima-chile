@@ -17,7 +17,7 @@ const hora = (d) => `${d.getHours()}:00`
 const azar = (l) => l[Math.floor(Math.random() * l.length)]
 
 /** Datos compactos de la comuna para la IA (sin datos personales). */
-export function armarContexto({ comuna, ahora, horas, dias, alertas, sismos, reportes }) {
+export function armarContexto({ comuna, ahora, horas, dias, alertas, sismos, reportes, comunidad }) {
   const p = alertas?.alertas ? alertaPrincipal(alertas.alertas) : null
   return {
     comuna: comuna?.nombre,
@@ -48,6 +48,7 @@ export function armarContexto({ comuna, ahora, horas, dias, alertas, sismos, rep
     sismosRecientes: (sismos ?? []).slice(0, 3).map((s) => ({ magnitud: s.magnitud, lugar: s.lugar, haceHoras: Math.round((Date.now() - s.hora) / 3600e3) })),
     reportesVecinos: reportes?.length ?? 0,
     luna: faseLunar().nombre,
+    ...(comunidad ? { loQueSeComenta: comunidad } : {}),
   }
 }
 
@@ -114,7 +115,7 @@ function diaPedido(t, dias) {
   return null
 }
 
-export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, alertas, sismos }) {
+export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, alertas, sismos, comunidad }) {
   const t = sinTildes(pregunta)
   const lugar = comuna?.nombre ?? 'tu comuna'
   const tu = nombre ? `${nombre}, ` : ''
@@ -138,6 +139,13 @@ export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, a
     if (p) return `Sí, hay ${NIVELES[p.nivel].etiqueta} por ${p.amenaza.toLowerCase()} en ${lugar}. ${p.instrucciones ? `La indicación es: ${p.instrucciones}` : 'Sigue las indicaciones de SENAPRED.'}`
     if (alertas?.tipo === 'ok') return `Ahora no hay alertas oficiales en ${lugar}. Si eso cambia, te aviso altiro.`
     return 'No pude revisar las alertas oficiales en este momento. Puedes confirmarlas en senapred.cl.'
+  }
+
+  if (/(que se (dice|comenta)|noticias|redes|reddit|twitter|que esta pasando|que paso|comunidad)/.test(t)) {
+    const tit = comunidad?.titulares ?? []
+    if (!tit.length) return 'Ahora no encuentro noticias ni comentarios de emergencias en Chile. Lo oficial siempre está en senapred.cl.'
+    const pico = comunidad.picos?.[0]
+    return `${pico ? `Ojo: hay muchas personas comentando. ${pico}. ` : ''}Lo más reciente que se comenta es: ${tit[0].replace(/^\[[^\]]*\]\s*/, '')}. Recuerda que esto no es oficial: confírmalo en SENAPRED.`
   }
 
   if (QUIERE.sismo.test(t)) {

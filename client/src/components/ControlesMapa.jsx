@@ -4,7 +4,42 @@ import { useEffect, useRef } from 'react'
  * Controles sobre el mapa en una fila que se desliza sola, despacio, para mostrar todas las
  * capas (se detiene al tocarla y vuelve a moverse después de un rato).
  */
-export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, onRios, riosActivo, onSismos, sismosActivo, onEvac, evacActivo }) {
+function Chip({ activo, onClick, color, etiqueta, children, texto }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={activo}
+      aria-label={etiqueta}
+      onClick={onClick}
+      style={activo ? { background: color } : undefined}
+      className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-bold whitespace-nowrap shadow-lg ring-1 ring-linea backdrop-blur ${activo ? 'text-white' : 'bg-superficie/95 text-texto'}`}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activo ? 'currentColor' : color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {children}
+      </svg>
+      {texto}
+    </button>
+  )
+}
+
+export default function ControlesMapa({
+  base,
+  onBase,
+  modoCalle,
+  onModoCalle,
+  onRios,
+  riosActivo,
+  onSismos,
+  sismosActivo,
+  onEvac,
+  evacActivo,
+  camarasActivo,
+  onCamaras,
+  volcanesActivo,
+  onVolcanes,
+  nubesActivo,
+  onNubes,
+}) {
   const fila = useRef(null)
   const pausa = useRef(0)
   useEffect(() => {
@@ -57,6 +92,15 @@ export default function ControlesMapa({ base, onBase, modoCalle, onModoCalle, on
             </button>
           ))}
         </div>
+        <Chip activo={nubesActivo} onClick={onNubes} color="#64748b" etiqueta="Nubes del satélite" texto="Nubes">
+          <path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.2 9.1 4.5 4.5 0 0 0 7 18z" />
+        </Chip>
+        <Chip activo={volcanesActivo} onClick={onVolcanes} color="#b45309" etiqueta="Volcanes" texto="Volcanes">
+          <path d="M3 20l6.5-10h5L21 20zM10 7c.5-1.5 1.5-2 2-4 .5 2 1.5 2.5 2 4" />
+        </Chip>
+        <Chip activo={camarasActivo} onClick={onCamaras} color="#0369a1" etiqueta="Cámaras en vivo" texto="Cámaras">
+          <path d="M3 7h12v10H3zM15 10l6-3v10l-6-3z" />
+        </Chip>
         <button
           type="button"
           aria-pressed={evacActivo}

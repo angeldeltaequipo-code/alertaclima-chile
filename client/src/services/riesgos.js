@@ -30,6 +30,8 @@ export function descripcionMagnitud(m) {
 export const colorMagnitud = (m) => (m >= 6 ? '#e11d48' : m >= 5 ? '#f97316' : m >= 4 ? '#f59e0b' : m >= 3 ? '#38bdf8' : '#94a3b8')
 
 // Volcanes activos de Chile vigilados por la Red Nacional de Vigilancia Volcánica (SERNAGEOMIN).
+export const COLOR_VOLCAN = { Roja: '#dc2626', Naranja: '#f97316', Amarilla: '#facc15', Verde: '#22c55e', sin: '#a8a29e' }
+
 export const VOLCANES = [
   ['Parinacota', -18.17, -69.14],
   ['Guallatiri', -18.42, -69.09],

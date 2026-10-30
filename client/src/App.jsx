@@ -1,5 +1,5 @@
 import Cosmos from './components/Cosmos'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
 import VistaAhora from './components/VistaAhora'
@@ -20,6 +20,9 @@ import Resumen from './components/Resumen'
 import { useNotificaciones } from './hooks/useNotificaciones'
 import { useCuenta } from './hooks/useCuenta'
 import { useRiesgos } from './hooks/useRiesgos'
+import { useComunidad } from './hooks/useComunidad'
+import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
+import FichaVolcan from './components/FichaVolcan'
 import { BotonZumi } from './components/Zumi'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
@@ -73,9 +76,17 @@ export default function App() {
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
   // Todas las cámaras públicas del país (para el mapa y el contador).
   const camarasChile = useCamarasChile({ activo: true, enLinea })
+  const camarasMapa = useMemo(() => unirCamaras(camaras.camaras, [...camarasChile.camaras, ...CAMARAS_OBSERVATORIOS]), [camaras.camaras, camarasChile.camaras])
   const cuenta = useCuenta({ enLinea })
   const riesgos = useRiesgos({ enLinea })
   const [capaSismos, setCapaSismos] = useState(false)
+  const comunidad = useComunidad({ enLinea })
+  const comunidadItems = useMemo(() => ubicar(comunidad.datos?.items, comuna), [comunidad.datos, comuna])
+  const volcanesNivel = useMemo(() => volcanesConNivel(riesgos.datos?.volcanes, comunidadItems), [riesgos.datos, comunidadItems])
+  const [capaVolcanes, setCapaVolcanes] = useState(false)
+  const [volcanSel, setVolcanSel] = useState(null)
+  const [capaNubes, setCapaNubes] = useState(() => leer('mapa:nubes', false))
+  const [capaCamaras, setCapaCamaras] = useState(() => leer('mapa:camaras', true))
   // Vías de evacuación: { estado: 'cargando' | 'listo' | 'error', datos, error }
   const [evac, setEvac] = useState(null)
   const notifBase = useNotificaciones({ enLinea })
@@ -238,6 +249,7 @@ export default function App() {
     alertas: alertas.estado,
     reportes: rep.reportes,
     sismos: riesgos.datos?.sismos,
+    comunidad: comunidad.datos ? resumenParaZumi(comunidadItems, comunidad.datos.tendencias) : null,
   }
   const traje = elegirTraje({ ...datosZumi, hoy: clima.datos?.dias?.[0], vista })
   const ultimoDato = [clima.datos?.obtenido, radar.ultimaCarga].filter(Boolean).sort((a, b) => b - a)[0]
@@ -320,7 +332,7 @@ export default function App() {
                   setCamaraSel(null)
                   setSeleccionado(r)
                 }}
-                camaras={unirCamaras(camaras.camaras, [...camarasChile.camaras, ...CAMARAS_OBSERVATORIOS])}
+                camaras={camarasMapa}
                 onCamara={(c) => {
                   setSeleccionado(null)
                   setCamaraSel(c)
@@ -333,6 +345,14 @@ export default function App() {
                 rioEnfocado={rioEnfocado}
                 sismos={capaSismos ? riesgos.datos?.sismos : null}
                 evacuacion={evac?.estado === 'listo' ? evac.datos : null}
+                verCamaras={capaCamaras}
+                volcanes={capaVolcanes ? volcanesNivel : null}
+                onVolcan={(v) => {
+                  setSeleccionado(null)
+                  setCamaraSel(null)
+                  setVolcanSel(v)
+                }}
+                nubes={capaNubes}
               />
             </Suspense>
             </Resguardo>
@@ -346,6 +366,22 @@ export default function App() {
             riosActivo={Boolean(rios)}
             sismosActivo={capaSismos}
             onSismos={() => setCapaSismos(!capaSismos)}
+            camarasActivo={capaCamaras}
+            onCamaras={() => {
+              guardar('mapa:camaras', !capaCamaras)
+              setCapaCamaras(!capaCamaras)
+              setCamaraSel(null)
+            }}
+            volcanesActivo={capaVolcanes}
+            onVolcanes={() => {
+              setCapaVolcanes(!capaVolcanes)
+              setVolcanSel(null)
+            }}
+            nubesActivo={capaNubes}
+            onNubes={() => {
+              guardar('mapa:nubes', !capaNubes)
+              setCapaNubes(!capaNubes)
+            }}
             evacActivo={Boolean(evac)}
             onEvac={() => {
               if (evac) return setEvac(null)
@@ -404,6 +440,8 @@ export default function App() {
                     setRioEnfocado(null)
                   }}
                 />
+              ) : volcanSel ? (
+                <FichaVolcan volcan={volcanSel} punto={ubicacion ?? clima.datos?.punto} onCerrar={() => setVolcanSel(null)} />
               ) : camaraSel ? (
                 <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
@@ -428,6 +466,13 @@ export default function App() {
                 setCapaSismos(true)
                 setVista('radar')
               }}
+              onVerVolcanes={() => {
+                setCapaVolcanes(true)
+                setVista('radar')
+              }}
+              comunidad={comunidad}
+              comunidadItems={comunidadItems}
+              volcanesNivel={volcanesNivel}
             />
             </Suspense>
             )}

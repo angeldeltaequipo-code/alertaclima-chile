@@ -1,6 +1,7 @@
 import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
+import LoQueSeComenta from './LoQueSeComenta'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
 import { hace } from '../services/reportes'
 
@@ -69,7 +70,7 @@ function Sismo({ s, punto }) {
 }
 
 /** Pestaña Riesgos: sismos de los últimos 7 días, tsunamis y volcanes cercanos. */
-export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
+export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerVolcanes, comunidad, comunidadItems, volcanesNivel }) {
   const [todos, setTodos] = useState(false)
   const entrada = useEntrada()
   const datos = riesgos.datos
@@ -78,7 +79,10 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
   const cerca = punto ? sismos.filter((s) => distanciaKm(punto, s) <= 300) : []
   const mayor = sismos.reduce((a, b) => (b.magnitud > (a?.magnitud ?? 0) ? b : a), null)
   const lista = todos ? sismos : sismos.slice(0, 8)
-  const volcanes = punto ? volcanesCercanos(punto, datos?.volcanes ?? []) : []
+  const volcanes = (punto ? volcanesCercanos(punto, datos?.volcanes ?? []) : []).map((v) => {
+    const n = volcanesNivel?.find((x) => x.nombre === v.nombre)
+    return n?.origen === 'prensa' && !v.actividad ? { ...v, prensa: n } : v
+  })
   const amenaza = (datos?.tsunami ?? []).find((t) => t.nivel !== 'informacion')
 
   return (
@@ -183,7 +187,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] font-bold">{v.nombre}</span>
                     <span className="block text-[13px] text-texto-2">
-                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : datos.volcanesConocidos ? 'Sin actividad destacada esta semana' : 'Revisa su nivel en SERNAGEOMIN'}
+                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : v.prensa ? `Alerta ${v.prensa.nivel.toLowerCase()} según la prensa (confirmar en SERNAGEOMIN)` : datos.volcanesConocidos ? 'Sin actividad destacada esta semana' : 'Revisa su nivel en SERNAGEOMIN'}
                     </span>
                   </span>
                   <span className="shrink-0 text-[14px] font-bold tabular-nums">{v.distanciaKm} km</span>
@@ -203,9 +207,16 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa }) {
               </a>
               .
             </p>
+            {onVerVolcanes && (
+              <button type="button" onClick={onVerVolcanes} className="mt-3 min-h-11 w-full rounded-xl bg-senal px-3 font-bold text-sobre-senal">
+                Ver los 31 volcanes en el mapa
+              </button>
+            )}
           </section>
         </>
       )}
+
+      {comunidad && <LoQueSeComenta comunidad={comunidad} items={comunidadItems} comuna={comuna} />}
 
       <section aria-labelledby="t-guias" className="tarjeta">
         <h2 id="t-guias" className="titulo-tarjeta">

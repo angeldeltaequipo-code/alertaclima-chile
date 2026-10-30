@@ -7,6 +7,7 @@ import { nombreCategoria } from '../services/reportes'
 import { limiteComuna } from '../services/comunas'
 import { radarInfo } from '../services/radar'
 import { caucesCercanos } from '../services/rios'
+import { COLOR_VOLCAN } from '../services/riesgos'
 
 maplibregl.setWorkerUrl(urlTrabajador)
 
@@ -39,6 +40,47 @@ async function teselaEsri(z, y, x, signal) {
   }
   throw new Error('Sin imagen satelital para esta zona')
 }
+// Nubes: imagen infrarroja del satélite GOES-Este (NASA GIBS), renovada cada ~10 minutos.
+// El infrarrojo muestra las nubes blancas sobre un suelo gris; se convierte cada píxel para que el
+// suelo quede transparente y las nubes se vean como nubes (más altas y frías = más blancas y opacas).
+const URLS_NUBES = (z, y, x) => [
+  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_Band13_Clean_Infrared/default/default/GoogleMapsCompatible_Level7/${z}/${y}/${x}.png`,
+  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/nrt/GOES-East_ABI_Band13_Clean_Infrared_v0_NRT_ZENJPEG/default/default/GoogleMapsCompatible_Level7/${z}/${y}/${x}.jpg`,
+]
+async function teselaNubes(z, y, x, signal) {
+  let blob
+  for (const url of URLS_NUBES(z, y, x)) {
+    try {
+      const r = await fetch(url, { signal })
+      if (r.ok) {
+        blob = await r.blob()
+        break
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') throw e
+    }
+  }
+  if (!blob) throw new Error('Sin imagen de nubes')
+  const img = await createImageBitmap(blob)
+  const lienzo = new OffscreenCanvas(img.width, img.height)
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(img, 0, 0)
+  const datos = ctx.getImageData(0, 0, img.width, img.height)
+  const px = datos.data
+  for (let i = 0; i < px.length; i += 4) {
+    const v = (px[i] + px[i + 1] + px[i + 2]) / 3
+    // < 105: suelo o mar (transparente). 105-235: nubes cada vez más altas.
+    const a = Math.max(0, Math.min(1, (v - 105) / 120))
+    const tono = 215 + Math.round(a * 40)
+    px[i] = tono
+    px[i + 1] = tono
+    px[i + 2] = Math.min(255, tono + 8)
+    px[i + 3] = Math.round(a * a * 235)
+  }
+  ctx.putImageData(datos, 0, 0)
+  return await (await lienzo.convertToBlob({ type: 'image/png' })).arrayBuffer()
+}
+
 let protocoloListo = false
 function registrarProtocolo() {
   if (protocoloListo) return
@@ -47,7 +89,62 @@ function registrarProtocolo() {
     const [z, y, x] = params.url.replace('esri://', '').split('/').map(Number)
     return { data: await teselaEsri(z, y, x, abort.signal) }
   })
+  maplibregl.addProtocol('nubes', async (params, abort) => {
+    const [z, y, x] = params.url.replace('nubes://', '').split('?')[0].split('/').map(Number)
+    return { data: await teselaNubes(z, y, x, abort.signal) }
+  })
 }
+
+// Íconos dibujados en un lienzo (nítidos en pantallas de alta densidad).
+function icono(dibujar, lado = 28) {
+  const k = 2
+  const c = document.createElement('canvas')
+  c.width = c.height = lado * k
+  const ctx = c.getContext('2d')
+  ctx.scale(k, k)
+  dibujar(ctx, lado)
+  return { imagen: ctx.getImageData(0, 0, lado * k, lado * k), pixelRatio: k }
+}
+const iconoCamara = () =>
+  icono((ctx, l) => {
+    ctx.beginPath()
+    ctx.arc(l / 2, l / 2, l / 2 - 1.5, 0, Math.PI * 2)
+    ctx.fillStyle = '#10202e'
+    ctx.fill()
+    ctx.lineWidth = 2.5
+    ctx.strokeStyle = '#fff'
+    ctx.stroke()
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(7, 10, 9.5, 8)
+    ctx.beginPath()
+    ctx.moveTo(16.5, 12.5)
+    ctx.lineTo(21.5, 10)
+    ctx.lineTo(21.5, 18)
+    ctx.lineTo(16.5, 15.5)
+    ctx.closePath()
+    ctx.fill()
+  }, 28)
+const iconoVolcan = (color) =>
+  icono((ctx, l) => {
+    ctx.beginPath()
+    ctx.moveTo(l / 2, 3)
+    ctx.lineTo(l - 2.5, l - 4)
+    ctx.lineTo(2.5, l - 4)
+    ctx.closePath()
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.lineWidth = 2.4
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = '#1c1917'
+    ctx.stroke()
+    // cráter
+    ctx.beginPath()
+    ctx.moveTo(l / 2 - 4, 9)
+    ctx.lineTo(l / 2 + 4, 9)
+    ctx.strokeStyle = '#1c1917'
+    ctx.lineWidth = 2
+    ctx.stroke()
+  }, 28)
 
 // Mapa con MapLibre (el mismo tipo de motor vectorial que usan Google Maps y Apple Maps):
 // zoom suave, texto nítido a cualquier escala y rotación con dos dedos.
@@ -128,11 +225,15 @@ export default function Mapa({
   rioEnfocado = null,
   sismos = null,
   evacuacion = null,
+  verCamaras = true,
+  volcanes = null,
+  onVolcan = () => {},
+  nubes = false,
 }) {
   const caja = useRef(null)
-  const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() })
+  const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
   const props = useRef({})
-  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle }
+  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, camaras, volcanes }
 
   // Ejecuta cuando el estilo esté cargado.
   const cuandoListo = (fn) => {
@@ -183,6 +284,11 @@ export default function Mapa({
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
 
+      mapa.addSource('nubes', { type: 'raster', tiles: ['nubes://{z}/{y}/{x}'], tileSize: 256, maxzoom: 7, attribution: 'Nubes: GOES-Este, NASA GIBS' })
+      // Bajo los nombres de ciudades, para que se sigan leyendo.
+      const primerTexto = mapa.getStyle().layers.find((l) => l.type === 'symbol')?.id
+      mapa.addLayer({ id: 'nubes', type: 'raster', source: 'nubes', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.9, 'raster-fade-duration': 300 } }, primerTexto)
+
       mapa.addSource('comuna', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       mapa.addLayer({ id: 'comuna-halo', type: 'line', source: 'comuna', paint: { 'line-color': '#000', 'line-opacity': 0.35, 'line-width': 5 } })
       mapa.addLayer({ id: 'comuna', type: 'line', source: 'comuna', paint: { 'line-color': AMBAR, 'line-width': 3, 'line-dasharray': [2, 1.5] } })
@@ -206,7 +312,59 @@ export default function Mapa({
 
       // La atribución parte plegada (botón «i») para no tapar el mapa en pantallas chicas.
       caja.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show')
-      // Sismos: círculos con tamaño y color según la magnitud.
+      // Cámaras: agrupadas en burbujas con el número cuando el mapa está lejos, y SIEMPRE bajo los sismos.
+      mapa.addImage('icono-camara', iconoCamara().imagen, { pixelRatio: 2 })
+      for (const [k, c] of Object.entries(COLOR_VOLCAN)) mapa.addImage(`volcan-${k}`, iconoVolcan(c).imagen, { pixelRatio: 2 })
+      mapa.addSource('camaras', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, cluster: true, clusterRadius: 42, clusterMaxZoom: 10 })
+      mapa.addLayer({
+        id: 'camaras-grupo',
+        type: 'circle',
+        source: 'camaras',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#10202e',
+          'circle-opacity': 0.82,
+          'circle-radius': ['step', ['get', 'point_count'], 13, 10, 16, 30, 20],
+          'circle-stroke-color': '#7dd3fc',
+          'circle-stroke-width': 2,
+        },
+      })
+      mapa.addLayer({
+        id: 'camaras-n',
+        type: 'symbol',
+        source: 'camaras',
+        filter: ['has', 'point_count'],
+        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-allow-overlap': true },
+        paint: { 'text-color': '#e0f2fe' },
+      })
+      mapa.addLayer({
+        id: 'camaras-pin',
+        type: 'symbol',
+        source: 'camaras',
+        filter: ['!', ['has', 'point_count']],
+        layout: { 'icon-image': 'icono-camara', 'icon-size': ['interpolate', ['linear'], ['zoom'], 5, 0.7, 12, 1], 'icon-allow-overlap': true },
+      })
+      // Volcanes: triángulos con el color del nivel de alerta técnica.
+      mapa.addSource('volcanes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      mapa.addLayer({
+        id: 'volcanes',
+        type: 'symbol',
+        source: 'volcanes',
+        layout: {
+          'icon-image': ['concat', 'volcan-', ['get', 'nivel']],
+          'icon-size': ['case', ['==', ['get', 'nivel'], 'sin'], 0.75, 1.05],
+          'icon-allow-overlap': true,
+          'symbol-sort-key': ['get', 'orden'],
+          'text-field': ['step', ['zoom'], ['case', ['==', ['get', 'nivel'], 'sin'], '', ['get', 'nombre']], 6, ['get', 'nombre']],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 12,
+          'text-offset': [0, 1.4],
+          'text-anchor': 'top',
+          'text-optional': true,
+        },
+        paint: { 'text-color': '#fff', 'text-halo-color': '#1c1917', 'text-halo-width': 1.6 },
+      })
+      // Sismos: círculos con tamaño y color según la magnitud (encima de cámaras y volcanes).
       mapa.addSource('sismos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       mapa.addLayer({
         id: 'sismos',
@@ -250,10 +408,33 @@ export default function Mapa({
     mapa.on('click', (e) => {
       if (props.current.modoCalle) props.current.onCalle({ lat: e.lngLat.lat, lng: e.lngLat.lng })
     })
+    mapa.on('click', 'camaras-grupo', async (e) => {
+      if (props.current.modoCalle) return
+      const f = e.features?.[0]
+      if (!f) return
+      const zoom = await mapa.getSource('camaras').getClusterExpansionZoom(f.properties.cluster_id)
+      mapa.easeTo({ center: f.geometry.coordinates, zoom: Math.min(zoom + 0.3, 14) })
+    })
+    mapa.on('click', 'camaras-pin', (e) => {
+      if (props.current.modoCalle) return
+      const id = e.features?.[0]?.properties?.id
+      const c = props.current.camaras.find((x) => String(x.id) === String(id))
+      if (c) props.current.onCamara(c)
+    })
+    mapa.on('click', 'volcanes', (e) => {
+      if (props.current.modoCalle) return
+      const n = e.features?.[0]?.properties?.nombre
+      const v = props.current.volcanes?.find((x) => x.nombre === n)
+      if (v) props.current.onVolcan(v)
+    })
+    for (const capa of ['camaras-grupo', 'camaras-pin', 'volcanes']) {
+      mapa.on('mouseenter', capa, () => (mapa.getCanvas().style.cursor = 'pointer'))
+      mapa.on('mouseleave', capa, () => (mapa.getCanvas().style.cursor = ''))
+    }
 
     return () => {
       mapa.remove()
-      ref.current = { mapa: null, listo: false, pendientes: [], reportes: new Map(), camaras: new Map(), radar: new Set() }
+      ref.current = { mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -343,27 +524,49 @@ export default function Mapa({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seleccionado?.id, visible])
 
-  // ---- Cámaras ----
+  // ---- Cámaras (capa del mapa, agrupada) ----
   useEffect(() => {
-    const mapa = ref.current.mapa
-    if (!mapa) return
-    sincronizar(
-      mapa,
-      ref.current.camaras,
-      camaras.map((c) => ({ ...c, clave: c.id, firma: `${c.lat},${c.lng}` })),
-      (c) => {
-        const el = elementoPin(
-          '<div class="pin-camara"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h12v10H3z"/><path d="M15 10l6-3v10l-6-3z"/></svg></div>',
-          `Cámara pública: ${c.titulo}`,
-        )
-        el.addEventListener('click', (e) => {
-          e.stopPropagation()
-          props.current.onCamara(c)
-        })
-        return new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat])
-      },
-    )
-  }, [camaras])
+    cuandoListo((mapa) => {
+      mapa.getSource('camaras').setData({
+        type: 'FeatureCollection',
+        features: (verCamaras ? camaras : []).map((c) => ({ type: 'Feature', properties: { id: String(c.id) }, geometry: { type: 'Point', coordinates: [c.lng, c.lat] } })),
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camaras, verCamaras])
+
+  // ---- Volcanes ----
+  const volcanesAntes = useRef(null)
+  useEffect(() => {
+    const recien = volcanes && !volcanesAntes.current
+    volcanesAntes.current = volcanes
+    cuandoListo((mapa) => {
+      const ORDEN = { Roja: 0, Naranja: 1, Amarilla: 2, Verde: 3, sin: 4 }
+      mapa.getSource('volcanes').setData({
+        type: 'FeatureCollection',
+        features: (volcanes ?? []).map((v) => ({
+          type: 'Feature',
+          properties: { nombre: v.nombre, nivel: v.nivel ?? 'sin', orden: ORDEN[v.nivel ?? 'sin'] ?? 4 },
+          geometry: { type: 'Point', coordinates: [v.lng, v.lat] },
+        })),
+      })
+      if (recien) mapa.flyTo({ center: [-70.5, -33], zoom: 3.7 })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volcanes])
+
+  // ---- Nubes ----
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      mapa.setLayoutProperty('nubes', 'visibility', nubes ? 'visible' : 'none')
+      if (!nubes) return
+      // Renovar la imagen cada 10 minutos (el satélite entrega una nueva).
+      const t = setInterval(() => mapa.getSource('nubes')?.setTiles([`nubes://{z}/{y}/{x}?t=${Math.floor(Date.now() / 600e3)}`]), 600e3)
+      ref.current.relojNubes = t
+    })
+    return () => clearInterval(ref.current.relojNubes)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nubes])
 
   // ---- Radar: una capa por cuadro, que quedan cargadas para animar sin volver a descargar ----
   useEffect(() => {

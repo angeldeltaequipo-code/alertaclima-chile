@@ -10,6 +10,7 @@ import { pushRouter } from './routes/push.js'
 import { cuentaRouter } from './routes/cuenta.js'
 import { chatRouter } from './routes/chat.js'
 import { riesgosRouter } from './routes/riesgos.js'
+import { comunidadRouter } from './routes/comunidad.js'
 import { ErrorValidacion } from './services/reportes.js'
 
 export const origenesPermitidos = () =>
@@ -40,6 +41,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/chat', chatRouter({ emitirChat }))
   app.use('/api/riesgos', riesgosRouter())
   app.use('/api/zumi', zumiRouter())
+  app.use('/api/comunidad', comunidadRouter())
   app.use('/api/admin', adminRouter({ avisarComunas, emitir: emitirReporte, enviarPush, emitirChat }))
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }))
