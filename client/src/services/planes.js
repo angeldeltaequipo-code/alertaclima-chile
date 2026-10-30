@@ -1,5 +1,5 @@
 // Planes: Gratis y «AlertaClima Familia». El servidor decide los límites y si el cobro está activo.
-// Cobro en la web: Flow.cl (tarjetas y Webpay). En la app de iPhone y Android: compras de la tienda (RevenueCat).
+// Cobro: compras de la tienda en la app de iPhone y Android (RevenueCat). El cobro web (Flow) queda apagado.
 import { API_URL } from './reportes'
 import { sesionActual } from './sesion'
 import { esNativa, plataforma } from './nativo'
