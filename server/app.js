@@ -13,8 +13,9 @@ import { riesgosRouter } from './routes/riesgos.js'
 import { comunidadRouter } from './routes/comunidad.js'
 import { ErrorValidacion } from './services/reportes.js'
 
-export const origenesPermitidos = () =>
-  (process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim())
+// Además de la web, la app de tiendas: Android carga desde https://localhost e iPhone desde alertaclima://localhost.
+export const ORIGENES_APP = ['https://localhost', 'alertaclima://localhost', 'capacitor://localhost']
+export const origenesPermitidos = () => [...(process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()), ...ORIGENES_APP]
 
 export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verificarGoogle } = {}) {
   const emitirReporte = emitir

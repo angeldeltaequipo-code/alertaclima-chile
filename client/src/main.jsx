@@ -4,8 +4,13 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
 
+import { esNativa, iniciarNativo } from './services/nativo'
+
 // Service worker: guarda la interfaz para abrir sin conexión y se actualiza solo.
-registerSW({ immediate: true })
+// En la app de tienda (Capacitor) la interfaz ya viene dentro de la app: no hace falta.
+if (!esNativa()) registerSW({ immediate: true })
+// Tocar una notificación nativa abre el detalle de alertas.
+iniciarNativo({ onAbrirAviso: () => window.dispatchEvent(new CustomEvent('ac:abrir-alertas')) })
 
 // El panel de administración vive en la misma app, en la dirección …/#admin.
 const PanelAdmin = lazy(() => import('./components/admin/PanelAdmin.jsx'))

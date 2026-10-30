@@ -3,6 +3,7 @@
 // a la pantalla de inicio (iOS 16.4 o superior): es una regla de Apple.
 import { API_URL } from './reportes'
 import { guardar, leer } from './almacen'
+import { bajaNativa, esNativa, tokenNativo } from './nativo'
 
 const ua = () => navigator.userAgent
 const esIOS = () => /iphone|ipad|ipod/i.test(ua()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -35,6 +36,7 @@ export function entorno() {
 /** 'ok' | 'ios-instalar' | 'integrado' (navegador dentro de otra app) | 'no' | 'sin-servidor' */
 export function soporte() {
   if (!API_URL) return 'sin-servidor'
+  if (esNativa()) return 'ok' // App de App Store / Google Play: notificaciones nativas.
   if (entorno().navegador === 'integrado') return 'integrado'
   if (esIOS() && !instalada()) return 'ios-instalar'
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'no'
@@ -109,7 +111,20 @@ async function claveDelServidor() {
   throw new ErrorNotificacion('No pudimos conectarnos. Espera un minuto y vuelve a intentarlo.', 'servidor')
 }
 
+/** En la app nativa la «suscripción» es el token de Firebase (se renueva solo). */
+async function suscripcionNativa() {
+  try {
+    const token = await tokenNativo()
+    const sub = { endpoint: `fcm:${token}`, keys: { p256dh: 'nativo', auth: 'nativo' } }
+    return { ...sub, toJSON: () => sub, unsubscribe: bajaNativa }
+  } catch (e) {
+    if (e.codigo === 'bloqueadas') throw new ErrorNotificacion(e.message, 'bloqueadas')
+    throw new ErrorNotificacion(e.message ?? 'No se pudieron activar los avisos.', 'suscribir')
+  }
+}
+
 async function suscripcionActual(crear) {
+  if (esNativa()) return suscripcionNativa()
   const reg = await Promise.race([
     navigator.serviceWorker.ready,
     new Promise((_, no) => setTimeout(() => no(new ErrorNotificacion('La app todavía se está preparando. Vuelve a cargar la página e inténtalo otra vez.', 'sw')), 15000)),
@@ -147,6 +162,12 @@ const bloqueadas = () =>
 
 /** Pide permiso (debe llamarse directo desde un toque de la persona) y suscribe estas comunas. */
 export async function activar(comunas) {
+  if (esNativa()) {
+    const sub = await suscripcionActual(true)
+    await enviar('/suscripciones', { suscripcion: sub.toJSON(), comunas })
+    guardar('notif:comunas', comunas)
+    return comunas
+  }
   if (permiso() === 'denied') throw bloqueadas()
   const p = await Notification.requestPermission()
   if (p === 'denied') throw bloqueadas()
@@ -186,6 +207,15 @@ export async function probar() {
 export async function revisar() {
   const comunas = comunasSuscritas()
   if (!comunas.length || soporte() !== 'ok') return comunas
+  if (esNativa()) {
+    try {
+      const sub = await suscripcionActual(true)
+      await enviar('/suscripciones', { suscripcion: sub.toJSON(), comunas })
+    } catch {
+      /* se reintenta la próxima vez */
+    }
+    return comunas
+  }
   // Si la persona bloqueó las notificaciones después de activarlas, se da de baja.
   if (permiso() === 'denied') return desactivar()
   if (permiso() !== 'granted') return comunas

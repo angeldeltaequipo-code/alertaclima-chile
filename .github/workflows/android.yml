@@ -1,0 +1,74 @@
+# Arma la app de Android en la nube:
+# - Siempre: un APK de prueba para instalar directo en un teléfono (Actions → la ejecución → Artifacts).
+# - Si existen los secretos de firma: el paquete AAB firmado para subir a Google Play.
+#
+# Secretos (Settings → Secrets and variables → Actions):
+#   GOOGLE_SERVICES_JSON          contenido de google-services.json (Firebase, para notificaciones)
+#   ANDROID_KEYSTORE_BASE64       llave de firma (.jks) en base64
+#   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+name: App Android
+
+on:
+  push:
+    branches: [main]
+    paths: ['client/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+        working-directory: client
+      - run: npm run build
+        working-directory: client
+        env:
+          VITE_API_URL: ${{ vars.API_URL || 'https://alertaclima-api.onrender.com' }}
+      - run: npx cap sync android
+        working-directory: client
+      - name: Firebase (notificaciones)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then echo "$GOOGLE_SERVICES_JSON" > client/android/app/google-services.json; fi
+      - name: Llave de firma
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/alertaclima.jks"; echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/alertaclima.jks" >> "$GITHUB_ENV"; fi
+      - name: APK de prueba
+        working-directory: client/android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlertaClima-prueba-apk
+          path: client/android/app/build/outputs/apk/debug/*.apk
+      - name: Paquete para Google Play (AAB firmado)
+        if: env.ANDROID_KEYSTORE_PATH != ''
+        working-directory: client/android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+      - if: env.ANDROID_KEYSTORE_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlertaClima-google-play-aab
+          path: client/android/app/build/outputs/bundle/release/*.aab

@@ -143,6 +143,11 @@ export default function App() {
     if (verDetalle) setVerAlertas(true)
   }
   const [verAlertas, setVerAlertas] = useState(false)
+  useEffect(() => {
+    const abrir = () => setVerAlertas(true)
+    window.addEventListener('ac:abrir-alertas', abrir)
+    return () => window.removeEventListener('ac:abrir-alertas', abrir)
+  }, [])
   const [seleccionado, setSeleccionado] = useState(null)
   const [formulario, setFormulario] = useState(null)
   const [aviso, setAviso] = useState(null)

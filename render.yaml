@@ -38,6 +38,8 @@ services:
         sync: false
       - key: REDDIT_CLIENT_SECRET
         sync: false
+      - key: FCM_CREDENCIALES # JSON de cuenta de servicio de Firebase: notificaciones de la app de App Store y Google Play.
+        sync: false
       - key: X_BEARER_TOKEN # API de X (Twitter), de pago. Opcional.
         sync: false
       - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"

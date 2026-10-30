@@ -6,6 +6,10 @@
 // - Solo se notifican alertas oficiales: nueva, sube de nivel o termina.
 //   Los reportes vecinales no generan notificaciones.
 import webpush from 'web-push'
+import { enviarFCM, esNativa } from './fcm.js'
+
+/** Envía por Web Push o, si es la app nativa (endpoint «fcm:…»), por Firebase. */
+export const enviarUniversal = (sub, mensaje, opciones) => (esNativa(sub.endpoint) ? enviarFCM(sub.endpoint, mensaje, opciones) : webpush.sendNotification(sub, mensaje, opciones))
 import { ErrorValidacion } from './reportes.js'
 import { NIVELES } from './alertas.js'
 
@@ -47,7 +51,8 @@ function validarSuscripcion(s) {
   const endpoint = s?.endpoint
   const p256dh = s?.keys?.p256dh
   const auth = s?.keys?.auth
-  if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint) || endpoint.length > 1000) {
+  // Web Push (https://…) o app nativa (fcm:<token de Firebase>).
+  if (typeof endpoint !== 'string' || !(/^https:\/\//.test(endpoint) || /^fcm:[\w:-]{20,400}$/.test(endpoint)) || endpoint.length > 1000) {
     throw new ErrorValidacion('Suscripción inválida')
   }
   if (typeof p256dh !== 'string' || typeof auth !== 'string' || p256dh.length > 200 || auth.length > 100) {
@@ -136,7 +141,7 @@ export function tipoDeAviso(antes, despues) {
  * varias de esas comunas recibe una sola notificación. Borra las suscripciones que
  * el servicio de notificaciones informa como vencidas (404/410).
  */
-export async function notificarAlerta(pool, alerta, tipo, { enviar = webpush.sendNotification, urlApp } = {}) {
+export async function notificarAlerta(pool, alerta, tipo, { enviar = enviarUniversal, urlApp } = {}) {
   await clavesVapid(pool)
   const { rows } = await pool.query(
     `SELECT DISTINCT s.id, s.endpoint, s.p256dh, s.auth
@@ -184,7 +189,7 @@ const ultimaPrueba = new Map() // endpoint -> hora de la última prueba
  * Notificación de prueba a UN dispositivo ya suscrito (máximo una por minuto).
  * Sirve para que la persona confirme que todo funciona sin esperar una alerta real.
  */
-export async function enviarPrueba(pool, endpoint, { enviar = webpush.sendNotification, urlApp } = {}) {
+export async function enviarPrueba(pool, endpoint, { enviar = enviarUniversal, urlApp } = {}) {
   if (typeof endpoint !== 'string' || endpoint.length > 1000) throw new ErrorValidacion('Suscripción inválida')
   const antes = ultimaPrueba.get(endpoint)
   if (antes && Date.now() - antes < 60_000) throw new ErrorValidacion('Espera un minuto antes de pedir otra prueba.', 429)

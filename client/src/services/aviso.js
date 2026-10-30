@@ -1,3 +1,4 @@
+import { esNativa, vibrarNativo } from './nativo'
 // Aviso físico cuando llega o sube una alerta oficial: vibración del teléfono.
 //
 // Límites del navegador (no de la app):
@@ -19,7 +20,13 @@ export const vibrarActivado = () => leer('vibrar', true)
 export const setVibrarActivado = (v) => guardar('vibrar', v)
 
 export function vibrar(nivel) {
-  if (!vibracionSoportada() || !vibrarActivado()) return false
+  if (!vibrarActivado()) return false
+  // App nativa (iPhone no tiene navigator.vibrate): vibración del sistema.
+  if (esNativa()) {
+    vibrarNativo(nivel === 'preventiva' ? 'suave' : 'fuerte')
+    return true
+  }
+  if (!vibracionSoportada()) return false
   try {
     return navigator.vibrate(PATRONES[nivel] ?? PATRONES.amarilla)
   } catch {
