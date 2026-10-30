@@ -412,12 +412,13 @@ export default function App() {
             <button
               type="button"
               onClick={abrirFormulario}
-              className="absolute top-[4.25rem] right-3 z-[500] flex min-h-12 items-center gap-2 rounded-xl border-2 border-sobre-senal bg-senal px-3 text-[16px] font-bold text-sobre-senal"
+              aria-label="Reportar un problema en el mapa"
+              className="absolute top-[4.25rem] right-3 z-[500] flex w-12 flex-col items-center rounded-xl border-2 border-sobre-senal bg-senal pt-1 pb-0.5 text-sobre-senal shadow-lg"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+                <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
               </svg>
-              Reportar
+              <span className="text-[10px] leading-tight font-black" aria-hidden="true">Avisar</span>
             </button>
           )}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[500] p-3">

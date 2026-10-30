@@ -263,7 +263,9 @@ export default function Mapa({
       pitchWithRotate: false,
       locale: { 'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar', 'NavigationControl.ResetBearing': 'Apuntar al norte' },
     })
-    mapa.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), 'top-right')
+    // En el teléfono se acerca con dos dedos: los botones + y − sobran y tapaban el mapa.
+    const tactil = window.matchMedia?.('(pointer: coarse)').matches
+    mapa.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: !tactil, visualizePitch: false }), 'top-right')
     mapa.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: [radarInfo.atribucion] }), 'bottom-right')
     mapa.touchZoomRotate.enableRotation()
     ref.current.mapa = mapa

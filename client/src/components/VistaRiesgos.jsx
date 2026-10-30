@@ -2,22 +2,71 @@ import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
 import LoQueSeComenta from './LoQueSeComenta'
+import { picos } from '../services/comunidad'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
 import { hace } from '../services/reportes'
 
 const num = (v, d = 1) => v.toLocaleString('es-CL', { maximumFractionDigits: d })
 
-function Encabezado() {
+const ir = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+/** Resumen de un vistazo: cada fila dice si hay algo de qué preocuparse y lleva a su detalle. */
+function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }) {
+  const filas = [
+    {
+      id: 't-tsunami',
+      ok: !amenaza,
+      titulo: 'Tsunami',
+      texto: amenaza ? 'Hay un boletín de amenaza. Sigue al SHOA y SENAPRED.' : 'Sin amenaza en el Pacífico (48 h). Oficial: SHOA',
+      enlace: amenaza ? null : 'https://www.shoa.cl/',
+    },
+    {
+      id: 't-sismos',
+      ok: !cercaUltimo || cercaUltimo.magnitud < 5,
+      titulo: 'Sismos cerca',
+      texto: cercaUltimo ? `Último: magnitud ${num(cercaUltimo.magnitud)}, ${hace(new Date(cercaUltimo.hora))}` : 'Ninguno a menos de 300 km esta semana',
+    },
+    {
+      id: 't-volcanes',
+      ok: !volcanesNoticia.length,
+      titulo: 'Volcanes',
+      texto: volcanesNoticia.length ? `En las noticias: ${volcanesNoticia.slice(0, 2).join(', ')}` : datos?.volcanesConocidos ? 'Sin actividad destacada' : 'Sin novedades en la prensa',
+    },
+    {
+      id: 't-comunidad',
+      ok: !picos,
+      titulo: 'Lo que se comenta',
+      texto: picos ? `Mucha gente habla de: ${picos}` : 'Nada fuera de lo normal',
+    },
+  ]
   return (
-    <div className="riesgos-tierra relative overflow-hidden rounded-[28px] px-5 pt-6 pb-16 text-white">
+    <section aria-labelledby="t-resumen-riesgos" className="riesgos-tierra relative overflow-hidden rounded-[28px] px-4 pt-5 pb-4 text-white">
       <div className="cielo-estrellas" aria-hidden="true" />
-      <div className="tierra-limbo" aria-hidden="true" />
       <div className="relative">
-        <p className="text-[13px] font-bold tracking-[0.2em] text-sky-200/90 uppercase">Planeta en vivo</p>
-        <h2 className="mt-1 text-[28px] leading-tight font-bold">Sismos, tsunamis y volcanes</h2>
-        <p className="mt-1 max-w-sm text-[15px] text-white/80">Lo que se mueve bajo Chile, con datos científicos que se actualizan cada minuto.</p>
+        <p className="text-[12px] font-bold tracking-[0.2em] text-sky-200/90 uppercase">Planeta en vivo</p>
+        <h2 id="t-resumen-riesgos" className="mt-0.5 text-[24px] leading-tight font-bold">
+          Riesgos {comuna ? `para ${comuna.nombre}` : 'en Chile'}
+        </h2>
+        <ul className="mt-3 space-y-1.5">
+          {filas.map((f) => (
+            <li key={f.id}>
+              <button type="button" onClick={() => (f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-white/10 px-3 py-2 text-left backdrop-blur active:bg-white/20">
+                <span className={`grid size-7 shrink-0 place-items-center rounded-full text-[15px] font-black ${f.ok ? 'bg-emerald-400 text-emerald-950' : 'bg-amber-400 text-amber-950'}`} aria-hidden="true">
+                  {f.ok ? '✓' : '!'}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-bold">{f.titulo}</span>
+                  <span className="block truncate text-[13px] text-white/80">{f.texto}</span>
+                </span>
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="shrink-0 opacity-70">
+                  <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -81,13 +130,23 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
   const lista = todos ? sismos : sismos.slice(0, 8)
   const volcanes = (punto ? volcanesCercanos(punto, datos?.volcanes ?? []) : []).map((v) => {
     const n = volcanesNivel?.find((x) => x.nombre === v.nombre)
-    return n?.origen === 'prensa' && !v.actividad ? { ...v, prensa: n } : v
+    if (n?.origen === 'prensa' && !v.actividad) return { ...v, prensa: n }
+    if (n?.noticia && !v.actividad) return { ...v, noticia: n.noticia }
+    return v
   })
   const amenaza = (datos?.tsunami ?? []).find((t) => t.nivel !== 'informacion')
+  const picosTexto = picos(comunidad?.datos?.tendencias).map((p) => p.etiqueta.toLowerCase()).join(', ')
 
   return (
     <div className={`${entrada} space-y-3 px-4 pt-4 pb-8`}>
-      <Encabezado />
+      <Resumen
+        datos={datos}
+        comuna={comuna}
+        amenaza={amenaza}
+        cercaUltimo={cerca[0] ?? null}
+        volcanesNoticia={(volcanesNivel ?? []).filter((v) => v.noticia || v.origen === 'prensa').map((v) => v.nombre)}
+        picos={picosTexto}
+      />
 
       {!datos && (
         <p className="tarjeta text-[16px] text-texto-2" role="status">
@@ -97,8 +156,9 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
 
       {datos && (
         <>
-          {/* Tsunami: lo primero si hay amenaza */}
-          <section aria-labelledby="t-tsunami" className={`tarjeta ${amenaza ? 'ring-2 ring-peligro' : ''}`}>
+          {/* Tsunami: tarjeta propia solo si hay amenaza (si no, basta la fila del resumen) */}
+          {amenaza && (
+          <section aria-labelledby="t-tsunami" className="tarjeta ring-2 ring-peligro">
             <h2 id="t-tsunami" className="titulo-tarjeta flex items-center gap-2">
               <span className={`size-3 rounded-full ${amenaza ? 'bg-peligro' : 'bg-ok'}`} aria-hidden="true" />
               Tsunami
@@ -123,6 +183,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
               .
             </p>
           </section>
+          )}
 
           {/* Sismos */}
           <section aria-labelledby="t-sismos" className="tarjeta">
@@ -187,7 +248,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] font-bold">{v.nombre}</span>
                     <span className="block text-[13px] text-texto-2">
-                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : v.prensa ? `Alerta ${v.prensa.nivel.toLowerCase()} según la prensa (confirmar en SERNAGEOMIN)` : datos.volcanesConocidos ? 'Sin actividad destacada esta semana' : 'Revisa su nivel en SERNAGEOMIN'}
+                      {v.actividad ? `${v.actividad.estado}${v.actividad.nivel ? ` · alerta técnica ${v.actividad.nivel}` : ''}` : v.prensa ? `Alerta ${v.prensa.nivel.toLowerCase()} según la prensa (confirmar en SERNAGEOMIN)` : v.noticia ? `En las noticias: ${v.noticia.texto}` : datos.volcanesConocidos ? 'Sin actividad destacada esta semana' : 'Revisa su nivel en SERNAGEOMIN'}
                     </span>
                   </span>
                   <span className="shrink-0 text-[14px] font-bold tabular-nums">{v.distanciaKm} km</span>

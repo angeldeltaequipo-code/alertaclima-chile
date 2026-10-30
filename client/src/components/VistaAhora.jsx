@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
 import GraficoHoras from './GraficoHoras'
@@ -39,6 +40,46 @@ function resumenLluvia(horas) {
   const max = horas.reduce((a, b) => (b.lluvia > a.lluvia ? b : a))
   const fin = horas[horas.length - 1].hora
   return `Se esperan ${num(total)} mm hasta las ${hhmm(fin)}. Lo más intenso, cerca de las ${hhmm(max.hora)}: ${num(max.lluvia)} mm en esa hora (lluvia ${intensidad(max.lluvia)}).`
+}
+
+/** Separador de grupos: ayuda a entender la página como 3 partes (pronóstico, tu zona, explorar). */
+function Grupo({ children }) {
+  return <h2 className="px-1 pt-4 text-[13px] font-black tracking-[0.14em] text-texto-2 uppercase">{children}</h2>
+}
+
+/** Cielo y espacio: contenido para curiosear, plegado para que la página principal sea corta. */
+function Explorar({ horas, dias, punto, comuna }) {
+  const [abierto, setAbierto] = useState(false)
+  return (
+    <section aria-labelledby="t-cielo-ancla" className="scroll-mt-16">
+      <button
+        type="button"
+        id="t-cielo-ancla"
+        aria-expanded={abierto}
+        onClick={() => setAbierto(!abierto)}
+        className="explorar-boton flex min-h-16 w-full items-center gap-3 rounded-[24px] px-4 py-3 text-left text-white"
+      >
+        <span className="text-[30px]" aria-hidden="true">🔭</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[18px] font-bold">Cielo y espacio en vivo</span>
+          <span className="block text-[14px] text-white/80">La Luna, los planetas sobre ti, observatorios, la Estación Espacial y el Sol.</span>
+        </span>
+        <svg width="18" height="18" viewBox="0 0 14 14" aria-hidden="true" style={{ transform: abierto ? 'rotate(180deg)' : 'none' }} className="shrink-0 transition-transform">
+          <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+      {abierto && (
+        <div className="mt-3 space-y-3">
+          <Resguardo>
+            <MiraElCielo horas={horas} hoy={dias[0]} punto={punto} comuna={comuna} />
+          </Resguardo>
+          <Resguardo>
+            <EspacioEnVivo punto={punto} />
+          </Resguardo>
+        </div>
+      )}
+    </section>
+  )
 }
 
 function Cargando() {
@@ -101,33 +142,22 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
 
       {invitacion}
 
-      <p className="px-1 text-[14px] leading-snug text-texto-2">
-        {ahora.medido ? (
-          <>
-            <strong className="text-texto">Medido a las {hhmm(ahora.estacion.hora)}</strong> en la estación {ahora.estacion.nombre}, a{' '}
-            {num(ahora.estacion.distanciaKm, 0)} km. El modelo estimaba {grados(ahora.temperaturaModelo)}.
-          </>
-        ) : (
-          <>
-            <strong className="text-texto">Estimación del modelo</strong>: no hay una estación meteorológica con datos recientes cerca de{' '}
-            {comuna.nombre}.
-          </>
-        )}
-        {ahora.lloviendoEnEstacion && (
-          <strong className="block text-lluvia-texto">Está lloviendo en la estación: {ahora.texto.toLowerCase()}.</strong>
-        )}
-        {lluviaAhora && (
-          <strong className="block text-lluvia-texto">
-            Lloviendo: {num(ahora.lluvia)} mm en la última hora (lluvia {intensidad(ahora.lluvia)}).
-          </strong>
-        )}
-      </p>
+      {(ahora.lloviendoEnEstacion || lluviaAhora) && (
+        <p className="rounded-2xl bg-lluvia/15 px-3 py-2 text-[15px] font-bold text-lluvia-texto" role="status">
+          {ahora.lloviendoEnEstacion ? `Está lloviendo en la estación: ${ahora.texto.toLowerCase()}.` : `Lloviendo: ${num(ahora.lluvia)} mm en la última hora (lluvia ${intensidad(ahora.lluvia)}).`}
+        </p>
+      )}
 
       {urgenteAluvion && aluvion}
 
+      <Grupo>Pronóstico</Grupo>
       <Bloque titulo="Próximas 24 horas" id="t-horas">
         {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
         <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
+      </Bloque>
+
+      <Bloque titulo="Próximos 7 días" id="t-dias">
+        <Semana dias={dias} actual={ahora.temperatura} />
       </Bloque>
 
       {hayLluvia && (
@@ -137,33 +167,28 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
         </Bloque>
       )}
 
+      {!urgenteAluvion && aluvion}
+
+      <Grupo>Tu zona</Grupo>
       {reportes}
 
       {camaras}
 
-      <Bloque titulo="Próximos 7 días" id="t-dias">
-        <Semana dias={dias} actual={ahora.temperatura} />
-      </Bloque>
-
-      {!urgenteAluvion && aluvion}
-
-      <Resguardo>
-        <span id="t-cielo-ancla" className="block scroll-mt-16" />
-        <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
-      </Resguardo>
-      <Resguardo>
-        <EspacioEnVivo punto={datos.punto} />
-      </Resguardo>
-
       <h2 id="t-detalle" className="scroll-mt-16 px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
       <Fichas ahora={ahora} dias={dias} />
+
+      <Grupo>Explorar</Grupo>
+      <Explorar horas={horas} dias={dias} punto={datos.punto} comuna={comuna?.nombre} />
 
       <p className="px-1 text-[13px] text-texto-2">
         Pronóstico de{' '}
         <a href={climaInfo.url} target="_blank" rel="noopener" className="underline">
           {climaInfo.nombre}
         </a>{' '}
-        (CC BY 4.0), actualizado a las {hhmm(datos.obtenido)}
+        (CC BY 4.0), actualizado a las {hhmm(datos.obtenido)}.{' '}
+        {ahora.medido
+          ? `Temperatura medida a las ${hhmm(ahora.estacion.hora)} en la estación ${ahora.estacion.nombre}, a ${num(ahora.estacion.distanciaKm, 0)} km (el modelo estimaba ${grados(ahora.temperaturaModelo)})`
+          : `Sin estación meteorológica cercana con datos recientes: la temperatura es una estimación del modelo`}
         {datos.punto?.aprox ? `. Punto aproximado dentro de la comuna.` : `, para la localidad de ${comuna.nombre}.`}
       </p>
     </div>

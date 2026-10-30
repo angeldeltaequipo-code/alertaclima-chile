@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 
 const SECCIONES = [
   ['t-horas', '24 horas'],
-  ['t-lluvia', 'Lluvia'],
   ['t-dias', '7 días'],
+  ['t-lluvia', 'Lluvia'],
+  ['t-reportes', 'Vecinos'],
   ['t-camaras', 'Cámaras'],
-  ['t-cielo-ancla', 'Cielo'],
-  ['t-espacio', 'Espacio'],
   ['t-detalle', 'Detalle'],
+  ['t-cielo-ancla', 'Cielo y espacio'],
 ]
 
 export default function Atajos() {

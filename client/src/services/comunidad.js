@@ -83,6 +83,15 @@ export function picos(tendencias) {
     .sort((a, b) => b.ultimaHora - a.ultimaHora)
 }
 
+// Cómo lo nombra la prensa: «volcán Chillán» por Nevados de Chillán, «Peteroa» por Planchón-Peteroa…
+const GENERICAS = new Set(['nevados', 'san', 'laguna', 'descabezado', 'ojos', 'cordon', 'grande', 'del', 'de'])
+export function aliasVolcan(nombre) {
+  const n = plano(nombre)
+  const partes = n.split(/[-\s]+/).filter((p) => p.length > 3 && !GENERICAS.has(p))
+  const compuesto = /^(san|laguna|descabezado|ojos)\b/.test(n)
+  return [n, ...(compuesto ? [] : partes)]
+}
+
 const NIVEL = [
   ['roja', 'Roja'],
   ['naranja', 'Naranja'],
@@ -96,10 +105,10 @@ const NIVEL = [
 export function volcanesConNivel(oficiales = [], items = []) {
   const noticiasVolcan = (items ?? []).filter((i) => i.tipo === 'volcan' && i.fuente === 'noticias')
   return VOLCANES.map((v) => {
-    const clave = plano(v.nombre).split(/[-\s]/)[0]
-    const of = (oficiales ?? []).find((a) => plano(a.nombre).includes(clave))
+    const claves = aliasVolcan(v.nombre)
+    const of = (oficiales ?? []).find((a) => claves.some((k) => plano(a.nombre).includes(k)))
     if (of?.nivel) return { ...v, nivel: of.nivel, origen: 'oficial', estado: of.estado ?? null }
-    const n = noticiasVolcan.find((i) => new RegExp(`\\b${esc(clave)}\\b`).test(plano(i.texto)))
+    const n = noticiasVolcan.find((i) => claves.some((k) => new RegExp(`\\b${esc(k)}\\b`).test(plano(i.texto))))
     const nivel = n && NIVEL.find(([k]) => plano(n.texto).includes(`alerta ${k}`) || plano(n.texto).includes(`alerta tecnica ${k}`) || plano(n.texto).includes(`alerta tecnica volcanica ${k}`))
     if (nivel) return { ...v, nivel: nivel[1], origen: 'prensa', noticia: n }
     return { ...v, nivel: of ? 'Verde' : null, origen: of ? 'oficial' : null, estado: of?.estado ?? null, noticia: n ?? null }

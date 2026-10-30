@@ -942,4 +942,34 @@ body {
 .landing-mision { padding: 28px; border-radius: 28px; background: radial-gradient(120% 140% at 0% 0%, rgb(251 146 60 / 0.25), transparent 55%), radial-gradient(120% 140% at 100% 100%, rgb(129 140 248 / 0.25), transparent 55%), rgb(255 255 255 / 0.04); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1); }
 .landing-pregunta { border-radius: 18px; background: rgb(255 255 255 / 0.05); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); }
 .landing-pregunta summary::-webkit-details-marker { display: none; }
-.fila-capas { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.fila-capas { -webkit-mask-image: linear-gradient(90deg, transparent, #000 10px, #000 85%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10px, #000 85%, transparent); padding-left: 6px; }
+
+/* Botón «Cielo y espacio»: una ventana al cielo nocturno. */
+.explorar-boton {
+  background:
+    radial-gradient(120% 140% at 85% 0%, rgba(124, 58, 237, 0.55), transparent 60%),
+    radial-gradient(90% 120% at 0% 100%, rgba(14, 165, 233, 0.45), transparent 60%),
+    #0b1026;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 30px -12px rgba(76, 29, 149, 0.7);
+}
+.explorar-boton:active {
+  transform: scale(0.99);
+}
+
+/* Hoja de capas del mapa */
+.con-cosmos .hoja-capas,
+.hoja-capas {
+  background-color: var(--superficie);
+  animation: subir-hoja 0.22s ease-out;
+}
+@keyframes subir-hoja {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hoja-capas {
+    animation: none;
+  }
+}
