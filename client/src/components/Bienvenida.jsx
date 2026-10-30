@@ -103,7 +103,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   const [buscando, setBuscando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [hablandoZumi, setHablandoZumi] = useState(false)
-  const [saludo, setSaludo] = useState(false)
+  const [escenaInicio] = useState(() => (new Date().getHours() >= 20 || new Date().getHours() < 7 ? 'noche' : 'sala'))
   const [ancho, setAncho] = useState(() => window.innerWidth)
   const vivo = useEnVivo()
   const [planesWeb, setPlanesWeb] = useState(null)
@@ -116,10 +116,8 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   useEffect(() => {
     const f = () => setAncho(window.innerWidth)
     window.addEventListener('resize', f)
-    const t = setTimeout(() => setSaludo(true), 600)
     return () => {
       window.removeEventListener('resize', f)
-      clearTimeout(t)
     }
   }, [])
   useEffect(() => {
@@ -138,8 +136,6 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   // La voz necesita un toque de la persona (los navegadores no dejan hablar solo al abrir).
   const escuchar = () => {
     if (hablandoZumi) return callar()
-    setSaludo(false)
-    requestAnimationFrame(() => setSaludo(true))
     hablar(dice, { silencio: false })
   }
 
@@ -292,7 +288,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
         <div className="relative order-1 md:order-2">
           <div className="landing-escenario relative mx-auto w-full overflow-hidden" style={{ height: altoZumi + (escritorio ? 40 : 10) }}>
-            <ZumiVideo gesto={saludo ? 'saludo' : null} posicion="center 32%" className="rounded-[inherit]" />
+            <ZumiVideo escena={escenaInicio} estado={hablandoZumi ? 'hablando' : 'reposo'} posicion={[0.5, 0.32]} className="rounded-[inherit]" />
             <div className="bienvenida-zumi-velo absolute inset-0" aria-hidden="true" />
           </div>
           <p className="entrar globo-bienvenida relative z-10 mx-2 -mt-10 text-[15px] md:-mt-14 md:text-[17px] leading-snug font-bold md:mx-8" style={{ animationDelay: '250ms' }} aria-live="polite">

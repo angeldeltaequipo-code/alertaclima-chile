@@ -23,7 +23,7 @@ import {
   vozSilenciada,
 } from '../services/narrador'
 import { SUGERENCIAS, preguntarZumi } from '../services/zumiCerebro'
-import { NIVELES } from '../services/alertas'
+import { NIVELES, alertaPrincipal } from '../services/alertas'
 
 
 /** Alto de ZUMI según la pantalla: grande, pero dejando sitio a los datos y a los subtítulos. */
@@ -272,6 +272,15 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     if (e.hablando) hablar(e.frases.slice(Math.max(0, e.frase)), { silencio: v })
   }
 
+  // Director de escena: dónde está ZUMI según la hora, el clima, las alertas y el tema de la frase.
+  const hora = new Date().getHours()
+  const llueve = (datos.horas ?? []).slice(0, 3).some((h) => (h.lluvia ?? 0) >= 0.5) || /lluv|chubas|tormenta|llovizna/i.test(datos.ahora?.texto ?? '')
+  const base = hora >= 20 || hora < 7 ? 'noche' : llueve ? 'lluvia' : 'sala'
+  const hayAlerta = escena?.clip === 'alerta' || Boolean(datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas))
+  const deDatos = ['temp', 'minmax', 'lluvia', 'viento', 'aluvion', 'sismo'].includes(escena?.tarjeta?.tipo)
+  const escenario = hayAlerta && (escena?.clip === 'alerta' || !conversa) ? 'alerta' : deDatos && !conversa ? 'estudio' : base
+  const enPantalla = escenario === 'estudio' || escenario === 'alerta'
+
   const subtitulo = pensando
     ? 'Déjame pensar…'
     : respondiendo || (ultima?.texto && terminado && conversa)
@@ -293,11 +302,12 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
 
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
         {/* ZUMI en su estudio: video con calidad de película animada, que cambia según lo que pasa */}
+        {/* ZUMI presentador: el escenario cambia según el clima, la hora, las alertas y lo que cuenta */}
         <ZumiVideo
+          escena={escenario}
           estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
-          gesto={i === 0 || Boolean(respondiendo && ultima?.pregunta && /hola|buen/i.test(ultima.pregunta)) ? 'saludo' : escena?.tarjeta?.tipo === 'ok' ? 'celebrar' : null}
-          luz={alerta ? 'alerta' : 'normal'}
-          posicion="center 30%"
+          posicion={[0.5, 0.3]}
+          pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
         />
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
 
@@ -338,7 +348,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
 
         {/* Panel holográfico con el dato */}
         <div className="absolute inset-x-4 top-[calc(env(safe-area-inset-top)+5.4rem)]" aria-hidden="true">
-          {!conversa && <Holograma t={escena?.tarjeta} />}
+          {!conversa && !enPantalla && <Holograma t={escena?.tarjeta} />}
         </div>
 
         {/* Subtítulos y conversación */}

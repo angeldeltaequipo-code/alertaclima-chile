@@ -999,3 +999,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .zumi-pose { animation: none; }
 }
+
+/* Datos dentro de la pantalla del estudio de ZUMI */
+.pantalla-estudio { display: flex; align-items: center; justify-content: center; padding: 4% 4% 4% 8%; }
+.holo-en-pantalla { width: 100%; transform: scale(0.86); transform-origin: center; animation: pantalla-entra 0.5s ease-out; }
+.holo-en-pantalla .holograma { overflow: visible; min-width: 0; margin: 0 auto; background: transparent; box-shadow: none; border: 0; padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; color: #0b2545; text-shadow: none; }
+.holo-en-pantalla .holograma::after { display: none; }
+.holo-en-pantalla .holo-etiqueta { color: #1d4f91; }
+.holo-en-pantalla .holograma [class*='text-white'] { color: #23476f; }
+.holo-en-pantalla .holograma [class*='text-[52px]'] { font-size: 44px; }
+.zumi-video .pantalla-estudio:has(.holo-en-pantalla:empty) { display: none; }
+@keyframes pantalla-entra { from { opacity: 0; transform: scale(0.78); } to { opacity: 1; transform: scale(0.86); } }
+.escena-alerta .holo-en-pantalla .holograma, .escena-alerta .holo-en-pantalla .holo-etiqueta, .escena-alerta .holo-en-pantalla .holograma [class*='text-white'] { color: #fff; }
