@@ -163,7 +163,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                   placeholder="nombre@correo.cl"
                   className="mt-1 min-h-12 w-full rounded-xl border-2 border-borde bg-superficie px-3 text-[17px]"
                 />
-                <p className="mt-1 text-[13px] text-texto-2">Lo usa Flow, nuestro sistema de pago chileno, para enviarte los comprobantes. No lo usamos para nada más.</p>
+                <p className="mt-1 text-[13px] text-texto-2">Lo usa nuestro sistema de pago para enviarte los comprobantes. No lo usamos para nada más.</p>
               </div>
             )}
 
@@ -173,8 +173,11 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
               </p>
             )}
 
+            {!enApp && !plan.pagos?.web && <SuscribirEnApp />}
+
             <button
               type="button"
+              hidden={!enApp && !plan.pagos?.web && Boolean(cuenta.token)}
               disabled={ocupado || (!disponible && Boolean(cuenta.token))}
               onClick={empezar}
               className="mt-5 min-h-14 w-full rounded-2xl bg-senal text-[19px] font-bold text-sobre-senal shadow-lg disabled:opacity-60"
@@ -236,6 +239,30 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
     </div>
   )
   return createPortal(contenido, document.querySelector('.con-cosmos') ?? document.body)
+}
+
+// Sin cobro en la web: el plan se compra en la app del teléfono (Apple o Google cobran) y vale
+// también aquí, con la misma cuenta. VITE_URL_APP_STORE se define cuando la app esté publicada.
+const URL_PLAY = import.meta.env.VITE_URL_GOOGLE_PLAY || 'https://play.google.com/store/apps/details?id=cl.alertaclima.app'
+const URL_APPLE = import.meta.env.VITE_URL_APP_STORE || ''
+
+function SuscribirEnApp() {
+  return (
+    <div className="mt-5 rounded-2xl bg-superficie-2 p-4">
+      <p className="text-[17px] font-bold">Suscríbete desde la app de tu teléfono</p>
+      <p className="mt-1 text-[15px] text-texto-2">Paga de forma segura con tu cuenta de Apple o Google. El plan queda activo también aquí, con la misma cuenta.</p>
+      <div className="mt-3 grid gap-2">
+        {URL_APPLE && (
+          <a href={URL_APPLE} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center rounded-xl bg-texto text-[16px] font-bold text-superficie">
+            Descargar en App Store
+          </a>
+        )}
+        <a href={URL_PLAY} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center rounded-xl bg-texto text-[16px] font-bold text-superficie">
+          Descargar en Google Play
+        </a>
+      </div>
+    </div>
+  )
 }
 
 function TuPlan({ plan, onCerrar }) {
