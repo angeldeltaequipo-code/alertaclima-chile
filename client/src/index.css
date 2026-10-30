@@ -973,3 +973,29 @@ body {
     animation: none;
   }
 }
+
+/* Tamaño de letra elegido en Ajustes (agranda todo el contenido de la pestaña, no el mapa). */
+:root[data-letra='grande'] .escala-letra { zoom: 1.1; }
+:root[data-letra='muy'] .escala-letra { zoom: 1.24; }
+:root[data-letra='grande'] nav[aria-label='Secciones'] span,
+:root[data-letra='muy'] nav[aria-label='Secciones'] span { font-size: 14px; }
+
+/* ZUMI te cuenta */
+.zumi-cuenta {
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--senal) 22%, transparent), transparent 55%),
+    var(--superficie);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--senal) 45%, transparent);
+}
+.zumi-pose {
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.35));
+  animation: zumi-flota 4.5s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes zumi-flota {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-4px) rotate(-1.5deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zumi-pose { animation: none; }
+}

@@ -83,3 +83,19 @@ export function useComunaGuardada() {
   }
   return [cut, setCut]
 }
+
+/**
+ * Tamaño de letra: "normal", "grande" (por defecto, pensado para leer sin lentes) o "muy".
+ * Se aplica como data-letra en <html>; el CSS agranda el contenido de las pestañas.
+ */
+export function useLetra() {
+  const [letra, setLetra] = useState(() => {
+    const v = leer('letra', 'grande')
+    return ['normal', 'grande', 'muy'].includes(v) ? v : 'grande'
+  })
+  useEffect(() => {
+    document.documentElement.dataset.letra = letra
+    guardar('letra', letra)
+  }, [letra])
+  return [letra, setLetra]
+}

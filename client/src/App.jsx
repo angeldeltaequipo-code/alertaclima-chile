@@ -7,7 +7,7 @@ import Navegacion from './components/Navegacion'
 import ListaReportes from './components/ListaReportes'
 import DetalleReporte from './components/DetalleReporte'
 import { useConexion } from './hooks/useConexion'
-import { useAhorro, useComunaGuardada, useTema } from './hooks/usePreferencias'
+import { useAhorro, useComunaGuardada, useLetra, useTema } from './hooks/usePreferencias'
 import { useRadar } from './hooks/useRadar'
 import { useClima } from './hooks/useClima'
 import { useReportes } from './hooks/useReportes'
@@ -23,6 +23,8 @@ import { useRiesgos } from './hooks/useRiesgos'
 import { useComunidad } from './hooks/useComunidad'
 import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
+import ZumiTeCuenta from './components/ZumiTeCuenta'
+import MiFamilia from './components/MiFamilia'
 import { BotonZumi } from './components/Zumi'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
@@ -64,6 +66,7 @@ function unirCamaras(cerca = [], pais = []) {
 
 export default function App() {
   const [tema, setTema, temaVisible] = useTema()
+  const [letra, setLetra] = useLetra()
   const ahorro = useAhorro()
   const enLinea = useConexion()
   const [cut, setCut] = useComunaGuardada()
@@ -281,7 +284,7 @@ export default function App() {
           />
         )}
         <div id="vista-ahora" hidden={vista !== 'ahora'} className="h-full overflow-y-auto overscroll-contain">
-          <div className="mx-auto max-w-xl">
+          <div className="escala-letra mx-auto max-w-xl">
             {comuna && (
               <VistaAhora
                 clima={clima}
@@ -306,6 +309,8 @@ export default function App() {
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
+                zumi={clima.datos && <ZumiTeCuenta datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }} onEscuchar={() => setZumi(true)} />}
+                familia={<MiFamilia />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
                 onVerRios={() => buscarRios()}
@@ -456,7 +461,7 @@ export default function App() {
 
         {/* Riesgos: sismos, tsunamis y volcanes */}
         <div hidden={vista !== 'riesgos'} className="h-full overflow-y-auto overscroll-contain">
-          <div className="mx-auto max-w-xl">
+          <div className="escala-letra mx-auto max-w-xl">
             {visitadas.has('riesgos') && (
             <Suspense fallback={<Cargando />}>
             <VistaRiesgos
@@ -495,7 +500,9 @@ export default function App() {
         <div hidden={vista !== 'ajustes'} className="h-full overflow-y-auto overscroll-contain">
           {visitadas.has('ajustes') && (
             <Suspense fallback={<Cargando />}>
-              <Ajustes tema={tema} setTema={setTema} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
+              <div className="escala-letra">
+                <Ajustes tema={tema} setTema={setTema} letra={letra} setLetra={setLetra} ahorro={ahorro} notif={notif} comuna={comuna} cuenta={cuenta} />
+              </div>
             </Suspense>
           )}
         </div>

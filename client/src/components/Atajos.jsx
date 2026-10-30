@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 const SECCIONES = [
+  ['t-familia', 'Familia'],
   ['t-horas', '24 horas'],
   ['t-dias', '7 días'],
   ['t-lluvia', 'Lluvia'],

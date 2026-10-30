@@ -139,7 +139,7 @@ function TuCuenta({ cuenta }) {
   )
 }
 
-export default function Ajustes({ tema, setTema, ahorro, notif, comuna, cuenta }) {
+export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif, comuna, cuenta }) {
   const { instalada, puedeInstalar, esIOS, instalar } = useInstalar()
 
   return (
@@ -150,6 +150,31 @@ export default function Ajustes({ tema, setTema, ahorro, notif, comuna, cuenta }
           <TuCuenta cuenta={cuenta} />
         </Seccion>
       )}
+      <Seccion titulo="Tamaño de letra">
+        <div role="radiogroup" aria-label="Tamaño de letra" className="grid grid-cols-3 gap-2">
+          {[
+            ['normal', 'Normal', 18],
+            ['grande', 'Grande', 24],
+            ['muy', 'Muy grande', 30],
+          ].map(([v, t, px]) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={letra === v}
+              onClick={() => setLetra?.(v)}
+              className={`flex min-h-20 flex-col items-center justify-center rounded-2xl border-2 px-1 ${letra === v ? 'border-senal bg-senal text-sobre-senal' : 'border-borde'}`}
+            >
+              <span className="leading-none font-bold" style={{ fontSize: px }} aria-hidden="true">
+                Aa
+              </span>
+              <span className="mt-1 text-[14px] font-bold">{t}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[15px] text-texto-2">Agranda los textos y botones de toda la app. Elige el que leas cómodo sin lentes.</p>
+      </Seccion>
+
       <Seccion titulo="Pantalla">
         <Opciones
           nombre="Tema"

@@ -173,7 +173,7 @@ export function escenasReporte({ nombre, comuna, ahora, horas, dias, alertas, re
 
   const s = sismos?.[0]
   if (s && s.magnitud >= 5 && Date.now() - s.hora < 6 * 3600e3) {
-    di(`Hubo un sismo de magnitud ${s.magnitud.toLocaleString('es-CL', { maximumFractionDigits: 1 })} ${s.lugar ? `cerca de ${s.lugar}` : ''}.`, { tipo: 'sismo', magnitud: s.magnitud, texto: s.lugar }, 'alerta')
+    di(`Hubo un sismo de magnitud ${s.magnitud.toLocaleString('es-CL', { maximumFractionDigits: 1 })} ${s.lugar ? (/^a \d/.test(s.lugar) ? s.lugar : `cerca de ${s.lugar}`) : ''}.`, { tipo: 'sismo', magnitud: s.magnitud, texto: s.lugar }, 'alerta')
   }
 
   if (ahora) {
