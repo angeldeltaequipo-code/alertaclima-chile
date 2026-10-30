@@ -1,6 +1,7 @@
 // Página de entrada de AlertaClima: una landing que presenta el producto (con ZUMI como cara),
 // muestra datos reales en vivo y lleva a entrar con Google en un toque. Si la persona ya tiene
 // cuenta, el mismo lugar le pide su comuna.
+import { configPlanes } from '../services/planes'
 import { useEffect, useState } from 'react'
 import { alCambiarNarrador, callar, hablar } from '../services/narrador'
 import { comunaEnPunto } from '../services/comunas'
@@ -106,6 +107,10 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   const [saludo, setSaludo] = useState(false)
   const [ancho, setAncho] = useState(() => window.innerWidth)
   const vivo = useEnVivo()
+  const [planesWeb, setPlanesWeb] = useState(null)
+  useEffect(() => {
+    configPlanes().then(setPlanesWeb).catch(() => {})
+  }, [])
   const escritorio = ancho >= 900
   const altoZumi = Math.round(escritorio ? Math.min(window.innerHeight * 0.62, 560) : Math.min(window.innerHeight * 0.33, 300))
 
@@ -391,6 +396,39 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
           </p>
         </div>
       </section>
+
+      {/* Planes: solo cuando el cobro está activo */}
+      {planesWeb?.cobroActivo && (
+        <section id="l-planes" aria-labelledby="t-l-planes" className="relative mx-auto mt-16 max-w-4xl scroll-mt-20 px-5">
+          <h2 id="t-l-planes" className="landing-h2 text-center">Elige cómo cuidar a los tuyos</h2>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="landing-tarjeta" style={{ '--c': '#38bdf8' }}>
+              <p className="text-[14px] font-bold tracking-widest text-sky-300 uppercase">Esencial</p>
+              <p className="mt-1 text-[28px] font-extrabold text-white">Incluido</p>
+              <ul className="mt-3 space-y-1.5 text-[16px] text-white/80">
+                <li>✓ Alertas oficiales de tu comuna</li>
+                <li>✓ Botón SOS y vías de evacuación</li>
+                <li>✓ Clima, radar, sismos y volcanes</li>
+                <li>✓ ZUMI: {planesWeb.limites?.gratis?.zumiDia ?? 5} preguntas al día</li>
+              </ul>
+            </div>
+            <div className="landing-tarjeta" style={{ '--c': '#fbbf24', border: '2px solid rgb(252 211 77 / 0.7)' }}>
+              <p className="text-[14px] font-bold tracking-widest text-amber-300 uppercase">Familia</p>
+              <p className="mt-1 text-[28px] font-extrabold text-white">
+                ${(planesWeb.precios?.mensual ?? 1990).toLocaleString('es-CL')}
+                <span className="text-[16px] font-bold text-white/70"> al mes</span>
+              </p>
+              <p className="text-[14px] text-white/70">o ${(planesWeb.precios?.anual ?? 14990).toLocaleString('es-CL')} al año</p>
+              <ul className="mt-3 space-y-1.5 text-[16px] text-white/85">
+                <li>✓ Todo lo Esencial</li>
+                <li>✓ Hasta 5 familiares y 5 comunas con avisos</li>
+                <li>✓ ZUMI sin límite, con inteligencia artificial</li>
+                {planesWeb.precios?.pruebaDias > 0 && <li>✓ {planesWeb.precios.pruebaDias} días de prueba sin costo</li>}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Preguntas */}
       <section id="l-preguntas" className="relative mx-auto mt-16 max-w-3xl scroll-mt-20 px-5">
