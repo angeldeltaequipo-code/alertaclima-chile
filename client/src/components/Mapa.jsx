@@ -44,8 +44,7 @@ async function teselaEsri(z, y, x, signal) {
 // El infrarrojo muestra las nubes blancas sobre un suelo gris; se convierte cada píxel para que el
 // suelo quede transparente y las nubes se vean como nubes (más altas y frías = más blancas y opacas).
 const URLS_NUBES = (z, y, x) => [
-  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_Band13_Clean_Infrared/default/default/GoogleMapsCompatible_Level7/${z}/${y}/${x}.png`,
-  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/nrt/GOES-East_ABI_Band13_Clean_Infrared_v0_NRT_ZENJPEG/default/default/GoogleMapsCompatible_Level7/${z}/${y}/${x}.jpg`,
+  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_Band13_Clean_Infrared/default/default/GoogleMapsCompatible_Level6/${z}/${y}/${x}.png?t=${Math.floor(Date.now() / 600e3)}`,
 ]
 async function teselaNubes(z, y, x, signal) {
   let blob
@@ -69,13 +68,13 @@ async function teselaNubes(z, y, x, signal) {
   const px = datos.data
   for (let i = 0; i < px.length; i += 4) {
     const v = (px[i] + px[i + 1] + px[i + 2]) / 3
-    // < 105: suelo o mar (transparente). 105-235: nubes cada vez más altas.
-    const a = Math.max(0, Math.min(1, (v - 105) / 120))
+    // En la paleta de GIBS: < 138 suelo o mar (transparente); 138-215 nubes cada vez más altas y frías.
+    const a = Math.max(0, Math.min(1, (v - 138) / 77))
     const tono = 215 + Math.round(a * 40)
     px[i] = tono
     px[i + 1] = tono
     px[i + 2] = Math.min(255, tono + 8)
-    px[i + 3] = Math.round(a * a * 235)
+    px[i + 3] = Math.round(Math.sqrt(a) * 225)
   }
   ctx.putImageData(datos, 0, 0)
   return await (await lienzo.convertToBlob({ type: 'image/png' })).arrayBuffer()
@@ -284,7 +283,7 @@ export default function Mapa({
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
 
-      mapa.addSource('nubes', { type: 'raster', tiles: ['nubes://{z}/{y}/{x}'], tileSize: 256, maxzoom: 7, attribution: 'Nubes: GOES-Este, NASA GIBS' })
+      mapa.addSource('nubes', { type: 'raster', tiles: ['nubes://{z}/{y}/{x}'], tileSize: 256, maxzoom: 6, attribution: 'Nubes: GOES-Este, NASA GIBS' })
       // Bajo los nombres de ciudades, para que se sigan leyendo.
       const primerTexto = mapa.getStyle().layers.find((l) => l.type === 'symbol')?.id
       mapa.addLayer({ id: 'nubes', type: 'raster', source: 'nubes', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.9, 'raster-fade-duration': 300 } }, primerTexto)
