@@ -77,6 +77,10 @@ export default function App() {
   const clima = useClima({ comuna, ahorro: ahorro.activo, enLinea })
   const rep = useReportes({ comuna, enLinea })
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
+  // Widget de la pantalla de inicio (app nativa): se actualiza con lo último que se cargó.
+  useEffect(() => {
+    import('./services/widget').then((w) => w.actualizarWidget({ comuna, clima: clima.datos, alertas: alertas.estado })).catch(() => {})
+  }, [comuna, clima.datos, alertas.estado])
   const obs = useObservacion({ cut, punto: clima.datos?.punto, enLinea, ahorro: ahorro.activo })
   const camaras = useCamaras({ punto: clima.datos?.punto, enLinea })
   // Todas las cámaras públicas del país (para el mapa y el contador).

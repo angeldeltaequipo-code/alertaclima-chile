@@ -4,4 +4,5 @@
     <string name="title_activity_main">AlertaClima</string>
     <string name="package_name">cl.alertaclima.app</string>
     <string name="custom_url_scheme">cl.alertaclima.app</string>
+    <string name="widget_descripcion">El clima de tu comuna y si hay alerta oficial, con ZUMI</string>
 </resources>
