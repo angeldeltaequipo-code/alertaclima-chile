@@ -32,39 +32,40 @@ export function interpretarOverpass(d) {
   return { puntos, rutas }
 }
 
-async function directoOverpass({ lat, lng }) {
+// Se consulta a todos los servidores a la vez; gana la primera respuesta buena.
+function directoOverpass({ lat, lng }, signal) {
   const zlat = Math.round(lat / 0.3) * 0.3
   const zlng = Math.round(lng / 0.3) * 0.3
-  const caja = `(${(zlat - 0.35).toFixed(3)},${(zlng - 0.4).toFixed(3)},${(zlat + 0.35).toFixed(3)},${(zlng + 0.4).toFixed(3)})`
+  const caja = `(${(zlat - 0.22).toFixed(3)},${(zlng - 0.27).toFixed(3)},${(zlat + 0.22).toFixed(3)},${(zlng + 0.27).toFixed(3)})`
   const q = `[out:json][timeout:25];(nwr["emergency"="assembly_point"]${caja};way["evacuation_route"]${caja};relation["route"="evacuation"]${caja};);out geom 4000;`
-  let error
-  for (const url of OVERPASS) {
-    try {
-      const r = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: q }), signal: AbortSignal.timeout(30000) })
+  return Promise.any(
+    OVERPASS.map(async (url) => {
+      const r = await fetch(url, { method: 'POST', body: new URLSearchParams({ data: q }), signal: AbortSignal.any([signal, AbortSignal.timeout(35000)]) })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       return { ...interpretarOverpass(await r.json()), fuente: '© colaboradores de OpenStreetMap (ODbL)' }
-    } catch (e) {
-      error = e
-    }
-  }
-  throw error
+    }),
+  )
 }
 
+async function desdeServidor(punto, signal) {
+  const r = await fetch(`${API_URL}/api/evacuacion?lat=${punto.lat.toFixed(4)}&lng=${punto.lng.toFixed(4)}`, { signal: AbortSignal.any([signal, AbortSignal.timeout(35000)]) })
+  const d = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(d.error ?? 'No se pudieron cargar las vías de evacuación')
+  return d
+}
+
+/**
+ * Nuestro servidor (guarda en caché un día, así que suele ser instantáneo) y, en paralelo,
+ * OpenStreetMap directo desde el teléfono. Se usa lo primero que llegue.
+ */
 export async function obtenerEvacuacion(punto) {
-  let mensaje = 'No se pudieron cargar las vías de evacuación'
+  const control = new AbortController()
   try {
-    const r = await fetch(`${API_URL}/api/evacuacion?lat=${punto.lat.toFixed(4)}&lng=${punto.lng.toFixed(4)}`)
-    const d = await r.json().catch(() => ({}))
-    if (r.ok) return d
-    if (r.status === 400) throw new Error(d.error ?? mensaje)
-    mensaje = d.error ?? mensaje
-  } catch (e) {
-    if (/inválida/.test(e.message)) throw e
-  }
-  try {
-    return await directoOverpass(punto)
+    return await Promise.any([desdeServidor(punto, control.signal), directoOverpass(punto, control.signal)])
   } catch {
-    throw new Error(mensaje)
+    throw new Error('No se pudieron cargar las vías de evacuación. Revisa tu conexión e inténtalo de nuevo.')
+  } finally {
+    control.abort()
   }
 }
 

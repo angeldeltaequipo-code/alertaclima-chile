@@ -56,14 +56,14 @@ export async function evacuacionCerca(punto, { fetchFn = fetch } = {}) {
   const zona = `${zlat.toFixed(1)},${zlng.toFixed(1)}`
   const c = cache.get(zona)
   if (c && Date.now() < c.hasta) return c.datos
-  const caja = [zlat - 0.35, zlng - 0.4, zlat + 0.35, zlng + 0.4].map((x) => x.toFixed(3))
+  const caja = [zlat - 0.22, zlng - 0.27, zlat + 0.22, zlng + 0.27].map((x) => x.toFixed(3))
   // Se consulta a todos los servidores a la vez y se usa la primera respuesta buena:
   // Overpass suele tardar 15-25 s en zonas grandes y el hosting corta pedidos muy largos.
   const control = new AbortController()
   const errores = []
   const pedir = async (url) => {
     try {
-      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.any([control.signal, AbortSignal.timeout(40000)]) })
+      const r = await fetchFn(url, { method: 'POST', headers: CABECERAS, body: 'data=' + encodeURIComponent(consultaOverpass(caja)), signal: AbortSignal.any([control.signal, AbortSignal.timeout(25000)]) })
       if (!r.ok) throw new Error(`${new URL(url).host} respondió ${r.status}`)
       const d = await r.json()
       if (d.remark && !d.elements?.length) throw new Error(`${new URL(url).host}: ${String(d.remark).slice(0, 60)}`)

@@ -25,7 +25,7 @@ export default function PanelEvacuacion({ evac, punto, comuna, onCerrar }) {
       </div>
       {evac.estado === 'cargando' && (
         <p role="status" className="py-2 text-[16px] text-texto-2">
-          Buscando vías de evacuación y zonas seguras…
+          Buscando vías de evacuación y zonas seguras… (la primera vez en tu zona puede tardar hasta medio minuto)
         </p>
       )}
       {evac.estado === 'error' && <p className="py-2 text-[16px] font-bold text-peligro">{evac.error}</p>}
