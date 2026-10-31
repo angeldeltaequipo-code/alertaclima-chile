@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { lazySeguro } from '../services/cargaSegura'
 import { CAMARAS_CIELO, calidadNoche, faseLunar, urlFresca } from '../services/cielo'
 import { hhmm } from '../services/formato'
 import ImagenViva from './ImagenViva'
@@ -126,7 +127,7 @@ function Visor({ camara, onCerrar }) {
 }
 
 /** Tarjeta «Mira el cielo»: la Luna, cómo viene la noche y los observatorios de Chile en vivo. */
-const CieloEnVivo = lazy(() => import('./CieloEnVivo'))
+const CieloEnVivo = lazySeguro(() => import('./CieloEnVivo'))
 
 export default function MiraElCielo({ horas, hoy, punto, comuna }) {
   const [abierta, setAbierta] = useState(null)

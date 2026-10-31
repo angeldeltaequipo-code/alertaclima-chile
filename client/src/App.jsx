@@ -1,5 +1,6 @@
 import Cosmos from './components/Cosmos'
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { lazySeguro } from './services/cargaSegura'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
 import VistaAhora from './components/VistaAhora'
@@ -26,7 +27,7 @@ import FichaVolcan from './components/FichaVolcan'
 import ZumiTeCuenta from './components/ZumiTeCuenta'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
-const Planes = lazy(() => import('./components/Planes'))
+const Planes = lazySeguro(() => import('./components/Planes'))
 import { BotonZumi } from './components/Zumi'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
@@ -46,18 +47,18 @@ import Resguardo from './components/Resguardo'
 import TirarParaActualizar from './components/TirarParaActualizar'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
-const Mapa = lazy(() => import('./components/Mapa'))
-const FormReporte = lazy(() => import('./components/FormReporte'))
+const Mapa = lazySeguro(() => import('./components/Mapa'))
+const FormReporte = lazySeguro(() => import('./components/FormReporte'))
 // Lo que no se ve al abrir la app se descarga recién cuando hace falta: la primera carga es más liviana.
-const VistaRiesgos = lazy(() => import('./components/VistaRiesgos'))
-const VistaChat = lazy(() => import('./components/VistaChat'))
-const Ajustes = lazy(() => import('./components/Ajustes'))
-const EstudioZumi = lazy(() => import('./components/EstudioZumi'))
-const DetalleAlertas = lazy(() => import('./components/DetalleAlertas'))
-const Bienvenida = lazy(() => import('./components/Bienvenida'))
-const SelectorComuna = lazy(() => import('./components/SelectorComuna'))
-const PuertaCuenta = lazy(() => import('./components/PuertaCuenta'))
-const PantallaSOS = lazy(() => import('./components/SOS').then((m) => ({ default: m.PantallaSOS })))
+const VistaRiesgos = lazySeguro(() => import('./components/VistaRiesgos'))
+const VistaChat = lazySeguro(() => import('./components/VistaChat'))
+const Ajustes = lazySeguro(() => import('./components/Ajustes'))
+const EstudioZumi = lazySeguro(() => import('./components/EstudioZumi'))
+const DetalleAlertas = lazySeguro(() => import('./components/DetalleAlertas'))
+const Bienvenida = lazySeguro(() => import('./components/Bienvenida'))
+const SelectorComuna = lazySeguro(() => import('./components/SelectorComuna'))
+const PuertaCuenta = lazySeguro(() => import('./components/PuertaCuenta'))
+const PantallaSOS = lazySeguro(() => import('./components/SOS').then((m) => ({ default: m.PantallaSOS })))
 const Cargando = () => <div className="grid h-full min-h-40 place-items-center text-texto-2">Cargando…</div>
 
 /** Cámaras cercanas + las del país, sin repetir (las cercanas traen la distancia). */
