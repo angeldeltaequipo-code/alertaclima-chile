@@ -23,6 +23,7 @@ import {
   vozSilenciada,
 } from '../services/narrador'
 import { SUGERENCIAS, preguntarZumi } from '../services/zumiCerebro'
+import { PELICULAS, consejoDelDia, frasePelicula, peliculaPara, vistaHoy, yaVista } from '../services/cine'
 import { NIVELES, alertaPrincipal } from '../services/alertas'
 
 
@@ -179,13 +180,27 @@ function Holograma({ t }) {
   )
 }
 
-export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'presentador', escenasIniciales, onCerrar }) {
+export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'presentador', escenasIniciales, peliculaInicial = null, onCerrar }) {
   const e = useNarrador()
   const ref = useRef(null)
   const [nombre, setNombre] = useState(nombrePreferido)
   const quien = nombre || nombreCuenta
-  const escenas = useMemo(() => escenasIniciales ?? escenasReporte({ ...datos, nombre: quien }), []) // eslint-disable-line react-hooks/exhaustive-deps
-  const textos = useMemo(() => escenas.map((x) => x.texto), [escenas])
+  // El reporte de ZUMI, con sus películas donde corresponde: la primera vez se presenta actuando, y si
+  // hoy llueve o hace calor, actúa el consejo (una vez al día). Así todo es el mismo personaje.
+  const escenas = useMemo(() => {
+    if (peliculaInicial && PELICULAS[peliculaInicial]) return [{ ...frasePelicula(peliculaInicial), tarjeta: null, clip: 'estudio' }]
+    const base = escenasIniciales ?? escenasReporte({ ...datos, nombre: quien })
+    if (escenasIniciales) return base
+    const lista = [...base]
+    if (!yaVista('hola') && lista[0]?.tarjeta?.tipo === 'saludo') lista[0] = { ...lista[0], ...frasePelicula('hola') }
+    const consejo = consejoDelDia(datos)
+    if (consejo && !vistaHoy(consejo)) {
+      const k = lista.findIndex((x) => ['lluvia', 'minmax', 'temp'].includes(x.tarjeta?.tipo))
+      lista.splice(k >= 0 ? k + 1 : lista.length - 1, 0, { ...frasePelicula(consejo), tarjeta: null, clip: 'estudio' })
+    }
+    return lista
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const textos = useMemo(() => escenas.map((x) => (x.pelicula ? { texto: x.texto, pelicula: x.pelicula } : x.texto)), [escenas])
   const [silencio, setSilencio] = useState(() => vozSilenciada() || !vozDisponible())
   const [conversa, setConversa] = useState(false)
   const [pregunta, setPregunta] = useState('')
@@ -199,7 +214,8 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const enReporte = e.frases === textos
   const i = enReporte ? e.frase : -1
   const escena = i >= 0 ? escenas[i] : null
-  const respondiendo = ultima && e.frases.length === 1 && e.frases[0] === ultima.texto && e.hablando
+  const primera = e.frases[0]
+  const respondiendo = ultima && e.frases.length === 1 && (typeof primera === 'string' ? primera : primera?.texto) === ultima.texto && e.hablando
   const terminado = !e.hablando
 
   useEffect(() => {
@@ -232,6 +248,16 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     setPregunta('')
     setPensando(true)
     setUltima({ pregunta: q, texto: null })
+    // Temas que ZUMI explica actuando (sismo, mochila, calor, lluvia, quién es): responde con su película.
+    const peli = peliculaPara(q)
+    if (peli) {
+      const f = frasePelicula(peli)
+      historial.current = [...historial.current, { rol: 'persona', texto: q }, { rol: 'zumi', texto: f.texto }].slice(-6)
+      setPensando(false)
+      setUltima({ pregunta: q, texto: f.texto, fuente: 'zumi' })
+      hablar([f], { silencio })
+      return
+    }
     const r = await preguntarZumi(q, { ...datos, nombre: quien }, historial.current, { conCuenta })
     historial.current = [...historial.current, { rol: 'persona', texto: q }, { rol: 'zumi', texto: r.texto }].slice(-6)
     setPensando(false)
@@ -377,7 +403,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
                       ↻ Repetir el reporte
                     </button>
                   )}
-                  {SUGERENCIAS.map((s) => (
+                  {[...SUGERENCIAS.slice(0, 2), '¿Qué hago si tiembla?', '¿Qué llevo en la mochila de emergencia?', ...SUGERENCIAS.slice(2)].map((s) => (
                     <button key={s} type="button" onClick={() => preguntar(s)} className="boton-vidrio min-h-10 shrink-0 rounded-full px-3 text-[14px] font-bold">
                       {s}
                     </button>

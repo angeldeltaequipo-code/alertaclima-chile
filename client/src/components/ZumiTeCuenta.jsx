@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
+import { PELICULAS, RUTA_CINE, consejoDelDia } from '../services/cine'
 import { alertaPrincipal } from '../services/alertas'
 
 const BASE = import.meta.env.BASE_URL
@@ -19,7 +20,7 @@ export function elegirPose({ alertas, horas, ahora }, hora = new Date().getHours
  * Lo primero que se ve: ZUMI resume el día en 2 o 3 frases simples, con un botón grande para
  * escucharlo en voz alta. Pensado para quien no quiere leer gráficos.
  */
-export default function ZumiTeCuenta({ datos, onEscuchar }) {
+export default function ZumiTeCuenta({ datos, onEscuchar, onPelicula }) {
   const escenas = escenasReporte(datos)
   // Sin el saludo ni la despedida: solo lo importante.
   const frases = escenas
@@ -28,6 +29,7 @@ export default function ZumiTeCuenta({ datos, onEscuchar }) {
     .slice(0, 3)
     .map((e) => e.texto)
   const pose = elegirPose(datos)
+  const consejo = consejoDelDia(datos)
 
   const claveVoz = escenas.map((x) => x.texto).join('|') + (datos.nombre ?? '')
   // La voz de ZUMI se va preparando en segundo plano: al tocar «Escuchar», habla de inmediato.
@@ -66,6 +68,18 @@ export default function ZumiTeCuenta({ datos, onEscuchar }) {
         </svg>
         Escuchar a ZUMI
       </button>
+      {consejo && onPelicula && (
+        <button type="button" onClick={() => onPelicula(consejo)} className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-superficie/70 p-2 text-left ring-1 ring-borde active:scale-[0.99]">
+          <span className="relative h-16 w-11 shrink-0 overflow-hidden rounded-xl">
+            <img src={`${RUTA_CINE}${consejo}.webp`} alt="" className="h-full w-full object-cover" />
+            <span className="absolute inset-0 grid place-items-center text-[16px] text-white drop-shadow" aria-hidden="true">▶</span>
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[13px] font-black tracking-wide text-senal-texto uppercase">ZUMI te muestra</span>
+            <span className="block text-[16px] leading-snug font-bold">{PELICULAS[consejo].titulo}</span>
+          </span>
+        </button>
+      )}
       <p className="mt-2 text-center text-[14px] text-texto-2">También puedes hacerle preguntas con tu voz.</p>
     </section>
   )

@@ -8,7 +8,7 @@ import { comunaEnPunto } from '../services/comunas'
 import { obtenerRiesgos } from '../services/riesgos'
 import BotonGoogle from './BotonGoogle'
 import ZumiVideo from './ZumiVideo'
-import { ESCENAS_CINE, ReproductorCine } from './CineZumi'
+import { frasePelicula } from '../services/cine'
 
 const Icono = ({ d, color, tam = 24 }) => (
   <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -135,12 +135,10 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
     : [primerNombre ? `¡Listo, ${primerNombre}!` : '¡Perfecto!', 'Ahora dime dónde estás para cuidarte en tu comuna.']
 
   // La voz necesita un toque de la persona (los navegadores no dejan hablar solo al abrir).
-  const [pelicula, setPelicula] = useState(false)
   const escuchar = () => {
     if (hablandoZumi) return callar()
-    // Primera vez: ZUMI se presenta en su película (voz y boca perfectamente sincronizadas).
-    if (pasoCuenta) return setPelicula(true)
-    hablar(dice, { silencio: false })
+    // Primera vez: ZUMI se presenta actuando su película, ahí mismo en su sala.
+    hablar(pasoCuenta ? [frasePelicula('hola')] : dice, { silencio: false })
   }
 
   const ubicarme = () => {
@@ -274,8 +272,6 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
           </button>
         </div>
       </header>
-
-      {pelicula && <ReproductorCine inicial="hola" lista={ESCENAS_CINE} onCerrar={() => setPelicula(false)} />}
 
       {/* Héroe */}
       <section className="relative mx-auto grid max-w-6xl items-center gap-2 px-5 md:grid-cols-[1.05fr_1fr] md:gap-8 md:pt-6">

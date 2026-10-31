@@ -10,6 +10,8 @@
 // - Se mueve: de vez en cuando camina hasta la ventana o la pantalla y vuelve.
 import { useEffect, useRef, useState } from 'react'
 import { alCambiarBoca, VISEMAS } from '../services/labios'
+import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
+import { RUTA_CINE, marcarVista } from '../services/cine'
 
 const BASE = import.meta.env.BASE_URL
 const RUTA = `${BASE}zumi/video/`
@@ -92,26 +94,68 @@ export default function ZumiVideo({ escena = 'sala', estado = 'reposo', gesto = 
     return clips.reposo
   }
 
-  const reproducir = (clip, fundido = 300) => {
+  const reproducir = (clip, fundido = 300, { url = null, sonido = false } = {}) => {
     const c = s.current
     const i = 1 - c.visible
     const v = vid(i)
-    if (!v) return
+    if (!v) return Promise.resolve(false)
     c.actual = clip
     c.cambiando = true
-    cargarCara(clip).then((d) => (c.caras[clip] = d))
-    v.src = archivo(clip)
+    if (!url) cargarCara(clip).then((d) => (c.caras[clip] = d))
+    v.muted = !sonido
+    v.src = url ?? archivo(clip)
     v.currentTime = 0
-    v.play()
-      .then(() => {
-        c.visible = i
-        setVisible(i)
-        c.cambiando = false
-        const viejo = vid(1 - i)
-        setTimeout(() => viejo?.pause(), fundido + 50)
+    const mostrar = () => {
+      c.visible = i
+      setVisible(i)
+      c.cambiando = false
+      const viejo = vid(1 - i)
+      setTimeout(() => viejo?.pause(), fundido + 50)
+      return true
+    }
+    return v
+      .play()
+      .then(mostrar)
+      .catch(() => {
+        // Sin permiso para sonar: se muestra igual, en silencio
+        if (!sonido) return (c.cambiando = false)
+        v.muted = true
+        return v.play().then(mostrar, () => (c.cambiando = false))
       })
-      .catch(() => (c.cambiando = false))
   }
+
+  // Películas: ZUMI actúa la escena con su voz. Al terminar vuelve a su rutina en el escenario.
+  useEffect(() => {
+    const quitar = registrarPelicula(
+      (id, { silencio = false } = {}) =>
+        new Promise((ok) => {
+          const c = s.current
+          if (c.pelicula) c.pelicula.ok(true)
+          c.pelicula = { id, ok }
+          marcarVista(id)
+          reproducir(`cine-${id}`, 400, { url: `${RUTA_CINE}${id}.mp4`, sonido: !silencio }).then((bien) => {
+            if (!bien && c.pelicula?.id === id) {
+              c.pelicula = null
+              ok(false)
+            }
+          })
+        }),
+    )
+    alDetenerPelicula(() => {
+      const c = s.current
+      if (!c.pelicula) return
+      const p = c.pelicula
+      c.pelicula = null
+      vid(c.visible)?.pause()
+      reproducir(elegir(), 300)
+      p.ok(true)
+    })
+    return () => {
+      quitar()
+      alDetenerPelicula(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Inicio
   useEffect(() => {
@@ -132,7 +176,7 @@ export default function ZumiVideo({ escena = 'sala', estado = 'reposo', gesto = 
     const c = s.current
     if (c.escena === escena) return
     c.escena = escena
-    if (listo) reproducir(elegir(), 500)
+    if (listo && !c.pelicula) reproducir(elegir(), 500)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [escena])
 
@@ -141,7 +185,7 @@ export default function ZumiVideo({ escena = 'sala', estado = 'reposo', gesto = 
     const c = s.current
     const antes = c.estado
     c.estado = estado
-    if (!listo || antes === estado) return
+    if (!listo || antes === estado || c.pelicula) return
     const hablar = esc().clips.hablar
     if ((estado === 'hablando' || estado === 'pensando') && hablar && c.actual !== hablar) reproducir(hablar)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,6 +199,13 @@ export default function ZumiVideo({ escena = 'sala', estado = 'reposo', gesto = 
   const alTerminar = (i) => () => {
     const c = s.current
     if (i !== c.visible || c.cambiando) return
+    if (c.pelicula && c.actual === `cine-${c.pelicula.id}`) {
+      const p = c.pelicula
+      c.pelicula = null
+      reproducir(elegir(), 400)
+      p.ok(true)
+      return
+    }
     const sig = elegir()
     if (sig === c.actual) {
       const v = vid(i)
