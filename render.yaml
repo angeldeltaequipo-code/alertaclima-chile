@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free # Para el piloto real: un plan pagado, que no se duerme tras 15 min sin uso.
     region: virginia
-    buildCommand: cd server && npm ci --omit=dev
+    buildCommand: cd server && npm ci --omit=dev && node scripts/descargar-voz.js
     startCommand: cd server && node scripts/migrar.js && node scripts/sembrar-comunas.js --si-vacia && node index.js
     healthCheckPath: /api/salud
     envVars:

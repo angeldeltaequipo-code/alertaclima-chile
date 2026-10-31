@@ -10,6 +10,7 @@ import { riesgoAluvion } from './aluvion'
 import { faseLunar } from './cielo'
 import { direccionViento } from './clima'
 import * as labios from './labios'
+import { elementoAudio, pedirFrase, vozPropiaDisponible } from './vozZumi'
 
 export const NOMBRE = 'ZUMI'
 
@@ -87,17 +88,59 @@ export function alCambiarNarrador(fn) {
 export const vozSilenciada = () => leer('zumi:silencio', false)
 export const guardarVozSilenciada = (v) => guardar('zumi:silencio', Boolean(v))
 
+// Frase que está sonando con la voz propia (para poder cortarla)
+let cortarAudio = null
+function reproducirFrase(f, dicho) {
+  const a = elementoAudio()
+  return new Promise((ok) => {
+    let listo = false
+    const fin = () => {
+      if (listo) return
+      listo = true
+      cortarAudio = null
+      a.onended = a.onerror = null
+      labios.terminar()
+      ok()
+    }
+    cortarAudio = () => {
+      a.pause()
+      fin()
+    }
+    a.onended = fin
+    a.onerror = fin
+    a.src = f.url
+    a.play()
+      .then(() => labios.empezar(dicho, { duracionMs: f.ms ?? a.duration * 1000, reloj: () => a.currentTime * 1000, energia: f.env }))
+      .catch(fin)
+  })
+}
+
 export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
   const s = silencio ? null : sintesis()
   sintesis()?.cancel()
-  if (s) await cuandoHayVoces()
-  const voz = s ? elegirVoz() : null
+  cortarAudio?.()
   estado = { hablando: true, frase: 0, frases }
   avisar()
+  // Voz propia de ZUMI (servidor); si no está o falla, la voz del teléfono.
+  const propia = !silencio && (await vozPropiaDisponible())
+  if (s && !propia) await cuandoHayVoces()
+  const voz = s && !propia ? elegirVoz() : null
+  const pedidos = []
+  const pedir = (i) => (pedidos[i] ??= i < frases.length ? pedirFrase(paraVoz(frases[i])).catch(() => null) : Promise.resolve(null))
   for (let i = 0; i < frases.length; i++) {
     if (estado.frases !== frases) return false // se interrumpió
     estado = { ...estado, frase: i }
     avisar()
+    if (propia) {
+      pedir(i + 1) // la siguiente frase se va preparando mientras ZUMI habla
+      const f = await pedir(i)
+      if (estado.frases !== frases) return false
+      if (f) {
+        await reproducirFrase(f, paraVoz(frases[i]))
+        URL.revokeObjectURL(f.url)
+        continue
+      }
+    }
     // Sin voz (silenciado o navegador sin lectura): avanza al ritmo de lectura de los subtítulos.
     if (!s) {
       const ms = Math.max(2200, frases[i].length * 62)
@@ -136,6 +179,7 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
 
 export function callar() {
   sintesis()?.cancel()
+  cortarAudio?.()
   labios.terminar()
   estado = { hablando: false, frase: -1, frases: [] }
   avisar()

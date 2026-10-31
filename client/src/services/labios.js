@@ -48,22 +48,23 @@ let raf = 0
  * Empieza a mover la boca para `texto`. `duracionMs` es la estimación total; `cps` (caracteres por
  * segundo) se usa si no hay duración. Devuelve funciones para re-sincronizar y terminar.
  */
-export function empezar(texto, { cps = 13.5 } = {}) {
+export function empezar(texto, { cps = 13.5, duracionMs = null, reloj = null, energia = null } = {}) {
   const chars = [...texto]
   const pesos = chars.map(peso)
   const total = pesos.reduce((a, b) => a + b, 0)
-  const msPorPeso = 1000 / cps / (total / chars.length)
+  // Con audio real (voz propia de ZUMI) se conoce la duración exacta y el reloj es el del audio.
+  const msPorPeso = duracionMs ? (duracionMs * 0.94) / total : 1000 / cps / (total / chars.length)
   const tiempos = []
   let t = 0
   for (const p of pesos) {
     tiempos.push(t)
     t += p * msPorPeso
   }
-  seq = { chars, tiempos, fin: t, inicio: performance.now(), desfase: 0 }
+  seq = { chars, tiempos, fin: t, inicio: performance.now(), desfase: 0, reloj, energia }
   cancelAnimationFrame(raf)
   const paso = () => {
     if (!seq) return
-    const ahora = performance.now() - seq.inicio + seq.desfase
+    const ahora = seq.reloj ? seq.reloj() : performance.now() - seq.inicio + seq.desfase
     if (ahora >= seq.fin) {
       avisar('reposo')
       raf = requestAnimationFrame(paso) // sigue vivo hasta `terminar` (la voz puede ir más lenta)
@@ -81,7 +82,15 @@ export function empezar(texto, { cps = 13.5 } = {}) {
     const v = visemaDe(c)
     // Media vocal: al final de cada letra la boca se relaja un poco (se ve más natural).
     const dentro = (ahora - seq.tiempos[lo]) / ((seq.tiempos[lo + 1] ?? seq.fin) - seq.tiempos[lo])
-    avisar(v == null ? 'reposo' : dentro > 0.82 && v !== 'm' ? 'm' : v)
+    let forma = v == null ? 'reposo' : dentro > 0.82 && v !== 'm' ? 'm' : v
+    // Energía real del audio: en silencio la boca se cierra; si suena suave, apenas se abre.
+    if (seq.energia) {
+      const e = seq.energia[Math.floor(ahora / 20)] ?? 0
+      if (e < 0.1) forma = 'reposo'
+      else if (e < 0.28 && (forma === 'a' || forma === 'o' || forma === 'e')) forma = 'm'
+      else if (e > 0.6 && forma === 'm') forma = 'e'
+    }
+    avisar(forma)
     raf = requestAnimationFrame(paso)
   }
   raf = requestAnimationFrame(paso)

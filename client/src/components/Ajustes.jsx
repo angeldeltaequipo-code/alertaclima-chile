@@ -3,6 +3,8 @@ import { useInstalar } from '../hooks/useInstalar'
 import { AjustesNotificaciones } from './Notificaciones'
 import BotonGoogle from './BotonGoogle'
 import { setVibrarActivado, vibracionSoportada, vibrar, vibrarActivado } from '../services/aviso'
+import { guardarUsarVozPropia, usarVozPropia } from '../services/vozZumi'
+import { callar, hablar } from '../services/narrador'
 
 function AjusteVibracion() {
   const [activo, setActivo] = useState(vibrarActivado)
@@ -44,6 +46,36 @@ function AjusteVibracion() {
         Con la app cerrada, el aviso llega como notificación (actívalas arriba).
       </p>
     </>
+  )
+}
+
+function VozDeZumi() {
+  const [propia, setPropia] = useState(usarVozPropia)
+  const cambiar = (v) => {
+    guardarUsarVozPropia(v)
+    setPropia(v)
+    if (!v) callar()
+  }
+  return (
+    <Seccion titulo="Voz de ZUMI">
+      <Opciones
+        nombre="Voz de ZUMI"
+        valor={propia}
+        onCambiar={cambiar}
+        opciones={[
+          { valor: true, etiqueta: 'Voz de ZUMI' },
+          { valor: false, etiqueta: 'Voz del teléfono' },
+        ]}
+      />
+      <p className="mt-2 text-[15px] text-texto-2">La voz de ZUMI necesita internet; sin conexión, ZUMI usa la voz de tu teléfono.</p>
+      <button
+        type="button"
+        onClick={() => hablar(['¡Hola! Soy ZUMI. Así suena mi voz cuando te cuento el clima.'], { silencio: false })}
+        className="mt-2 min-h-12 rounded-full border-2 border-borde px-4 text-[16px] font-bold"
+      >
+        Escuchar una prueba
+      </button>
+    </Seccion>
   )
 }
 
@@ -190,6 +222,8 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
         </div>
         <p className="mt-2 text-[15px] text-texto-2">Agranda los textos y botones de toda la app. Elige el que leas cómodo sin lentes.</p>
       </Seccion>
+
+      <VozDeZumi />
 
       <Seccion titulo="Pantalla">
         <Opciones

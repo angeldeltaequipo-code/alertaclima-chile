@@ -11,6 +11,7 @@ import { cuentaRouter } from './routes/cuenta.js'
 import { chatRouter } from './routes/chat.js'
 import { riesgosRouter } from './routes/riesgos.js'
 import { comunidadRouter } from './routes/comunidad.js'
+import { vozRouter } from './routes/voz.js'
 import { adminPlanesRouter, pagosRouter, planesRouter } from './routes/planes.js'
 import { ErrorValidacion } from './services/reportes.js'
 
@@ -44,6 +45,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/riesgos', riesgosRouter())
   app.use('/api/zumi', zumiRouter())
   app.use('/api/comunidad', comunidadRouter())
+  app.use('/api/voz', vozRouter())
   app.use('/api/planes', planesRouter())
   app.use('/api/pagos', pagosRouter())
   app.use('/api/admin/planes', adminPlanesRouter())
