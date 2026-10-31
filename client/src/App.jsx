@@ -24,6 +24,7 @@ import { useComunidad } from './hooks/useComunidad'
 import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
 import ZumiTeCuenta from './components/ZumiTeCuenta'
+import CineZumi from './components/CineZumi'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
 const Planes = lazy(() => import('./components/Planes'))
@@ -341,6 +342,7 @@ export default function App() {
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
                 zumi={clima.datos && <ZumiTeCuenta datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }} onEscuchar={() => setZumi(true)} />}
+                cine={clima.datos && <CineZumi datos={clima.datos} />}
                 familia={<MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}

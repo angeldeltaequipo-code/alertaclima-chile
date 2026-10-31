@@ -92,7 +92,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null, cine = null }) {
   const { datos, error, recargar } = clima
   const entrada = useEntrada()
 
@@ -140,6 +140,7 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
       <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />
       {resumen}
       {familia}
+      {cine}
       <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
 
       {invitacion}

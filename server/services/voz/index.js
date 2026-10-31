@@ -18,8 +18,10 @@ export const MAX_TEXTO = 400
 
 export const vozActiva = () => process.env.VOZ_ACTIVA !== 'false' && existsSync(path.join(DIR_VOZ, MODELO))
 export const ajustesVoz = () => {
-  const tono = Math.min(1.5, Math.max(0.8, Number(process.env.VOZ_TONO ?? 1.25)))
-  return { tono, velocidad: Number(process.env.VOZ_VELOCIDAD ?? (1 / tono).toFixed(3)), salida: 16000 }
+  // Personaje juvenil y enérgico: tono más agudo y un ritmo algo más rápido que una voz normal.
+  const tono = Math.min(1.5, Math.max(0.8, Number(process.env.VOZ_TONO ?? 1.3)))
+  const ritmo = Math.min(1.4, Math.max(0.7, Number(process.env.VOZ_RITMO ?? 1.08)))
+  return { tono, velocidad: Number(process.env.VOZ_VELOCIDAD ?? (ritmo / tono).toFixed(3)), salida: 16000 }
 }
 
 /** Texto como se dice: números, símbolos y siglas. */

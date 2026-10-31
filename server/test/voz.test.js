@@ -9,8 +9,8 @@ test('la voz dice los números y símbolos como se leen', () => {
   assert.ok(paraVoz('a'.repeat(1000)).length <= 400)
 })
 
-test('tono de personaje: sube el tono sin cambiar el ritmo', () => {
+test('tono de personaje: más agudo y un poco más rápido', () => {
   const a = ajustesVoz()
   assert.ok(a.tono > 1 && a.tono <= 1.5)
-  assert.ok(Math.abs(a.velocidad * a.tono - 1) < 0.01)
+  assert.ok(a.velocidad * a.tono > 0.95 && a.velocidad * a.tono < 1.2)
 })
