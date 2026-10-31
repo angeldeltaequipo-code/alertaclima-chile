@@ -1,4 +1,6 @@
-import { escenasReporte } from '../services/narrador'
+import { useEffect } from 'react'
+import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
+import { precargarFrases } from '../services/vozZumi'
 import { alertaPrincipal } from '../services/alertas'
 
 const BASE = import.meta.env.BASE_URL
@@ -26,6 +28,17 @@ export default function ZumiTeCuenta({ datos, onEscuchar }) {
     .slice(0, 3)
     .map((e) => e.texto)
   const pose = elegirPose(datos)
+
+  const claveVoz = escenas.map((x) => x.texto).join('|') + (datos.nombre ?? '')
+  // La voz de ZUMI se va preparando en segundo plano: al tocar «Escuchar», habla de inmediato.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const quien = nombrePreferido() || datos.nombre?.split(' ')[0]
+      precargarFrases(escenasReporte({ ...datos, nombre: quien }).map((x) => paraVoz(x.texto)))
+    }, 3000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveVoz])
   const hayAlerta = datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas)
 
   return (

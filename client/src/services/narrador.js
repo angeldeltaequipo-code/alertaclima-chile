@@ -60,7 +60,7 @@ export function cuandoHayVoces() {
 }
 
 // Pronunciación: los números y símbolos se escriben como se dicen.
-function paraVoz(texto) {
+export function paraVoz(texto) {
   return texto
     .replace(/(\d+),(\d+)\s*mm/g, '$1 coma $2 milímetros')
     .replace(/(\d+)\s*mm/g, '$1 milímetros')

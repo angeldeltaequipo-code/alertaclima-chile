@@ -90,3 +90,21 @@ export async function pedirFrase(texto, { signal } = {}) {
   const env = envolvente(buf)
   return { url: URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })), env, ms: env ? env.length * 20 : null }
 }
+
+/**
+ * Prepara en silencio las primeras frases del reporte (quedan en la caché del navegador), para que
+ * ZUMI empiece a hablar al instante cuando la persona lo abre. Solo unas pocas, de a una.
+ */
+let precargado = ''
+export async function precargarFrases(textos, max = 3) {
+  const clave = textos.slice(0, max).join('|')
+  if (!textos.length || clave === precargado || !(await vozPropiaDisponible())) return
+  precargado = clave
+  for (const t of textos.slice(0, max)) {
+    try {
+      await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(t)}`, { signal: AbortSignal.timeout(20000) }).then((r) => r.arrayBuffer())
+    } catch {
+      return
+    }
+  }
+}
