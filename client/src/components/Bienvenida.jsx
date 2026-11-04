@@ -7,7 +7,7 @@ import { alCambiarNarrador, callar, hablar } from '../services/narrador'
 import { comunaEnPunto } from '../services/comunas'
 import { obtenerRiesgos } from '../services/riesgos'
 import BotonGoogle from './BotonGoogle'
-import ZumiVideo from './ZumiVideo'
+import ZumiMarioneta from './ZumiMarioneta'
 import { frasePelicula } from '../services/cine'
 
 const Icono = ({ d, color, tam = 24 }) => (
@@ -290,7 +290,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
 
         <div className="relative order-1 md:order-2">
           <div className="landing-escenario relative mx-auto w-full overflow-hidden" style={{ height: altoZumi + (escritorio ? 40 : 10) }}>
-            <ZumiVideo escena={escenaInicio} estado={hablandoZumi ? 'hablando' : 'reposo'} posicion={[0.5, 0.32]} className="rounded-[inherit]" />
+            <ZumiMarioneta escena={escenaInicio} estado={hablandoZumi ? 'hablando' : 'reposo'} posicion={[0.5, 0.32]} className="rounded-[inherit]" />
             <div className="bienvenida-zumi-velo absolute inset-0" aria-hidden="true" />
           </div>
           <p className="entrar globo-bienvenida relative z-10 mx-2 -mt-10 text-[15px] md:-mt-14 md:text-[17px] leading-snug font-bold md:mx-8" style={{ animationDelay: '250ms' }} aria-live="polite">

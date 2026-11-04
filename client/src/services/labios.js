@@ -41,6 +41,10 @@ export function alCambiarBoca(fn) {
   return () => oyentes.delete(fn)
 }
 
+// Energía actual de la voz (0 a 1): mueve la mandíbula y la cabeza de ZUMI con el sonido real.
+let energiaAhora = 0
+export const energiaVoz = () => energiaAhora
+
 let seq = null // { texto, tiempos[], visemas[], inicio, total, ancla }
 let raf = 0
 
@@ -86,6 +90,8 @@ export function empezar(texto, { cps = 13.5, duracionMs = null, reloj = null, en
     // Energía real del audio: en silencio la boca se cierra; si suena suave, apenas se abre.
     if (seq.energia) {
       const e = seq.energia[Math.floor(ahora / 20)] ?? 0
+      // La boca se adelanta un poco al sonido (como al hablar de verdad) y compensa el retardo de pantalla
+      energiaAhora = Math.max(seq.energia[Math.floor((ahora + 90) / 20)] ?? 0, e * 0.6)
       if (e < 0.1) forma = 'reposo'
       else if (e < 0.28 && (forma === 'a' || forma === 'o' || forma === 'e')) forma = 'm'
       else if (e > 0.6 && forma === 'm') forma = 'e'
@@ -105,6 +111,7 @@ export function sincronizar(indice) {
 }
 
 export function terminar() {
+  energiaAhora = 0
   seq = null
   cancelAnimationFrame(raf)
   avisar('reposo')

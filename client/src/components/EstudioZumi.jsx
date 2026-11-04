@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import IconoClima from './IconoClima'
 import PortalZumi from './PortalZumi'
-import ZumiVideo from './ZumiVideo'
+import ZumiMarioneta from './ZumiMarioneta'
 import {
   NOMBRE,
   TRAJES,
@@ -303,8 +303,9 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const llueve = (datos.horas ?? []).slice(0, 3).some((h) => (h.lluvia ?? 0) >= 0.5) || /lluv|chubas|tormenta|llovizna/i.test(datos.ahora?.texto ?? '')
   const base = hora >= 20 || hora < 7 ? 'noche' : llueve ? 'lluvia' : 'sala'
   const hayAlerta = escena?.clip === 'alerta' || Boolean(datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas))
-  const deDatos = ['temp', 'minmax', 'lluvia', 'viento', 'aluvion', 'sismo'].includes(escena?.tarjeta?.tipo)
-  const escenario = hayAlerta && (escena?.clip === 'alerta' || !conversa) ? 'alerta' : deDatos && !conversa ? 'estudio' : base
+  // Un solo lugar durante todo el reporte (cambiar de set a mitad de frase rompía la continuidad):
+  // su casa según la hora y el clima, o el estudio en rojo si hay una alerta oficial.
+  const escenario = hayAlerta ? 'alerta' : base
   const enPantalla = escenario === 'estudio' || escenario === 'alerta'
 
   const subtitulo = pensando
@@ -329,7 +330,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
         {/* ZUMI en su estudio: video con calidad de película animada, que cambia según lo que pasa */}
         {/* ZUMI presentador: el escenario cambia según el clima, la hora, las alertas y lo que cuenta */}
-        <ZumiVideo
+        <ZumiMarioneta
           escena={escenario}
           estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
           posicion={[0.5, 0.3]}

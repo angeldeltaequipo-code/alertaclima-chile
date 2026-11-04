@@ -28,6 +28,7 @@ export function elementoAudio() {
     audio = new Audio()
     audio.preload = 'auto'
     audio.setAttribute('playsinline', '')
+    window.__zumiAudio = audio // para pruebas automáticas (grabar la voz junto a la imagen)
   }
   return audio
 }
