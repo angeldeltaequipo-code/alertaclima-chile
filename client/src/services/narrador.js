@@ -73,8 +73,22 @@ export function paraVoz(texto) {
 }
 
 const oyentes = new Set()
-let estado = { hablando: false, frase: -1, frases: [] }
+let estado = { hablando: false, sonando: false, frase: -1, frases: [] }
 const avisar = () => oyentes.forEach((f) => f(estado))
+// «sonando»: la voz realmente está sonando (no mientras se prepara la frase). ZUMI solo mueve la boca entonces.
+const sonar = (v) => {
+  if (estado.sonando === v) return
+  estado = { ...estado, sonando: v }
+  avisar()
+}
+const empezarBoca = (...a) => {
+  sonar(true)
+  labios.empezar(...a)
+}
+const terminarBoca = () => {
+  sonar(false)
+  labios.terminar()
+}
 export function alCambiarNarrador(fn) {
   oyentes.add(fn)
   fn(estado)
@@ -114,7 +128,7 @@ function reproducirFrase(f, dicho) {
       listo = true
       cortarAudio = null
       a.onended = a.onerror = null
-      labios.terminar()
+      terminarBoca()
       ok()
     }
     cortarAudio = () => {
@@ -125,7 +139,7 @@ function reproducirFrase(f, dicho) {
     a.onerror = fin
     a.src = f.url
     a.play()
-      .then(() => labios.empezar(dicho, { duracionMs: f.ms ?? a.duration * 1000, reloj: () => a.currentTime * 1000, energia: f.env }))
+      .then(() => empezarBoca(dicho, { duracionMs: f.ms ?? a.duration * 1000, reloj: () => a.currentTime * 1000, energia: f.env }))
       .catch(fin)
   })
 }
@@ -173,9 +187,9 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
     if (!s) {
       const t = textoDe(frases[i])
       const ms = Math.max(2200, t.length * 62)
-      labios.empezar(t, { cps: (t.length / ms) * 1000 * 0.92 })
+      empezarBoca(t, { cps: (t.length / ms) * 1000 * 0.92 })
       await new Promise((ok) => setTimeout(ok, ms))
-      labios.terminar()
+      terminarBoca()
       continue
     }
     await new Promise((ok) => {
@@ -185,17 +199,17 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
       let partio = false
       u.onstart = () => {
         partio = true
-        labios.empezar(dicho, { cps: 14.5 })
+        empezarBoca(dicho, { cps: 14.5 })
       }
       // Algunas voces no avisan el inicio: se arranca igual tras un instante.
-      setTimeout(() => !partio && estado.frases === frases && labios.empezar(dicho, { cps: 14.5 }), 450)
+      setTimeout(() => !partio && estado.frases === frases && empezarBoca(dicho, { cps: 14.5 }), 450)
       u.onboundary = (ev) => (ev.name === 'word' || ev.name == null) && labios.sincronizar(ev.charIndex)
       if (voz) u.voice = voz
       u.lang = voz?.lang ?? 'es-419'
       u.pitch = 1.35
       u.rate = 0.98
-      u.onend = () => (labios.terminar(), ok())
-      u.onerror = () => (labios.terminar(), ok())
+      u.onend = () => (terminarBoca(), ok())
+      u.onerror = () => (terminarBoca(), ok())
       s.speak(u)
     })
   }
@@ -211,7 +225,7 @@ export function callar() {
   cortarAudio?.()
   cortarPelicula?.()
   detenerPelicula?.()
-  labios.terminar()
+  terminarBoca()
   estado = { hablando: false, frase: -1, frases: [] }
   avisar()
 }

@@ -210,7 +210,7 @@ const TRAJE = {
  * @param hablando anima el anillo y las ondas de voz
  */
 export default function PortalZumi({ tam = 200, traje = 'presentador', hablando = false, className = '' }) {
-  const Traje = TRAJE[traje] ?? Presentador
+  // Sin trajes ni párpados dibujados encima: se veían como calcomanías sobre el ZUMI real.
   return (
     <span
       className={`portal-zumi ${hablando ? 'hablando' : ''} ${className}`}
@@ -224,15 +224,6 @@ export default function PortalZumi({ tam = 200, traje = 'presentador', hablando 
             alt=""
             draggable="false"
           />
-          <svg viewBox="0 0 512 512" className="portal-zumi-traje">
-            <Definiciones />
-            {/* párpados: parpadea cada pocos segundos */}
-            <g className="zumi-parpados">
-              <ellipse cx="198" cy="210" rx="31" ry="29" fill="url(#zp-parpado)" />
-              <ellipse cx="318" cy="206" rx="31" ry="29" fill="url(#zp-parpado)" />
-            </g>
-            <Traje />
-          </svg>
         </span>
         <span className="portal-zumi-brillo" />
       </span>

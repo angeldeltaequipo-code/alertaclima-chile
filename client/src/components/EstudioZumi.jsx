@@ -331,7 +331,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
         {/* ZUMI presentador: el escenario cambia según el clima, la hora, las alertas y lo que cuenta */}
         <ZumiVideo
           escena={escenario}
-          estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
+          estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
           posicion={[0.5, 0.3]}
           pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
         />
