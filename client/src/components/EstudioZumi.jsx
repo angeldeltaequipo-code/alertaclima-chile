@@ -208,6 +208,10 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const [pensando, setPensando] = useState(false)
   const [escuchando, setEscuchando] = useState(false)
   const [ajustes, setAjustes] = useState(false)
+  // Modo llamada: como una llamada de voz con un asistente. ZUMI habla, te escucha solo y vuelve a responder.
+  const [llamada, setLlamada] = useState(false)
+  const [inicioLlamada, setInicioLlamada] = useState(0)
+  const silenciosLlamada = useRef(0)
   const historial = useRef([])
   const reconocedor = useRef(null)
 
@@ -277,19 +281,58 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     r.lang = 'es-CL'
     r.interimResults = true
     r.maxAlternatives = 1
+    let oyo = false
     r.onresult = (ev) => {
       const t = Array.from(ev.results)
         .map((x) => x[0].transcript)
         .join(' ')
       setPregunta(t)
-      if (ev.results[ev.results.length - 1].isFinal) preguntar(t)
+      if (ev.results[ev.results.length - 1].isFinal && t.trim()) {
+        oyo = true
+        silenciosLlamada.current = 0
+        preguntar(t)
+      }
     }
-    r.onend = () => setEscuchando(false)
-    r.onerror = () => setEscuchando(false)
+    const fin = (ev) => {
+      setEscuchando(false)
+      if (oyo) return
+      if (ev?.error === 'not-allowed' || ev?.error === 'service-not-allowed') return colgar('Necesito permiso para usar el micrófono. Puedes escribirme cuando quieras.')
+      silenciosLlamada.current += 1
+    }
+    r.onend = fin
+    r.onerror = fin
     reconocedor.current = r
     setEscuchando(true)
     r.start()
   }
+
+  const llamar = () => {
+    reconocedor.current?.stop()
+    silenciosLlamada.current = 0
+    setConversa(true)
+    const saludo = `¡Hola${quien ? `, ${quien}` : ''}! ¡Aquí ZUMI, listo y con las orejas paradas! Cuéntame, ¿qué quieres saber?`
+    setUltima({ pregunta: null, texto: saludo, fuente: 'zumi' })
+    setLlamada(true)
+    setInicioLlamada(Date.now())
+    hablar([saludo], { silencio })
+  }
+  const colgar = (despedida = '¡Fue genial hablar contigo! Aquí estaré cuando me necesites. ¡Chao, chao!') => {
+    setLlamada(false)
+    reconocedor.current?.stop()
+    setUltima({ pregunta: null, texto: despedida, fuente: 'zumi' })
+    hablar([despedida], { silencio })
+  }
+  // Turnos de la llamada: cuando ZUMI termina de hablar, vuelve a escuchar solo.
+  useEffect(() => {
+    if (!llamada || !SR || e.hablando || pensando || escuchando) return
+    if (silenciosLlamada.current >= 3) {
+      silenciosLlamada.current = 0
+      colgar('¿Hola? Parece que te fuiste. ¡Te dejo tranquilo! Llámame cuando quieras.')
+      return
+    }
+    const t = setTimeout(escuchar, silenciosLlamada.current ? 300 : 650)
+    return () => clearTimeout(t)
+  })
 
   const cambiarSilencio = () => {
     const v = !silencio
@@ -307,6 +350,9 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   // su casa según la hora y el clima, o el estudio en rojo si hay una alerta oficial.
   const escenario = hayAlerta ? 'alerta' : base
   const enPantalla = escenario === 'estudio' || escenario === 'alerta'
+  // Lo que hace con el cuerpo según lo que cuenta (la clave cambia en cada frase para repetir el gesto)
+  const GESTO_DE = { saludo: 'saludo', ok: 'celebrar', lluvia: 'senalar', temp: 'senalar', minmax: 'caminar', viento: 'senalar', alerta: 'calma', sismo: 'calma', aluvion: 'calma', vecinos: 'caminar', luna: 'senalar' }
+  const gestoEscena = respondiendo ? `explicar:${ultima?.pregunta}` : escena?.tarjeta?.tipo && GESTO_DE[escena.tarjeta.tipo] ? `${GESTO_DE[escena.tarjeta.tipo]}:${i}` : i === -1 && conversa && !e.hablando ? 'reposo' : null
 
   const subtitulo = pensando
     ? 'Déjame pensar…'
@@ -333,6 +379,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
         <ZumiMarioneta
           escena={escenario}
           estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
+          gesto={gestoEscena}
           posicion={[0.5, 0.3]}
           pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
         />
@@ -395,8 +442,40 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
             </div>
           )}
 
-          {conversa && (
+          {llamada && (
+            <div className="llamada-zumi mt-3 flex items-center gap-3 rounded-full bg-black/55 p-2 pl-4 backdrop-blur-md">
+              <span className={`grid size-10 place-items-center rounded-full ${escuchando ? 'microfono-activo bg-red-500' : 'bg-white/15'}`} aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <rect x="9" y="3" width="6" height="11" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              </span>
+              <span className="flex-1 text-[15px] font-bold" aria-live="polite">
+                {pensando ? 'ZUMI está pensando…' : e.hablando ? 'ZUMI está hablando' : escuchando ? 'Te escucho, habla nomás' : 'En llamada con ZUMI'}
+                <Cronometro desde={inicioLlamada} />
+              </span>
+              {e.hablando && (
+                <button type="button" onClick={() => (callar(), escuchar())} className="boton-vidrio min-h-11 rounded-full px-3 text-[14px] font-bold">
+                  Hablar
+                </button>
+              )}
+              <button type="button" onClick={() => colgar()} aria-label="Colgar la llamada" className="grid size-12 place-items-center rounded-full bg-red-600">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 9c-2.5 0-4.9.5-7.1 1.4-.7.3-1 1-1 1.7v2.4c0 .7.6 1.2 1.3 1.1l3-.6c.6-.1 1-.6 1-1.2v-1.7a12 12 0 0 1 5.6 0v1.7c0 .6.4 1.1 1 1.2l3 .6c.7.1 1.3-.4 1.3-1.1v-2.4c0-.7-.3-1.4-1-1.7C16.9 9.5 14.5 9 12 9z" />
+                </svg>
+              </button>
+            </div>
+          )}
+          {conversa && !llamada && (
             <div className="mt-3">
+              {SR && !pensando && !e.hablando && (
+                <button type="button" onClick={llamar} className="mb-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-500 text-[16px] font-extrabold text-slate-950">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" />
+                  </svg>
+                  Llamar a ZUMI
+                </button>
+              )}
               {!pensando && !e.hablando && (
                 <div className="-mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1">
                   {!ultima && (
@@ -456,6 +535,11 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
               <button type="button" onClick={() => (callar(), setConversa(true))} className="boton-vidrio min-h-12 flex-1 rounded-full text-[15px] font-bold">
                 Saltar y preguntarle algo
               </button>
+              {SR && (
+                <button type="button" onClick={llamar} className="min-h-12 flex-1 rounded-full bg-emerald-500 text-[15px] font-extrabold text-slate-950">
+                  Llamar a ZUMI
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -512,4 +596,15 @@ function Interruptor({ etiqueta, detalle, inicial, onCambiar }) {
       />
     </label>
   )
+}
+
+/** Tiempo de llamada (mm:ss), como en el teléfono. */
+function Cronometro({ desde }) {
+  const [, setT] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setT((x) => x + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const s = Math.max(0, Math.floor((Date.now() - desde) / 1000))
+  return <span className="ml-2 font-mono text-[13px] text-white/60">{`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`}</span>
 }

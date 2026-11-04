@@ -16,7 +16,63 @@ export const DIR_VOZ = process.env.VOZ_DIR ?? path.resolve(AQUI, '../../voz/vits
 const MODELO = 'es_MX-claude-high.onnx'
 export const MAX_TEXTO = 400
 
-export const vozActiva = () => process.env.VOZ_ACTIVA !== 'false' && existsSync(path.join(DIR_VOZ, MODELO))
+const piperListo = () => existsSync(path.join(DIR_VOZ, MODELO))
+export const geminiActivo = () => Boolean(process.env.GEMINI_API_KEY)
+export const proveedorVoz = () => (process.env.VOZ_ACTIVA === 'false' ? null : geminiActivo() ? 'gemini' : piperListo() ? 'piper' : null)
+export const vozActiva = () => proveedorVoz() !== null
+
+// ---------- Voz con IA de Google (Gemini): humana, expresiva, con el estilo de ZUMI ----------
+// GEMINI_API_KEY (aistudio.google.com), GEMINI_VOZ (voz prediseñada) y GEMINI_TTS_MODELO.
+export const ESTILO_ZUMI =
+  process.env.ZUMI_ESTILO_VOZ ??
+  'Personaje animado: un panda rojo joven, súper extrovertido, juguetón y con mucha energía, tierno y cariñoso. Habla en español latino, rápido y sonriendo, con entusiasmo y chispa, como el héroe alegre de una película animada.'
+const MODELOS_GEMINI = () => (process.env.GEMINI_TTS_MODELO ? [process.env.GEMINI_TTS_MODELO] : ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview'])
+
+/** Texto + estilo → WAV (16 bits, mono). Usa la API de «interactions» de Gemini. */
+export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI } = {}) {
+  let ultimoError = null
+  for (const model of MODELOS_GEMINI()) {
+    const r = await fetchFn('https://generativelanguage.googleapis.com/v1beta/interactions', {
+      method: 'POST',
+      headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        input: [{ type: 'user_input', content: [{ type: 'text', text: texto, annotations: [{ type: 'speech_metadata', style: estilo }] }] }],
+        response_format: { type: 'audio' },
+        generation_config: { speech_config: [{ voice: process.env.GEMINI_VOZ ?? 'Fenrir' }] },
+      }),
+      signal: AbortSignal.timeout(20000),
+    })
+    if (!r.ok) {
+      ultimoError = new Error(`Gemini ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
+      if (r.status === 404 || r.status === 400) continue // otro modelo
+      throw ultimoError
+    }
+    const d = await r.json()
+    const audio = (d.steps ?? []).filter((x) => x.type === 'model_output').flatMap((x) => x.content ?? []).filter((c) => c.type === 'audio').at(-1)
+    if (!audio?.data) throw new Error('Gemini no devolvió audio')
+    const b = Buffer.from(audio.data, 'base64')
+    return b.subarray(0, 4).toString() === 'RIFF' ? b : pcmAWav(b, 24000)
+  }
+  throw ultimoError ?? new Error('Gemini sin modelo de voz disponible')
+}
+
+function pcmAWav(pcm, rate) {
+  const h = Buffer.alloc(44)
+  h.write('RIFF', 0)
+  h.writeUInt32LE(36 + pcm.length, 4)
+  h.write('WAVEfmt ', 8)
+  h.writeUInt32LE(16, 16)
+  h.writeUInt16LE(1, 20)
+  h.writeUInt16LE(1, 22)
+  h.writeUInt32LE(rate, 24)
+  h.writeUInt32LE(rate * 2, 28)
+  h.writeUInt16LE(2, 32)
+  h.writeUInt16LE(16, 34)
+  h.write('data', 36)
+  h.writeUInt32LE(pcm.length, 40)
+  return Buffer.concat([h, pcm])
+}
 export const ajustesVoz = () => {
   // Personaje juvenil y enérgico: tono más agudo y un ritmo algo más rápido que una voz normal.
   const tono = Math.min(1.5, Math.max(0.8, Number(process.env.VOZ_TONO ?? 1.3)))
@@ -48,7 +104,7 @@ export function paraVoz(texto) {
 // Caché en memoria (frases recientes: saludos, reportes repetidos)
 const CACHE_MAX = 120
 const cache = new Map()
-const clave = (t) => createHash('sha1').update(`${JSON.stringify(ajustesVoz())}|${t}`).digest('hex')
+const clave = (t) => createHash('sha1').update(`${proveedorVoz()}|${process.env.GEMINI_VOZ ?? ''}|${JSON.stringify(ajustesVoz())}|${t}`).digest('hex')
 
 let hilo = null
 let listo = null
@@ -90,6 +146,17 @@ export async function sintetizar(texto) {
     cache.set(k, b)
     return b
   }
+  if (proveedorVoz() === 'gemini') {
+    try {
+      const b = await vozGemini(t)
+      cache.set(k, b)
+      if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+      return b
+    } catch (e) {
+      console.error('Voz Gemini falló, uso la voz libre:', e.message)
+      if (!piperListo()) throw e
+    }
+  }
   await iniciar()
   const trabajo = cola.then(
     () =>
@@ -108,6 +175,6 @@ export async function sintetizar(texto) {
 
 /** Precalienta el modelo para que la primera frase no tarde (se llama al arrancar). */
 export function precalentar() {
-  if (!vozActiva()) return
+  if (!piperListo() || proveedorVoz() === 'gemini') return
   sintetizar('Hola, soy Zumi.').catch((e) => console.error('Voz de ZUMI no disponible:', e.message))
 }

@@ -25,3 +25,17 @@ test('arma el pedido a Claude con personalidad, datos e historial, y limpia la r
   assert.match(pedido.cuerpo.messages.at(-1).content, /<datos>\{"comuna":"Talca"\}<\/datos>[\s\S]*Ana[\s\S]*¿Llueve\?/)
   delete process.env.ANTHROPIC_API_KEY
 })
+
+test('sin clave de Claude, ZUMI conversa con Gemini', async () => {
+  const { preguntarIA } = await import('../services/zumi.js')
+  const prev = process.env.ANTHROPIC_API_KEY
+  delete process.env.ANTHROPIC_API_KEY
+  process.env.GEMINI_API_KEY = 'prueba'
+  let url = ''
+  const fetchFn = async (u) => ((url = u), { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '¡Hola! Hoy **sol**.' }] } }] }) })
+  const t = await preguntarIA({ pregunta: '¿llueve?', contexto: {}, historial: [] }, { fetchFn })
+  assert.equal(t, '¡Hola! Hoy sol.')
+  assert.match(url, /generativelanguage/)
+  delete process.env.GEMINI_API_KEY
+  if (prev) process.env.ANTHROPIC_API_KEY = prev
+})

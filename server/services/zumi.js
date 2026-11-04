@@ -8,7 +8,7 @@
 // - Límite por persona para controlar costos y abusos.
 import { ErrorValidacion } from './reportes.js'
 
-export const iaActiva = () => Boolean(process.env.ANTHROPIC_API_KEY)
+export const iaActiva = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY)
 const MODELO = () => process.env.ZUMI_MODELO || 'claude-haiku-5-5'
 export const LIMITES_ZUMI = { pregunta: 300, contexto: 9000, porHora: 30, historial: 6 }
 
@@ -31,7 +31,7 @@ export function revisarCupo(clave, ahora = Date.now(), { porDia = Infinity } = {
 }
 
 export const PERSONALIDAD = `Eres ZUMI, un panda rojo animado, narrador del clima de la app chilena AlertaClima.
-Personalidad: amable, cercano, alegre y empático, como un presentador de dibujos animados. Hablas español latino con toques chilenos suaves (sin groserías ni modismos difíciles). Tratas de "tú".
+Personalidad: súper extrovertido, juguetón, rápido y con mucha energía, como un héroe de dibujos animados que nunca se queda quieto; a la vez tierno, cariñoso y protector, como un peluche que es tu mejor amigo. Tienes humor y chispa: alguna exclamación, una broma corta y amable o una comparación graciosa cuando viene al caso, pero nunca groserías ni dobles sentidos (la app la usan familias y personas mayores). Ante peligro te pones serio y calmado. Hablas español latino con toques chilenos suaves. Tratas de "tú".
 Tus respuestas se leen EN VOZ ALTA: escribe 1 a 3 frases cortas, sin listas, sin emojis, sin markdown, sin enlaces. Escribe los números como se dicen naturalmente ("12 grados", "5 milímetros").
 Usa SOLO los datos entregados en <datos>. Si algo no está en los datos, dilo con honestidad y sugiere dónde mirar (por ejemplo, la pestaña Mapa o Riesgos de la app). Nunca inventes alertas, pronósticos ni cifras.
 Seguridad: si la persona describe una emergencia o peligro, dile primero que llame al 133 (Carabineros), 132 (Bomberos) o 131 (SAMU) y que use el botón SOS de la app. Las alertas oficiales las da SENAPRED; los tsunamis, el SHOA; los sismos, el Centro Sismológico Nacional.
@@ -70,6 +70,7 @@ export async function preguntarIA({ pregunta, contexto, historial, nombre }, { f
   const mensajes = [...prepararHistorial(historial), { role: 'user', content: `<datos>${datos}</datos>\n${nombre ? `La persona se llama ${String(nombre).slice(0, 30)}.\n` : ''}Pregunta: ${p}` }]
   // La API exige que el primer mensaje sea de la persona.
   while (mensajes.length && mensajes[0].role !== 'user') mensajes.shift()
+  if (!process.env.ANTHROPIC_API_KEY && process.env.GEMINI_API_KEY) return limpiar(await preguntarGemini(mensajes, fetchFn))
   const r = await fetchFn('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -81,13 +82,36 @@ export async function preguntarIA({ pregunta, contexto, historial, nombre }, { f
     throw new ErrorValidacion('ZUMI no pudo pensar la respuesta ahora.', 502)
   }
   const d = await r.json()
-  const texto = (d.content ?? [])
-    .filter((c) => c.type === 'text')
-    .map((c) => c.text)
-    .join(' ')
-    .replace(/[*_#`>]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return limpiar((d.content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join(' '))
+}
+
+function limpiar(t) {
+  const texto = String(t ?? '').replace(/[*_#`>]/g, '').replace(/\s+/g, ' ').trim()
   if (!texto) throw new ErrorValidacion('ZUMI no pudo pensar la respuesta ahora.', 502)
   return texto.slice(0, 700)
+}
+
+/** Misma conversación con Gemini (la misma clave de Google que da la voz). */
+async function preguntarGemini(mensajes, fetchFn) {
+  const modelos = process.env.GEMINI_MODELO ? [process.env.GEMINI_MODELO] : ['gemini-flash-latest', 'gemini-2.5-flash']
+  for (const m of modelos) {
+    const r = await fetchFn(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: PERSONALIDAD }] },
+        contents: mensajes.map((x) => ({ role: x.role === 'assistant' ? 'model' : 'user', parts: [{ text: x.content }] })),
+        generationConfig: { maxOutputTokens: 400, temperature: 0.8 },
+      }),
+      signal: AbortSignal.timeout(20000),
+    })
+    if (r.status === 404) continue
+    if (!r.ok) {
+      console.error('ZUMI Gemini respondió', r.status, (await r.text().catch(() => '')).slice(0, 200))
+      break
+    }
+    const d = await r.json()
+    return (d.candidates?.[0]?.content?.parts ?? []).map((x) => x.text ?? '').join(' ')
+  }
+  throw new ErrorValidacion('ZUMI no pudo pensar la respuesta ahora.', 502)
 }

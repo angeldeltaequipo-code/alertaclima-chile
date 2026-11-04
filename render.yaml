@@ -34,6 +34,10 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY # Clave de la API de Claude para que ZUMI converse con IA. Sin ella, ZUMI usa respuestas propias.
         sync: false
+      - key: GEMINI_API_KEY # Clave de Google AI Studio: voz humana de ZUMI (y su conversación si no hay clave de Claude).
+        sync: false
+      - key: GEMINI_VOZ # Voz de Gemini para ZUMI (Fenrir, Puck, Leda, Sadachbia…).
+        value: Fenrir
       - key: REDDIT_CLIENT_ID # App gratuita de Reddit (tipo script) para leer r/chile desde el servidor. Opcional.
         sync: false
       - key: REDDIT_CLIENT_SECRET

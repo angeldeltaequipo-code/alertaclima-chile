@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { MAX_TEXTO, sintetizar, vozActiva } from '../services/voz/index.js'
+import { MAX_TEXTO, proveedorVoz, sintetizar, vozActiva } from '../services/voz/index.js'
 
 // Límite por IP: frases por minuto (un reporte completo son ~8 frases).
 const VENTANA = 60_000
@@ -21,7 +21,7 @@ function permitido(ip) {
  */
 export function vozRouter() {
   const r = Router()
-  r.get('/estado', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ activa: vozActiva() }))
+  r.get('/estado', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ activa: vozActiva(), proveedor: proveedorVoz() }))
   r.get('/', async (req, res, next) => {
     try {
       if (!vozActiva()) return res.status(503).json({ error: 'La voz de ZUMI no está disponible' })

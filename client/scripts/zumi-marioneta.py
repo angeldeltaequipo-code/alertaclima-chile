@@ -80,7 +80,85 @@ boca_y = ny + 0.28 * d
 mand = np.clip((yy - boca_y) / (0.1 * d), 0, 1) * np.clip((ny + 0.95 * d - yy) / (0.12 * d), 0, 1) * np.clip((0.62 * d - np.abs(xx - nx)) / (0.12 * d), 0, 1)
 mandibula_a = cabeza_a * mand
 cabeza_sola_a = cabeza_a * (1 - mand * 0.0)  # la cabeza conserva la mandíbula detrás (sin hueco al bajar)
-cuerpo_a = mask  # el cuerpo completo; la cabeza se dibuja encima
+# ---------- brazos (capas aparte para gestos) ----------
+# Los brazos cuelgan a los lados: busca la primera fila (bajando desde los hombros) donde la silueta se
+# separa en 3 tramos (brazo, torso, brazo); los bordes del torso ahí marcan dónde termina cada brazo.
+mb = mask > 0.5
+borde_izq = borde_der = None
+for f in np.arange(1.6, 3.6, 0.05):
+    y = int(ny + f * d)
+    if y >= H0:
+        break
+    fila = mb[y]
+    tramos, x = [], 0
+    while x < W0:
+        if fila[x]:
+            s0 = x
+            while x < W0 and fila[x]:
+                x += 1
+            if x - s0 > 6:
+                tramos.append((s0, x))
+        x += 1
+    if len(tramos) >= 3:
+        cen = min(tramos, key=lambda t: abs((t[0] + t[1]) / 2 - nx))
+        izq = [t for t in tramos if t[1] <= cen[0]]
+        der = [t for t in tramos if t[0] >= cen[1]]
+        if izq and der:
+            borde_izq, borde_der, y_sep = cen[0], cen[1], y
+            break
+brazos = {}
+restos = []
+cuerpo_a = mask.copy()
+if borde_izq is not None:
+    hombro_y = ny + 1.25 * d
+    for lado, borde in (('izq', borde_izq), ('der', borde_der)):
+        dentro = (xx - borde) if lado == 'izq' else (borde - xx)  # >0 hacia el torso
+        fuera = np.clip((-dentro + 10) / 22, 0, 1)  # 1 fuera del torso, difuminado en el borde
+        alto = np.clip((yy - hombro_y) / (0.25 * d), 0, 1)
+        a_brazo = mask * fuera * alto
+        # Solo la pieza conectada al brazo (sin la cola ni los pies)
+        n_comp, etiquetas = cv2.connectedComponents((a_brazo > 0.25).astype(np.uint8))
+        semilla_x = int(borde - 0.25 * d) if lado == 'izq' else int(borde + 0.25 * d)
+        fila_sep = (a_brazo[y_sep] > 0.25).nonzero()[0]
+        if len(fila_sep):
+            semilla_x = int(fila_sep[np.argmin(np.abs(fila_sep - semilla_x))])
+        etq = etiquetas[y_sep, semilla_x]
+        if etq > 0:
+            a_brazo = a_brazo * cv2.GaussianBlur((etiquetas == etq).astype(np.float32), (0, 0), 1.5)
+        # Bajo la mano puede tocar la cola: ahí solo queda lo oscuro (la mano), no el pelaje claro de la cola
+        hsv_b = cv2.cvtColor(base, cv2.COLOR_BGR2HSV)
+        oscuro = np.maximum(np.clip((125 - hsv_b[..., 2].astype(np.float32)) / 30, 0, 1), np.clip((70 - hsv_b[..., 1].astype(np.float32)) / 25, 0, 1))  # mano oscura o garras grises
+        bajo = np.clip((yy - (y_sep + 0.3 * d)) / (0.08 * d), 0, 1)
+        mano_baja = a_brazo * bajo * oscuro * (yy < y_sep + 0.85 * d)
+        a_brazo = a_brazo * (1 - bajo + bajo * oscuro) * (yy < y_sep + 0.85 * d)
+        restos.append(mano_baja)
+        brazos[lado] = (a_brazo, borde)
+        # el cuerpo sin el brazo (la cola y los pies se quedan en el cuerpo)
+        cuerpo_a = cuerpo_a * (1 - np.clip(a_brazo / np.maximum(mask, 1e-3), 0, 1) * np.clip((-dentro + 2) / 6, 0, 1))
+        # El costado del torso que tapaba el brazo: una curva suave (panza redonda), no un corte recto.
+        y0, y1 = ny + 1.15 * d, y_sep + 0.1 * d
+        u = np.clip((yy - y0) / (y1 - y0), 0, 1)
+        panza = 0.14 * d * np.sin(np.pi * u) * ((yy > y0) & (yy < y1))
+        extra = np.clip((panza + dentro + 2) / 4, 0, 1) * (dentro < 2) * (yy > y0) * (yy < y1)
+        relleno_a = np.maximum(relleno_a, extra) if 'relleno_a' in dir() else extra
+        cuerpo_a = np.maximum(cuerpo_a, extra)
+    print(f'brazos: torso entre x={borde_izq} y x={borde_der} (fila {y_sep})')
+    # La mano (oscura o garras grises) sale del cuerpo aunque toque la cola
+    for r in restos:
+        cuerpo_a = cuerpo_a * (1 - np.clip(cv2.dilate(r, np.ones((3, 3), np.uint8)) * 1.5, 0, 1))
+    # Quitar restos sueltos (puntas de garras) que quedaron donde estaba la mano
+    n_c, et, est, _ = cv2.connectedComponentsWithStats((cuerpo_a > 0.3).astype(np.uint8))
+    if n_c > 2:
+        grande = 1 + int(np.argmax(est[1:, cv2.CC_STAT_AREA]))
+        islas = (et > 0) & (et != grande)
+        cuerpo_a = cuerpo_a * (1 - cv2.dilate(islas.astype(np.uint8), np.ones((5, 5), np.uint8)))
+    # Pelaje del costado: se rellena desde el torso (donde antes estaba el brazo)
+    hueco = ((mask > 0.3) & (sum(a for a, _ in brazos.values()) > 0.3)) | (relleno_a > 0)
+    rellena = cv2.inpaint(base, (hueco * 255).astype(np.uint8), 12, cv2.INPAINT_TELEA)
+    base_cuerpo = np.where((relleno_a > 0)[..., None] | ((sum(a for a, _ in brazos.values()) > 0.3) & (cuerpo_a > 0.05))[..., None], rellena, base)
+else:
+    print('No se encontraron brazos separados: sin gestos de brazos en este escenario')
+    base_cuerpo = base
 
 
 def rgba(img, alfa):
@@ -106,7 +184,8 @@ import os
 os.makedirs(salida, exist_ok=True)
 guardar('fondo.webp', cv2.resize(fondo, (ANCHO, ALTO), interpolation=cv2.INTER_AREA), 84)
 pos = {
-    'cuerpo': recortar('cuerpo.webp', rgba(base, cuerpo_a)),
+    'cuerpo': recortar('cuerpo.webp', rgba(base_cuerpo, cuerpo_a)),
+    **{f'brazo_{l}': recortar(f'brazo_{l}.webp', rgba(base, a)) for l, (a, _) in brazos.items()},
     'cabeza': recortar('cabeza.webp', rgba(base, cabeza_sola_a)),
     'mandibula': recortar('mandibula.webp', rgba(base, mandibula_a)),
 }
@@ -166,6 +245,8 @@ pieza = {
     'ojos': OJOS,
     'dTira': D_TIRA,
     'pos': pos,
+    # hombro de cada brazo (pivote del giro), en la escala de salida
+    'hombros': {l: [round((b + (14 if l == 'izq' else -14)) * k, 1), round((ny + 1.45 * d) * k, 1)] for l, (_, b) in brazos.items()},
 }
 json.dump(pieza, open(f'{salida}/pieza.json', 'w'))
 print(json.dumps(pieza))
