@@ -1,0 +1,26 @@
+name: Muestras de voz de ZUMI
+# Pide la misma frase con varias voces de Gemini para elegir la voz única de ZUMI.
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  muestras:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir muestras
+        run: |
+          mkdir voz
+          curl -sf -m 90 https://alertaclima-api.onrender.com/api/voz/estado || true
+          T='¡Hola, hola! ¡Soy ZUMI, tu amigo del clima! Hoy en tu comuna hay sol y 24 grados. ¡Ponte bloqueador y a disfrutar!'
+          for v in Fenrir Puck Leda Sadachbia Laomedeia Zephyr Aoede; do
+            for k in 1 2 3; do curl -sf -m 60 -G --data-urlencode "t=$T" --data-urlencode "voz=$v" https://alertaclima-api.onrender.com/api/voz -o "voz/$v.wav" && break; sleep 8; done
+            sleep 3
+          done
+          ls -la voz
+      - name: Guardar en la rama voz-muestras
+        run: |
+          cd voz
+          git init -q -b voz-muestras
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add . && git commit -qm "Muestras de voz"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voz-muestras

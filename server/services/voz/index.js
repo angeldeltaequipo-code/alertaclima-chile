@@ -29,7 +29,10 @@ export const ESTILO_ZUMI =
 const MODELOS_GEMINI = () => (process.env.GEMINI_TTS_MODELO ? [process.env.GEMINI_TTS_MODELO] : ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview'])
 
 /** Texto + estilo → WAV (16 bits, mono). Usa la API de «interactions» de Gemini. */
-export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI } = {}) {
+// Voces de Gemini que se pueden probar (para elegir la de ZUMI); la que usa la app es GEMINI_VOZ.
+export const VOCES_PRUEBA = ['Fenrir', 'Puck', 'Leda', 'Sadachbia', 'Laomedeia', 'Zephyr', 'Aoede']
+
+export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = process.env.GEMINI_VOZ ?? 'Fenrir' } = {}) {
   let ultimoError = null
   for (const model of MODELOS_GEMINI()) {
     const r = await fetchFn('https://generativelanguage.googleapis.com/v1beta/interactions', {
@@ -39,7 +42,7 @@ export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI }
         model,
         input: [{ type: 'user_input', content: [{ type: 'text', text: texto, annotations: [{ type: 'speech_metadata', style: estilo }] }] }],
         response_format: { type: 'audio' },
-        generation_config: { speech_config: [{ voice: process.env.GEMINI_VOZ ?? 'Fenrir' }] },
+        generation_config: { speech_config: [{ voice: voz }] },
       }),
       signal: AbortSignal.timeout(20000),
     })
@@ -139,11 +142,12 @@ function iniciar() {
 // Matices de actuación de la MISMA voz (no otra voz): la película pide ritmo de escena con pausas.
 export const MATICES = { escena: ' Está actuando una escena corta: habla con pausas expresivas entre frases y un ritmo algo más pausado, sin perder la energía.' }
 
-export async function sintetizar(texto, { matiz } = {}) {
+export async function sintetizar(texto, { matiz, voz } = {}) {
+  voz = VOCES_PRUEBA.includes(voz) ? voz : undefined
   const t = paraVoz(texto)
   const extra = MATICES[matiz] ?? ''
   if (!t) throw Object.assign(new Error('Texto vacío'), { status: 400 })
-  const k = clave(t + (extra ? `|${matiz}` : ''))
+  const k = clave(t + (extra ? `|${matiz}` : '') + (voz ? `|v:${voz}` : ''))
   if (cache.has(k)) {
     const b = cache.get(k)
     cache.delete(k)
@@ -155,7 +159,7 @@ export async function sintetizar(texto, { matiz } = {}) {
     let error = null
     for (let intento = 0; intento < 2; intento++) {
       try {
-        const b = await vozGemini(t, { estilo: ESTILO_ZUMI + extra })
+        const b = await vozGemini(t, { estilo: ESTILO_ZUMI + extra, ...(voz ? { voz } : {}) })
         cache.set(k, b)
         if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
         return b

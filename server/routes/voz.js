@@ -28,7 +28,7 @@ export function vozRouter() {
       const t = String(req.query.t ?? '').trim()
       if (!t || t.length > MAX_TEXTO) return res.status(400).json({ error: `Texto entre 1 y ${MAX_TEXTO} caracteres` })
       if (!permitido(req.ip)) return res.status(429).json({ error: 'Demasiadas frases seguidas; espera un momento' })
-      const wav = await sintetizar(t, { matiz: req.query.matiz === 'escena' ? 'escena' : undefined })
+      const wav = await sintetizar(t, { matiz: req.query.matiz === 'escena' ? 'escena' : undefined, voz: typeof req.query.voz === 'string' ? req.query.voz : undefined })
       res.set({ 'Content-Type': 'audio/wav', 'Cache-Control': 'public, max-age=86400', 'Content-Length': wav.length }).send(wav)
     } catch (e) {
       next(e)
