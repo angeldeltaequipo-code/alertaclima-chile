@@ -12,7 +12,7 @@ const W = (LNG[1] - LNG[0]) * K * 10
 const H = (LAT[0] - LAT[1]) * 10
 const xy = (lng, lat) => [(lng - LNG[0]) * K * 10, (LAT[0] - lat) * 10]
 
-export default function MapaSismos({ sismos, punto, alto = 360 }) {
+export default function MapaSismos({ sismos, punto, alto = 360, onAbrir }) {
   const [tierra, setTierra] = useState(null)
   const [elegido, setElegido] = useState(null)
   useEffect(() => {
@@ -84,9 +84,16 @@ export default function MapaSismos({ sismos, punto, alto = 360 }) {
               {hace(new Date(s.hora))}
               {s.profundidadKm != null ? ` · ${s.profundidadKm} km de profundidad` : ''}
             </p>
-            <button type="button" onClick={() => setElegido(null)} className="mt-2 min-h-9 text-[13px] font-bold underline">
-              Cerrar
-            </button>
+            <div className="mt-2 flex flex-wrap gap-x-3">
+              {onAbrir && (
+                <button type="button" onClick={() => onAbrir(s)} className="min-h-9 text-[13px] font-bold text-senal-texto underline">
+                  Ver toda la info
+                </button>
+              )}
+              <button type="button" onClick={() => setElegido(null)} className="min-h-9 text-[13px] font-bold underline">
+                Cerrar
+              </button>
+            </div>
           </div>
         ) : (
           <p className="text-texto-2">Toca un círculo para ver ese sismo. Los que laten ocurrieron en las últimas 6 horas.</p>

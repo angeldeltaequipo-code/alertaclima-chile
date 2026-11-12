@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 /** Panel de pantalla completa (en móvil) para selector y ajustes. */
 export default function Hoja({ titulo, onCerrar, puedeCerrar = true, children }) {
@@ -18,7 +19,8 @@ export default function Hoja({ titulo, onCerrar, puedeCerrar = true, children })
     }
   }, [onCerrar, puedeCerrar])
 
-  return (
+  // En el body: así siempre queda encima (también del botón de ZUMI), aunque la abra una vista con transform.
+  return createPortal(
     <div className="fixed inset-0 z-[1000] flex justify-center bg-black/60">
       <div
         ref={ref}
@@ -44,6 +46,7 @@ export default function Hoja({ titulo, onCerrar, puedeCerrar = true, children })
         </div>
         <div className="flex-1 overflow-y-auto overscroll-contain">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

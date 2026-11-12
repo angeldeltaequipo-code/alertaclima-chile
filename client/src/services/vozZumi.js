@@ -5,9 +5,10 @@ import { API_URL } from './reportes'
 
 // Versión de la voz única de ZUMI: al cambiarla, el navegador no reutiliza audios de la voz anterior.
 const VOZ = 'zephyr'
-import { guardar, leer } from './almacen'
+import { guardar } from './almacen'
 
-export const usarVozPropia = () => leer('zumi:voz-propia', true)
+// ZUMI tiene una sola voz: ya no se puede cambiar por la del teléfono.
+export const usarVozPropia = () => true
 export const guardarUsarVozPropia = (v) => guardar('zumi:voz-propia', Boolean(v))
 
 let disponible = null

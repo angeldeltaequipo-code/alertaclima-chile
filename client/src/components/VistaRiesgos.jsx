@@ -2,6 +2,8 @@ import { poseZumi } from './ZumiTeCuenta'
 import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
+import FichaSismo from './FichaSismo'
+import Hoja from './Hoja'
 import LoQueSeComenta from './LoQueSeComenta'
 import { picos } from '../services/comunidad'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
@@ -58,7 +60,7 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-bold">{f.titulo}</span>
-                  <span className="block truncate text-[13px] text-white/80">{f.texto}</span>
+                  <span className="line-clamp-2 block text-[13px] leading-snug text-white/80">{f.texto}</span>
                 </span>
                 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="shrink-0 opacity-70">
                   <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -94,12 +96,12 @@ function Guia({ id }) {
   )
 }
 
-function Sismo({ s, punto }) {
+function Sismo({ s, punto, onAbrir }) {
   const d = descripcionMagnitud(s.magnitud)
   const km = punto ? Math.round(distanciaKm(punto, s)) : null
   return (
     <li>
-      <a href={s.url} target="_blank" rel="noopener" className="flex items-center gap-3 rounded-2xl px-2 py-2 active:bg-superficie-2">
+      <button type="button" onClick={() => onAbrir(s)} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left active:bg-superficie-2">
         <span
           className="grid size-12 shrink-0 place-items-center rounded-2xl text-[17px] font-bold text-white tabular-nums"
           style={{ background: colorMagnitud(s.magnitud), boxShadow: `0 0 18px -4px ${colorMagnitud(s.magnitud)}` }}
@@ -108,21 +110,23 @@ function Sismo({ s, punto }) {
           {num(s.magnitud)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[16px] font-bold first-letter:uppercase">{s.lugar ?? 'Chile'}</span>
+          <span className="line-clamp-2 block text-[16px] leading-snug font-bold first-letter:uppercase">{s.lugar ?? 'Chile'}</span>
           <span className="block text-[13px] text-texto-2">
             {d.texto} · {hace(new Date(s.hora))}
             {s.profundidadKm != null ? ` · ${s.profundidadKm} km de profundidad` : ''}
           </span>
         </span>
         {km != null && <span className="shrink-0 text-[13px] font-bold text-texto-2 tabular-nums">{km < 1000 ? `${km} km` : ''}</span>}
-      </a>
+        <span aria-hidden="true" className="shrink-0 text-[20px] text-texto-2">›</span>
+      </button>
     </li>
   )
 }
 
 /** Pestaña Riesgos: sismos de los últimos 7 días, tsunamis y volcanes cercanos. */
-export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerVolcanes, comunidad, comunidadItems, volcanesNivel }) {
+export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerSismo, onVerVolcanes, comunidad, comunidadItems, volcanesNivel }) {
   const [todos, setTodos] = useState(false)
+  const [sismoAbierto, setSismoAbierto] = useState(null)
   const entrada = useEntrada()
   const datos = riesgos.datos
   const sismos = datos?.sismos ?? []
@@ -141,6 +145,21 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
 
   return (
     <div className={`${entrada} space-y-3 px-4 pt-4 pb-8`}>
+      {sismoAbierto && (
+        <Hoja titulo="Sismo" onCerrar={() => setSismoAbierto(null)}>
+          <FichaSismo
+            sismo={sismoAbierto}
+            punto={punto}
+            onVerEnMapa={
+              onVerSismo &&
+              ((q) => {
+                setSismoAbierto(null)
+                onVerSismo(q)
+              })
+            }
+          />
+        </Hoja>
+      )}
       <Resumen
         datos={datos}
         comuna={comuna}
@@ -198,7 +217,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
               </button>
             </div>
             <div className="mt-3">
-              <MapaSismos sismos={sismos} punto={punto} />
+              <MapaSismos sismos={sismos} punto={punto} onAbrir={setSismoAbierto} />
             </div>
             <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-2xl bg-superficie-2 py-2">
@@ -221,7 +240,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerV
             )}
             <ul className="-mx-2 mt-2">
               {lista.map((s) => (
-                <Sismo key={s.id} s={s} punto={punto} />
+                <Sismo key={s.id} s={s} punto={punto} onAbrir={setSismoAbierto} />
               ))}
             </ul>
             {sismos.length > 8 && (

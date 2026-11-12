@@ -227,12 +227,14 @@ export default function Mapa({
   verCamaras = true,
   volcanes = null,
   onVolcan = () => {},
+  onSismo = () => {},
+  enfocar = null,
   nubes = false,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
   const props = useRef({})
-  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, camaras, volcanes }
+  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos }
 
   // Ejecuta cuando el estilo esté cargado.
   const cuandoListo = (fn) => {
@@ -428,7 +430,15 @@ export default function Mapa({
       const v = props.current.volcanes?.find((x) => x.nombre === n)
       if (v) props.current.onVolcan(v)
     })
-    for (const capa of ['camaras-grupo', 'camaras-pin', 'volcanes']) {
+    mapa.on('click', 'sismos', (e) => {
+      if (props.current.modoCalle) return
+      // Si hay varios encima, el más fuerte
+      const ids = (e.features ?? []).map((f) => f.properties?.id)
+      const lista = (props.current.sismos ?? []).filter((x) => ids.includes(x.id))
+      const s = lista.sort((a, b) => b.magnitud - a.magnitud)[0]
+      if (s) props.current.onSismo(s)
+    })
+    for (const capa of ['camaras-grupo', 'camaras-pin', 'volcanes', 'sismos']) {
       mapa.on('mouseenter', capa, () => (mapa.getCanvas().style.cursor = 'pointer'))
       mapa.on('mouseleave', capa, () => (mapa.getCanvas().style.cursor = ''))
     }
@@ -619,6 +629,13 @@ export default function Mapa({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evacuacion])
 
+  // ---- Enfocar un punto (p. ej. un sismo abierto desde Riesgos) ----
+  useEffect(() => {
+    if (!enfocar) return
+    cuandoListo((mapa) => mapa.flyTo({ center: [enfocar.lng, enfocar.lat], zoom: Math.max(mapa.getZoom(), 6.5), duration: 1200 }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enfocar])
+
   // ---- Sismos ----
   const sismosAntes = useRef(null)
   useEffect(() => {
@@ -630,7 +647,7 @@ export default function Mapa({
         type: 'FeatureCollection',
         features: (sismos ?? []).map((s) => ({
           type: 'Feature',
-          properties: { mag: s.magnitud, edadH: (ahora - s.hora) / 3600e3 },
+          properties: { id: s.id, mag: s.magnitud, edadH: (ahora - s.hora) / 3600e3 },
           geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
         })),
       })

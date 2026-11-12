@@ -24,7 +24,8 @@ import { useRiesgos } from './hooks/useRiesgos'
 import { useComunidad } from './hooks/useComunidad'
 import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
-import ZumiTeCuenta from './components/ZumiTeCuenta'
+import FichaSismo from './components/FichaSismo'
+import EscenarioZumi from './components/EscenarioZumi'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
 const Planes = lazySeguro(() => import('./components/Planes'))
@@ -115,6 +116,8 @@ export default function App() {
   const volcanesNivel = useMemo(() => volcanesConNivel(riesgos.datos?.volcanes, comunidadItems), [riesgos.datos, comunidadItems])
   const [capaVolcanes, setCapaVolcanes] = useState(false)
   const [volcanSel, setVolcanSel] = useState(null)
+  const [sismoSel, setSismoSel] = useState(null)
+  const [enfocarMapa, setEnfocarMapa] = useState(null)
   const [capaNubes, setCapaNubes] = useState(() => leer('mapa:nubes', false))
   const [capaCamaras, setCapaCamaras] = useState(() => leer('mapa:camaras', true))
   // Vías de evacuación: { estado: 'cargando' | 'listo' | 'error', datos, error }
@@ -276,6 +279,8 @@ export default function App() {
     )
   }
 
+  // Hablar con ZUMI por voz necesita reconocimiento de voz del navegador (Chrome, Safari, Edge).
+  const puedeLlamarZumi = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
   const datosZumi = {
     comuna,
     ahora: condicionesActuales(clima.datos?.ahora, obs),
@@ -341,7 +346,20 @@ export default function App() {
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
-                zumi={clima.datos && <ZumiTeCuenta datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }} onEscuchar={() => setZumi(true)} onPelicula={(id) => setZumi(id)} />}
+                zumi={
+                  clima.datos &&
+                  (({ hoy }) => (
+                    <EscenarioZumi
+                      datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }}
+                      hoy={hoy}
+                      puedeLlamar={puedeLlamarZumi}
+                      onLlamar={() => setZumi({ modo: 'llamada' })}
+                      onEscuchar={() => setZumi(true)}
+                      onPreguntar={(pregunta) => setZumi({ pregunta })}
+                      onPelicula={(id) => setZumi(id)}
+                    />
+                  ))
+                }
                 familia={<MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />}
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
@@ -387,8 +405,16 @@ export default function App() {
                 onVolcan={(v) => {
                   setSeleccionado(null)
                   setCamaraSel(null)
+                  setSismoSel(null)
                   setVolcanSel(v)
                 }}
+                onSismo={(q) => {
+                  setSeleccionado(null)
+                  setCamaraSel(null)
+                  setVolcanSel(null)
+                  setSismoSel(q)
+                }}
+                enfocar={enfocarMapa}
                 nubes={capaNubes}
               />
             </Suspense>
@@ -402,7 +428,10 @@ export default function App() {
             onRios={rios ? () => setRios(null) : () => buscarRios()}
             riosActivo={Boolean(rios)}
             sismosActivo={capaSismos}
-            onSismos={() => setCapaSismos(!capaSismos)}
+            onSismos={() => {
+              setCapaSismos(!capaSismos)
+              setSismoSel(null)
+            }}
             camarasActivo={capaCamaras}
             onCamaras={() => {
               guardar('mapa:camaras', !capaCamaras)
@@ -478,6 +507,8 @@ export default function App() {
                     setRioEnfocado(null)
                   }}
                 />
+              ) : sismoSel ? (
+                <FichaSismo sismo={sismoSel} punto={ubicacion ?? clima.datos?.punto} enMapa onCerrar={() => setSismoSel(null)} />
               ) : volcanSel ? (
                 <FichaVolcan volcan={volcanSel} punto={ubicacion ?? clima.datos?.punto} onCerrar={() => setVolcanSel(null)} />
               ) : camaraSel ? (
@@ -502,6 +533,15 @@ export default function App() {
               punto={clima.datos?.punto ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)}
               onVerMapa={() => {
                 setCapaSismos(true)
+                setVista('radar')
+              }}
+              onVerSismo={(q) => {
+                setCapaSismos(true)
+                setSeleccionado(null)
+                setCamaraSel(null)
+                setVolcanSel(null)
+                setSismoSel(q)
+                setEnfocarMapa({ lat: q.lat, lng: q.lng, t: Date.now() })
                 setVista('radar')
               }}
               onVerVolcanes={() => {
@@ -563,7 +603,7 @@ export default function App() {
         </Suspense>
       )}
       {sos && <Suspense fallback={null}><PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} /></Suspense>}
-      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (evac || rios || fichaActual || camaraSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (evac || rios || fichaActual || camaraSel || sismoSel || volcanSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
         <Suspense fallback={<div className="fixed inset-0 z-[1150] grid place-items-center bg-[#050a18] text-white/80">Llamando a ZUMI…</div>}>
           <EstudioZumi
@@ -572,6 +612,7 @@ export default function App() {
             traje={traje}
             onCerrar={() => setZumi(false)}
             peliculaInicial={typeof zumi === 'string' ? zumi : null}
+            inicio={typeof zumi === 'object' ? zumi : null}
             datos={datosZumi}
           />
         </Suspense>

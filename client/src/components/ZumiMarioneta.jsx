@@ -93,7 +93,7 @@ function dibujarPelota(g, { x, y, r, giro }) {
   g.restore()
 }
 
-export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '' }) {
+export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true }) {
   const caja = useRef(null)
   const lienzo = useRef(null)
   const peli = useRef(null)
@@ -134,6 +134,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
 
   // Películas: se reproducen encima, con su voz; al terminar vuelve la marioneta.
   useEffect(() => {
+    if (!peliculas) return // otra marioneta (la del estudio) es la que actúa las películas
     const terminar = (ok) => {
       const c = s.current
       const p = c.pelicula
@@ -170,6 +171,17 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       quitar()
       alDetenerPelicula(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fuera de la vista (pestaña oculta o lejos al bajar) no dibuja: ahorra batería.
+  const visible = useRef(true)
+  useEffect(() => {
+    const el = caja.current
+    if (!el || !('IntersectionObserver' in window)) return
+    const io = new IntersectionObserver(([e]) => (visible.current = e.isIntersecting))
+    io.observe(el)
+    return () => io.disconnect()
   }, [])
 
   // Animación
@@ -459,7 +471,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       const cv = lienzo.current
       const el = caja.current
       const c = s.current
-      if (!cv || !el || !c.actual || document.hidden) return
+      if (!cv || !el || !c.actual || document.hidden || !visible.current) return
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const cw = el.clientWidth
       const ch = el.clientHeight

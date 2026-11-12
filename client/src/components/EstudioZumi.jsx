@@ -180,7 +180,7 @@ function Holograma({ t }) {
   )
 }
 
-export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'presentador', escenasIniciales, peliculaInicial = null, onCerrar }) {
+export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'presentador', escenasIniciales, peliculaInicial = null, inicio = null, onCerrar }) {
   const e = useNarrador()
   const ref = useRef(null)
   const [nombre, setNombre] = useState(nombrePreferido)
@@ -224,7 +224,15 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   useEffect(() => {
     const previo = document.activeElement
     ref.current?.focus()
-    hablar(textos, { silencio })
+    // Desde la portada: llamada directa o una pregunta ya hecha; si no, el reporte.
+    if (inicio?.modo === 'llamada') {
+      if (SR) llamar()
+      else {
+        setConversa(true)
+        hablar(enTrozos('¡Hola! ¡Aquí ZUMI! Escríbeme lo que quieras saber.'), { silencio })
+      }
+    } else if (inicio?.pregunta) preguntar(inicio.pregunta)
+    else hablar(textos, { silencio })
     const tecla = (ev) => ev.key === 'Escape' && onCerrar()
     document.addEventListener('keydown', tecla)
     document.body.style.overflow = 'hidden'

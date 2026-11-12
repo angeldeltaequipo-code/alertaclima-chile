@@ -149,9 +149,9 @@ export function InvitacionNotificaciones({ notif, comuna }) {
       : `Recibe avisos de alertas en ${comuna.nombre}, aunque la app esté cerrada`
   return (
     <section aria-label="Avisos de alertas" className="banda-invita entrar">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <img src={poseZumi('telefono')} alt="" width="48" height="56" className="zumi-pose h-14 w-auto shrink-0" />
-        <p className="min-w-0 flex-1 text-[15px] leading-snug font-bold">{texto}</p>
+        <p className="min-w-[10rem] flex-1 text-[15px] leading-snug font-bold">{texto}</p>
         {notif.soporte === 'ok' && !notif.bloqueadas ? (
           <button
             type="button"

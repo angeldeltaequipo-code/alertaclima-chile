@@ -135,11 +135,10 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
 
   return (
     <div className={`${entrada} space-y-3 px-4 pt-3 pb-24`}>
+      {/* ZUMI es la portada: él te cuenta el clima y conversa contigo */}
+      {zumi ? zumi({ hoy: dias[0] }) : <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />}
       <Atajos />
-      {zumi}
-      <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />
       {resumen}
-      {familia}
       <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
 
       {invitacion}
@@ -172,6 +171,7 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
       {!urgenteAluvion && aluvion}
 
       <Grupo>Tu zona</Grupo>
+      {familia}
       {reportes}
 
       {camaras}

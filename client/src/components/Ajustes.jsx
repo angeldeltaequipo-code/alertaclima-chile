@@ -3,8 +3,7 @@ import { useInstalar } from '../hooks/useInstalar'
 import { AjustesNotificaciones } from './Notificaciones'
 import BotonGoogle from './BotonGoogle'
 import { setVibrarActivado, vibracionSoportada, vibrar, vibrarActivado } from '../services/aviso'
-import { guardarUsarVozPropia, usarVozPropia } from '../services/vozZumi'
-import { callar, hablar } from '../services/narrador'
+import { hablar } from '../services/narrador'
 
 function AjusteVibracion() {
   const [activo, setActivo] = useState(vibrarActivado)
@@ -50,24 +49,12 @@ function AjusteVibracion() {
 }
 
 function VozDeZumi() {
-  const [propia, setPropia] = useState(usarVozPropia)
-  const cambiar = (v) => {
-    guardarUsarVozPropia(v)
-    setPropia(v)
-    if (!v) callar()
-  }
   return (
     <Seccion titulo="Voz de ZUMI">
-      <Opciones
-        nombre="Voz de ZUMI"
-        valor={propia}
-        onCambiar={cambiar}
-        opciones={[
-          { valor: true, etiqueta: 'Voz de ZUMI' },
-          { valor: false, etiqueta: 'Voz del teléfono' },
-        ]}
-      />
-      <p className="mt-2 text-[15px] text-texto-2">La voz de ZUMI necesita internet; sin conexión, ZUMI usa la voz de tu teléfono.</p>
+      <p className="text-[15px] text-texto-2">
+        ZUMI tiene una sola voz, la misma en el reporte, en las películas y cuando conversas con él. Necesita internet: sin
+        conexión, ZUMI te muestra lo que dice en pantalla.
+      </p>
       <button
         type="button"
         onClick={() => hablar(['¡Hola! Soy ZUMI. Así suena mi voz cuando te cuento el clima.'], { silencio: false })}
@@ -306,7 +293,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
             <strong className="text-texto">Mapa:</strong> © colaboradores de OpenStreetMap.
           </li>
           <li>
-            <strong className="text-texto">Alertas oficiales:</strong> aún no conectadas. Ante una emergencia, sigue
+            <strong className="text-texto">Alertas oficiales:</strong> las publica el equipo de AlertaClima desde fuentes oficiales (gob.cl y senapred.cl), con su enlace y hora de confirmación; aún no hay conexión automática con SENAPRED. Ante una emergencia, sigue
             siempre las instrucciones de SENAPRED y de tu municipalidad.
           </li>
         </ul>

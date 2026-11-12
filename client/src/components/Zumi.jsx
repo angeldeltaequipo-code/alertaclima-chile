@@ -26,6 +26,13 @@ export function BotonZumi({ onAbrir, traje }) {
     }, 9000)
     return () => clearTimeout(t)
   }, [globo])
+  // Cuando ZUMI ya está en su escenario (inicio), el botón no se muestra.
+  const [enEscena, setEnEscena] = useState(false)
+  useEffect(() => {
+    const f = (e) => setEnEscena(Boolean(e.detail))
+    window.addEventListener('zumi-escenario', f)
+    return () => window.removeEventListener('zumi-escenario', f)
+  }, [])
   // Se esconde mientras bajas leyendo (para no tapar nada) y vuelve al subir o al detenerte.
   const [oculto, setOculto] = useState(false)
   useEffect(() => {
@@ -49,7 +56,7 @@ export function BotonZumi({ onAbrir, traje }) {
     }
   }, [])
   return (
-    <div className={`pointer-events-none fixed right-3 bottom-[5.25rem] z-[900] flex items-end gap-2 transition-[transform,opacity] duration-300 ${oculto && !hablando ? 'translate-x-[130%] opacity-0' : ''}`}>
+    <div className={`pointer-events-none fixed right-3 bottom-[5.25rem] z-[900] flex items-end gap-2 transition-[transform,opacity] duration-300 ${(oculto && !hablando) || enEscena ? 'translate-x-[130%] opacity-0' : ''}`}>
       {globo && (
         <p className="globo-zumi pointer-events-auto max-w-[200px] rounded-2xl rounded-br-sm px-3 py-2 text-[14px] leading-snug font-bold">
           ¡Hola! Soy {NOMBRE}. Tócame y te cuento cómo está el clima.
