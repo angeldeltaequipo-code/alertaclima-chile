@@ -2,6 +2,9 @@
 // Aquí: saber si está disponible, pedir cada frase (con la siguiente ya encargada mientras habla),
 // desbloquear el audio en iPhone y medir la energía del audio para mover la boca.
 import { API_URL } from './reportes'
+
+// Versión de la voz única de ZUMI: al cambiarla, el navegador no reutiliza audios de la voz anterior.
+const VOZ = 'zephyr'
 import { guardar, leer } from './almacen'
 
 export const usarVozPropia = () => leer('zumi:voz-propia', true)
@@ -85,7 +88,7 @@ export function envolvente(buf) {
 
 /** Pide la frase al servidor. Devuelve { url, env, ms } o lanza error (se usa entonces la voz del teléfono). */
 export async function pedirFrase(texto, { signal } = {}) {
-  const r = await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(texto)}`, { signal: signal ?? AbortSignal.timeout(15000) })
+  const r = await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(texto)}&v=${VOZ}`, { signal: signal ?? AbortSignal.timeout(15000) })
   if (!r.ok) throw new Error(`voz ${r.status}`)
   const buf = await r.arrayBuffer()
   const env = envolvente(buf)
@@ -103,7 +106,7 @@ export async function precargarFrases(textos, max = 3) {
   precargado = clave
   for (const t of textos.slice(0, max)) {
     try {
-      await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(t)}`, { signal: AbortSignal.timeout(20000) }).then((r) => r.arrayBuffer())
+      await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(t)}&v=${VOZ}`, { signal: AbortSignal.timeout(20000) }).then((r) => r.arrayBuffer())
     } catch {
       return
     }

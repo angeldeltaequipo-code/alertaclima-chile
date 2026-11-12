@@ -22,17 +22,18 @@ export const proveedorVoz = () => (process.env.VOZ_ACTIVA === 'false' ? null : g
 export const vozActiva = () => proveedorVoz() !== null
 
 // ---------- Voz con IA de Google (Gemini): humana, expresiva, con el estilo de ZUMI ----------
-// GEMINI_API_KEY (aistudio.google.com), GEMINI_VOZ (voz prediseñada) y GEMINI_TTS_MODELO.
+// GEMINI_API_KEY (aistudio.google.com), ZUMI_VOZ (voz prediseñada; por defecto Zephyr, la elegida para ZUMI) y GEMINI_TTS_MODELO.
 export const ESTILO_ZUMI =
   process.env.ZUMI_ESTILO_VOZ ??
   'Personaje animado: un panda rojo joven, súper extrovertido, juguetón y con mucha energía, tierno y cariñoso. Habla en español latino, rápido y sonriendo, con entusiasmo y chispa, como el héroe alegre de una película animada.'
 const MODELOS_GEMINI = () => (process.env.GEMINI_TTS_MODELO ? [process.env.GEMINI_TTS_MODELO] : ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview'])
 
 /** Texto + estilo → WAV (16 bits, mono). Usa la API de «interactions» de Gemini. */
-// Voces de Gemini que se pueden probar (para elegir la de ZUMI); la que usa la app es GEMINI_VOZ.
+// Voces de Gemini que se pueden probar (para elegir la de ZUMI); la que usa la app es VOZ_ZUMI().
+export const VOZ_ZUMI = () => process.env.ZUMI_VOZ || 'Zephyr'
 export const VOCES_PRUEBA = ['Fenrir', 'Puck', 'Leda', 'Sadachbia', 'Laomedeia', 'Zephyr', 'Aoede']
 
-export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = process.env.GEMINI_VOZ ?? 'Fenrir' } = {}) {
+export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = VOZ_ZUMI() } = {}) {
   let ultimoError = null
   for (const model of MODELOS_GEMINI()) {
     const r = await fetchFn('https://generativelanguage.googleapis.com/v1beta/interactions', {
@@ -107,7 +108,7 @@ export function paraVoz(texto) {
 // Caché en memoria (frases recientes: saludos, reportes repetidos)
 const CACHE_MAX = 120
 const cache = new Map()
-const clave = (t) => createHash('sha1').update(`${proveedorVoz()}|${process.env.GEMINI_VOZ ?? ''}|${JSON.stringify(ajustesVoz())}|${t}`).digest('hex')
+const clave = (t) => createHash('sha1').update(`${proveedorVoz()}|${VOZ_ZUMI()}|${JSON.stringify(ajustesVoz())}|${t}`).digest('hex')
 
 let hilo = null
 let listo = null
