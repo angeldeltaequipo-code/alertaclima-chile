@@ -49,7 +49,7 @@ export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, 
     })
     if (!r.ok) {
       ultimoError = new Error(`Gemini ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
-      if (r.status === 404 || r.status === 400) continue // otro modelo
+      if (r.status === 404 || r.status === 400 || r.status === 429) continue // otro modelo (o sin cupo en este): misma voz
       throw ultimoError
     }
     const d = await r.json()
