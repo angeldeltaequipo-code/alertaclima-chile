@@ -1,6 +1,8 @@
 name: Voz de las películas de ZUMI
 # Pide al servidor la voz única de ZUMI (Gemini) para los textos de las películas y la deja como artefacto.
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   voz:
     runs-on: ubuntu-latest
@@ -16,7 +18,10 @@ jobs:
           pedir sismo 'Si tiembla: agáchate, cúbrete y afírmate. Cuando pase, revisa a tu familia y sigue a Senapred.'
           pedir mochila '¡Agua, linterna, radio, pilas y tus remedios! Una mochila lista te puede salvar el día.'
           ls -la voz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: voz-peliculas
-          path: voz
+      - name: Guardar en la rama voz-peliculas
+        run: |
+          cd voz
+          git init -q -b voz-peliculas
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add . && git commit -qm "Voz de las películas"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voz-peliculas
