@@ -1,6 +1,6 @@
 // Las «películas» de ZUMI: escenas cortas hechas con Higgsfield en las que ZUMI actúa y habla con su
-// única voz (la misma de la llamada, re-doblada y alineada a su boca con scripts/zumi-redoblar.py);
-// propia voz (la boca va perfecta porque voz e imagen salen del mismo video). No son un feed aparte:
+// única voz (la misma de la llamada, re-doblada y alineada a su boca con scripts/zumi-redoblar.py).
+// No son un feed aparte:
 // ZUMI las usa dentro de su reporte y como respuesta cuando le preguntas algo de esos temas.
 export const RUTA_CINE = `${import.meta.env.BASE_URL}zumi/cine/`
 
