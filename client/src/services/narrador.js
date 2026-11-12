@@ -10,7 +10,8 @@ import { riesgoAluvion } from './aluvion'
 import { faseLunar } from './cielo'
 import { direccionViento } from './clima'
 import * as labios from './labios'
-import { elementoAudio, pedirFrase, vozPropiaDisponible } from './vozZumi'
+import { elementoAudio, pedirFrase, usarVozPropia, vozPropiaDisponible } from './vozZumi'
+import { API_URL } from './reportes'
 
 export const NOMBRE = 'ZUMI'
 
@@ -145,7 +146,8 @@ function reproducirFrase(f, dicho) {
 }
 
 export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
-  const s = silencio ? null : sintesis()
+  // ZUMI tiene una sola voz (la del servidor). La voz del teléfono solo se usa si la app no tiene servidor.
+  const s = silencio || (API_URL && usarVozPropia()) ? null : sintesis()
   sintesis()?.cancel()
   cortarAudio?.()
   estado = { hablando: true, frase: 0, frases }
@@ -175,7 +177,9 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
     }
     if (propia) {
       pedir(i + 1) // la siguiente frase se va preparando mientras ZUMI habla
-      const f = await pedir(i)
+      let f = await pedir(i)
+      if (estado.frases !== frases) return false
+      if (!f) f = await pedirFrase(paraVoz(textoDe(frases[i]))).catch(() => null) // un reintento
       if (estado.frases !== frases) return false
       if (f) {
         await reproducirFrase(f, paraVoz(textoDe(frases[i])))

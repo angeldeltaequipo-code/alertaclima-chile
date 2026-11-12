@@ -136,10 +136,14 @@ function iniciar() {
 }
 
 /** Genera la frase (WAV). Una a la vez, en orden de llegada. */
-export async function sintetizar(texto) {
+// Matices de actuación de la MISMA voz (no otra voz): la película pide ritmo de escena con pausas.
+export const MATICES = { escena: ' Está actuando una escena corta: habla con pausas expresivas entre frases y un ritmo algo más pausado, sin perder la energía.' }
+
+export async function sintetizar(texto, { matiz } = {}) {
   const t = paraVoz(texto)
+  const extra = MATICES[matiz] ?? ''
   if (!t) throw Object.assign(new Error('Texto vacío'), { status: 400 })
-  const k = clave(t)
+  const k = clave(t + (extra ? `|${matiz}` : ''))
   if (cache.has(k)) {
     const b = cache.get(k)
     cache.delete(k)
@@ -147,15 +151,21 @@ export async function sintetizar(texto) {
     return b
   }
   if (proveedorVoz() === 'gemini') {
-    try {
-      const b = await vozGemini(t)
-      cache.set(k, b)
-      if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
-      return b
-    } catch (e) {
-      console.error('Voz Gemini falló, uso la voz libre:', e.message)
-      if (!piperListo()) throw e
+    // Una sola voz: si Gemini falla se reintenta, pero no se cambia a otra voz (salvo VOZ_RESPALDO=true).
+    let error = null
+    for (let intento = 0; intento < 2; intento++) {
+      try {
+        const b = await vozGemini(t, { estilo: ESTILO_ZUMI + extra })
+        cache.set(k, b)
+        if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+        return b
+      } catch (e) {
+        error = e
+        console.error('Voz Gemini falló:', e.message)
+        await new Promise((ok) => setTimeout(ok, 900))
+      }
     }
+    if (process.env.VOZ_RESPALDO !== 'true' || !piperListo()) throw error
   }
   await iniciar()
   const trabajo = cola.then(

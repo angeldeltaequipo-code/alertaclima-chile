@@ -11,7 +11,7 @@ jobs:
         run: |
           mkdir voz
           curl -sf -m 90 https://alertaclima-api.onrender.com/api/voz/estado || true
-          pedir() { for k in 1 2 3; do curl -sf -m 60 -G --data-urlencode "t=$2" https://alertaclima-api.onrender.com/api/voz -o "voz/$1.wav" && return 0; sleep 10; done; return 1; }
+          pedir() { for k in 1 2 3; do curl -sf -m 60 -G --data-urlencode "t=$2" --data-urlencode "matiz=escena" https://alertaclima-api.onrender.com/api/voz -o "voz/$1.wav" && return 0; sleep 10; done; return 1; }
           pedir hola '¡Hola, hola! ¡Soy ZUMI! Desde hoy cuido el clima de tu casa y de toda tu familia. ¿Listo? ¡Vamos!'
           pedir lluvia '¡Uy, se viene la lluvia! Paraguas, chaqueta y botas… ¡y antes de salir, revisa las alertas en la app!'
           pedir calor '¡Qué calor! Toma mucha agua, usa bloqueador y busca la sombra, sobre todo al mediodía.'

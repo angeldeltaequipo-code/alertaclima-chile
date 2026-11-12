@@ -218,8 +218,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const enReporte = e.frases === textos
   const i = enReporte ? e.frase : -1
   const escena = i >= 0 ? escenas[i] : null
-  const primera = e.frases[0]
-  const respondiendo = ultima && e.frases.length === 1 && (typeof primera === 'string' ? primera : primera?.texto) === ultima.texto && e.hablando
+  const respondiendo = ultima && e.hablando && e.frases.length > 0 && e.frases !== textos && e.frases.map((x) => (typeof x === 'string' ? x : x?.texto)).join(' ') === ultima.texto
   const terminado = !e.hablando
 
   useEffect(() => {
@@ -265,8 +264,8 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     const r = await preguntarZumi(q, { ...datos, nombre: quien }, historial.current, { conCuenta })
     historial.current = [...historial.current, { rol: 'persona', texto: q }, { rol: 'zumi', texto: r.texto }].slice(-6)
     setPensando(false)
-    setUltima({ pregunta: q, ...r })
-    hablar([r.texto], { silencio })
+    setUltima({ pregunta: q, ...r, texto: enTrozos(r.texto).join(' ') })
+    hablar(enTrozos(r.texto), { silencio })
   }
 
   const SR = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
@@ -314,13 +313,13 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     setUltima({ pregunta: null, texto: saludo, fuente: 'zumi' })
     setLlamada(true)
     setInicioLlamada(Date.now())
-    hablar([saludo], { silencio })
+    hablar(enTrozos(saludo), { silencio })
   }
   const colgar = (despedida = '¡Fue genial hablar contigo! Aquí estaré cuando me necesites. ¡Chao, chao!') => {
     setLlamada(false)
     reconocedor.current?.stop()
     setUltima({ pregunta: null, texto: despedida, fuente: 'zumi' })
-    hablar([despedida], { silencio })
+    hablar(enTrozos(despedida), { silencio })
   }
   // Turnos de la llamada: cuando ZUMI termina de hablar, vuelve a escuchar solo.
   useEffect(() => {
@@ -596,6 +595,21 @@ function Interruptor({ etiqueta, detalle, inicial, onCambiar }) {
       />
     </label>
   )
+}
+
+/**
+ * Corta una respuesta en frases cortas: la voz de cada una se pide aparte (y en paralelo con la que
+ * suena), así ZUMI empieza a hablar mucho antes, como en una llamada real.
+ */
+export function enTrozos(texto) {
+  const partes = String(texto ?? '').match(/[^.!?¡¿]*[¡¿]?[^.!?]*[.!?]+["»)]?|[^.!?]+$/g)?.map((x) => x.trim()).filter(Boolean) ?? []
+  const out = []
+  for (const p of partes) {
+    const ult = out.at(-1)
+    if (ult && (ult.length < 28 || p.length < 14)) out[out.length - 1] = `${ult} ${p}`
+    else out.push(p)
+  }
+  return out.length ? out : [String(texto ?? '')]
 }
 
 /** Tiempo de llamada (mm:ss), como en el teléfono. */

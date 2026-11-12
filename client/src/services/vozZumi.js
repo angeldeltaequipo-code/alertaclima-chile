@@ -12,7 +12,7 @@ export async function vozPropiaDisponible() {
   if (!API_URL || !usarVozPropia()) return false
   if (disponible !== null) return disponible
   try {
-    const r = await fetch(`${API_URL}/api/voz/estado`, { signal: AbortSignal.timeout(4000) })
+    const r = await fetch(`${API_URL}/api/voz/estado`, { signal: AbortSignal.timeout(12000) })
     disponible = r.ok && (await r.json()).activa === true
   } catch {
     disponible = false
@@ -85,7 +85,7 @@ export function envolvente(buf) {
 
 /** Pide la frase al servidor. Devuelve { url, env, ms } o lanza error (se usa entonces la voz del teléfono). */
 export async function pedirFrase(texto, { signal } = {}) {
-  const r = await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(texto)}`, { signal: signal ?? AbortSignal.timeout(12000) })
+  const r = await fetch(`${API_URL}/api/voz?t=${encodeURIComponent(texto)}`, { signal: signal ?? AbortSignal.timeout(15000) })
   if (!r.ok) throw new Error(`voz ${r.status}`)
   const buf = await r.arrayBuffer()
   const env = envolvente(buf)
