@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { VISEMAS, alCambiarBoca, energiaVoz } from '../services/labios'
 import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
 import { RUTA_CINE, marcarVista } from '../services/cine'
+import { crearMalla } from './zumiMalla'
 
 const BASE = import.meta.env.BASE_URL
 const RUTA = `${BASE}zumi/marioneta/`
@@ -30,18 +31,22 @@ const LUGARES = {
   estudio: [[0, 1, 0], [0.1, 0.97, 0], [0.2, 0.94, -0.01]],
   alerta: [[0, 1, 0], [0.08, 0.98, 0]],
 }
-// Gestos: ángulos de los brazos (grados; + = hacia afuera) y cuánto oscilan
+// Gestos: pose de cada brazo (grados; + = hacia afuera) con hombro y codo, y un vaivén opcional.
+// Contenidos a propósito: los movimientos chicos y bien amortiguados se ven vivos; los enormes, falsos.
 const GESTOS = {
-  reposo: { izq: 4, der: 4, osc: 0 },
-  saludo: { izq: 132, der: 6, osc: 18, rapido: 3.2, dur: 2600 },
-  celebrar: { izq: 140, der: 140, osc: 10, rapido: 4, dur: 1800 },
-  senalar: { izq: 4, der: 98, osc: 4, rapido: 1.5, dur: 2200 },
-  explicar: { izq: 34, der: 12, osc: 8, rapido: 1.2, dur: 1600 },
-  explicar2: { izq: 10, der: 38, osc: 8, rapido: 1.2, dur: 1600 },
-  calma: { izq: 26, der: 26, osc: 3, rapido: 0.8, dur: 2600 },
-  pensar: { izq: 100, der: 6, osc: 2, rapido: 0.6, dur: 3000 },
-  encoger: { izq: 48, der: 48, osc: 0, dur: 1100 },
+  reposo: { izq: [2, 4], der: [2, 4] },
+  saludo: { izq: [20, 68], der: [3, 5], vaiven: { lado: 'izq', hueso: 1, amp: 14, hz: 2.2 }, dur: 2800 },
+  celebrar: { izq: [16, 48], der: [16, 48], vaiven: { lado: 'ambos', hueso: 1, amp: 8, hz: 2.6 }, dur: 1900 },
+  senalar: { izq: [2, 4], der: [22, 20], vaiven: { lado: 'der', hueso: 1, amp: 3, hz: 1.2 }, dur: 2300 },
+  explicar: { izq: [10, 36], der: [3, 6], vaiven: { lado: 'izq', hueso: 1, amp: 7, hz: 1.4 }, dur: 1600 },
+  explicar2: { izq: [3, 6], der: [10, 36], vaiven: { lado: 'der', hueso: 1, amp: 7, hz: 1.4 }, dur: 1600 },
+  calma: { izq: [6, -30], der: [6, -30], vaiven: { lado: 'ambos', hueso: 1, amp: 4, hz: 0.7 }, dur: 2600 },
+  pensar: { izq: [8, -58], der: [2, 4], dur: 3000 },
+  encoger: { izq: [12, 40], der: [12, 40], dur: 1200 },
 }
+// Resorte: los brazos aceleran, se pasan un poquito y se asientan (en vez de moverse en línea recta)
+const RIGIDEZ = 0.00009
+const FRENO = 0.016
 
 const cache = new Map()
 function cargarEscena(escena) {
@@ -206,8 +211,9 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       formaVis: 'reposo',
       energiaSuave: 0,
       // brazos y gestos
-      bIzq: 4,
-      bDer: 4,
+      // brazos: [hombro izq, codo izq, hombro der, codo der] y sus velocidades (resortes)
+      brazos: [2, 4, 2, 4],
+      velBrazos: [0, 0, 0, 0],
       gesto: 'reposo',
       gestoHasta: 0,
       proximoGesto: 3000,
@@ -314,6 +320,13 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       g.rotate(((vaiven * 0.8 + pasoS * 4.5 + andando * 2) * Math.PI) / 180)
       g.scale(1 - resp * 0.003, 1 + resp * 0.007 + brinco)
       g.translate(-px, -py)
+      if (e.malla === undefined) {
+        try {
+          e.malla = crearMalla(p, img)
+        } catch {
+          e.malla = null
+        }
+      }
       const cu = pos('cuerpo')
       g.drawImage(img.cuerpo, cu[0], cu[1], cu[2], cu[3])
 
@@ -330,11 +343,19 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       if (serio && a.gesto === 'reposo' && habla) a.gesto = 'calma'
       if (piensa) a.gesto = 'pensar'
       const G = GESTOS[a.gesto] ?? GESTOS.reposo
-      const osc = Math.sin((t / 1000) * Math.PI * 2 * (G.rapido ?? 1)) * (G.osc ?? 0)
-      let objIzq = G.izq + osc + (andando ? -pasoS * 14 : 0) + vaiven * 1.5
-      let objDer = G.der - (G.osc ? osc * 0.4 : 0) + (andando ? pasoS * 14 : 0) - vaiven * 1.5
+      const obj = [...G.izq, ...G.der]
+      if (G.vaiven) {
+        const v = Math.sin((t / 1000) * Math.PI * 2 * G.vaiven.hz) * G.vaiven.amp
+        if (G.vaiven.lado !== 'der') obj[G.vaiven.hueso] += v
+        if (G.vaiven.lado !== 'izq') obj[2 + G.vaiven.hueso] += G.vaiven.lado === 'ambos' ? v : v
+      }
+      // respiración y pasos: los brazos acompañan, siempre poquito
+      obj[0] += resp * 1 + (andando ? -pasoS * 5 : 0)
+      obj[2] += resp * 1 + (andando ? pasoS * 5 : 0)
+      obj[1] += andando ? 8 : 0
+      obj[3] += andando ? 8 : 0
 
-      // pelota: la lanza hacia arriba y la atrapa
+      // pelota: la sostiene adelante, la lanza, espera y la atrapa
       let pelota = null
       if (a.pelotaDesde < 0 && !habla && !piensa && !andando && t > a.proximaPelota && a.gesto === 'reposo') a.pelotaDesde = t
       if (a.pelotaDesde >= 0) {
@@ -343,32 +364,46 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
           a.pelotaDesde = -1
           a.proximaPelota = t + 18000 + Math.random() * 16000
         } else {
-          // brazos: sostiene adelante, lanza (sube), espera, atrapa
           const lanzar = Math.sin(Math.min(1, u / 0.25) * Math.PI)
-          objIzq = 30 + lanzar * 40
-          objDer = 30 + lanzar * 40
-          const [nx0, ny0] = p.nariz
-          const manoY = ny0 + 2.55 * p.d
+          obj[0] = obj[2] = 12 + lanzar * 6
+          obj[1] = obj[3] = -52 + lanzar * 30 // las manos juntas adelante; al lanzar suben un poco
+          const [hix, hiy] = p.hombros?.izq ?? [p.nariz[0] - p.d, p.nariz[1] + 1.2 * p.d]
+          const [hdx] = p.hombros?.der ?? [p.nariz[0] + p.d]
+          const manoY = hiy + 1.5 * p.d
           const vuelo = u < 0.18 ? 0 : u > 0.82 ? 0 : Math.sin(((u - 0.18) / 0.64) * Math.PI)
-          pelota = { x: nx0 + Math.sin(u * Math.PI * 2) * 0.12 * p.d, y: manoY - vuelo * 2.6 * p.d, r: 0.32 * p.d, giro: u * 9 }
+          pelota = { x: (hix + hdx) / 2 + Math.sin(u * Math.PI * 2) * 0.08 * p.d, y: manoY - vuelo * 2.6 * p.d, r: 0.3 * p.d, giro: u * 9 }
         }
       }
-      a.bIzq = suave(a.bIzq, objIzq, Math.min(1, dt * 0.012))
-      a.bDer = suave(a.bDer, objDer, Math.min(1, dt * 0.012))
-      const brazo = (lado, ang) => {
-        const im = img[`brazo_${lado}`]
-        const ps = p.pos[`brazo_${lado}`]
-        const hb = p.hombros?.[lado]
-        if (!im || !ps || !hb) return
-        g.save()
-        g.translate(hb[0], hb[1])
-        g.rotate(((lado === 'izq' ? ang : -ang) * Math.PI) / 180)
-        g.translate(-hb[0], -hb[1])
-        g.drawImage(im, ps[0], ps[1], ps[2], ps[3])
-        g.restore()
+      if (window.__zumiPose) obj.splice(0, 4, ...window.__zumiPose) // solo para pruebas
+      // resortes (con un pequeño retraso del antebrazo: sigue al brazo, como en la vida real)
+      const h = Math.min(32, dt)
+      for (let i = 0; i < 4; i++) {
+        const rig = i % 2 ? RIGIDEZ * 0.8 : RIGIDEZ
+        a.velBrazos[i] += ((obj[i] - a.brazos[i]) * rig - a.velBrazos[i] * FRENO) * h
+        a.brazos[i] += a.velBrazos[i] * h
       }
-      brazo('izq', a.bIzq)
-      brazo('der', a.bDer)
+      const [hI, cI, hD, cD] = a.brazos
+      if (e.malla) {
+        // brazos con malla deformable: se doblan en el codo y nacen fijos del hombro
+        e.malla.dibujar({ izq: { hombro: hI, codo: cI }, der: { hombro: hD, codo: cD } })
+        g.drawImage(e.malla.lienzo, e.malla.x, e.malla.y, e.malla.w, e.malla.h)
+      } else {
+        // sin WebGL: piezas, con giros más chicos
+        const brazo = (lado, ang) => {
+          const im = img[`brazo_${lado}`]
+          const ps = p.pos[`brazo_${lado}`]
+          const hb = p.hombros?.[lado]
+          if (!im || !ps || !hb) return
+          g.save()
+          g.translate(hb[0], hb[1])
+          g.rotate(((lado === 'izq' ? ang : -ang) * Math.PI) / 180)
+          g.translate(-hb[0], -hb[1])
+          g.drawImage(im, ps[0], ps[1], ps[2], ps[3])
+          g.restore()
+        }
+        brazo('izq', hI * 0.6)
+        brazo('der', hD * 0.6)
+      }
 
       // cabeza (gira sobre el cuello)
       const d = p.d
