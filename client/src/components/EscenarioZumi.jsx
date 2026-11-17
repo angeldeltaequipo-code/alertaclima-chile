@@ -70,7 +70,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
 
   // Al llegar, ZUMI saluda; cada tanto hace algo con el cuerpo para sentirse vivo.
   useEffect(() => {
-    const id = setInterval(() => setGesto(`${['pelota', 'senalar', 'saludo'][Math.floor(Math.random() * 3)]}:${Date.now()}`), 26000)
+    const id = setInterval(() => setGesto(`${['pelota', 'senalar', 'saludo', 'pensar'][Math.floor(Math.random() * 4)]}:${Date.now()}`), 22000)
     return () => clearInterval(id)
   }, [])
 
@@ -86,7 +86,8 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     const [texto, g] = REACCIONES[toques.current % REACCIONES.length]
     toques.current += 1
     setReaccion(texto)
-    setGesto(`${g}:${Date.now()}`)
+    // con alerta, ZUMI no festeja: tranquiliza
+    setGesto(`${escena === 'alerta' ? 'calma' : g}:${Date.now()}`)
     navigator.vibrate?.(12)
   }
 

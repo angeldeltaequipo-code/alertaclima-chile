@@ -95,10 +95,10 @@ function dibujarPelota(g, { x, y, r, giro }) {
 // y terminan en ese mismo cuadro, así el bucle y el regreso a la marioneta no se notan). Cubren la escena
 // completa. «reposo» se repite mientras está quieto; los demás son gestos que se reproducen una vez.
 const VIDEOS = {
-  sala: ['reposo', 'saludo', 'celebrar'],
-  noche: ['reposo'],
-  lluvia: ['reposo'],
-  alerta: ['reposo'],
+  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar'],
+  noche: ['reposo', 'saludo'],
+  lluvia: ['reposo', 'saludo'],
+  alerta: ['reposo', 'calma'],
   estudio: ['reposo'],
 }
 const ahorroDatos = () => typeof navigator !== 'undefined' && !!navigator.connection?.saveData
