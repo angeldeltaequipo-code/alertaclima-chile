@@ -111,7 +111,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     <section ref={raiz} aria-label="ZUMI, tu amigo del clima" className={`portada-zumi relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}>
       {/* Escenario: siempre muestra a ZUMI entero (de las orejas a los pies) y cerca; nada lo tapa */}
       <div className="relative w-full" style={{ aspectRatio: '0.86', maxHeight: '47dvh', minHeight: 300 }}>
-        <ZumiMarioneta escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} peliculas={false} className="escenario-zumi-lienzo" />
+        <ZumiMarioneta escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} peliculas={false} vivo className="escenario-zumi-lienzo" />
         <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
 
         {/* Tocar a ZUMI */}

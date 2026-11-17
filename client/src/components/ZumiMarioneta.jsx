@@ -91,7 +91,13 @@ function dibujarPelota(g, { x, y, r, giro }) {
   g.restore()
 }
 
-export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null }) {
+// Videos reales de ZUMI en reposo (hechos con Google Flow a partir de su pose de descanso; empiezan y
+// terminan en el mismo cuadro, así el bucle no se nota). Cubren la escena completa.
+const VIDEO_REPOSO = { sala: `${RUTA}sala/reposo` }
+const ahorroDatos = () => typeof navigator !== 'undefined' && !!navigator.connection?.saveData
+
+export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null, vivo = false }) {
+  const capaViva = useRef(null)
   const caja = useRef(null)
   const lienzo = useRef(null)
   const peli = useRef(null)
@@ -448,6 +454,26 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
         a.proximaMirada = t + 2500 + Math.random() * 4000
       }
       const mira = conDedo ? Math.max(-1, Math.min(1, dedo.x)) : a.mirar * 0.4
+
+      // Capa «viva»: cuando ZUMI está en reposo de verdad, se funde un video real suyo (respira,
+      // parpadea, mueve las orejas). Cualquier gesto, el dedo, la voz o un paseo vuelven a la marioneta.
+      const vv = capaViva.current
+      if (vv && e === c.actual) {
+        const quieto = !habla && !piensa && !escucha && !andando && !conDedo && a.pelotaDesde < 0 && a.gesto === 'reposo' && Math.abs(a.x) < 2 && Math.abs(a.esc - 1) < 0.01 && alfa === 1 && vv.dataset.escena === c.escena
+        a.quietoDesde = quieto ? (a.quietoDesde ?? t) : null
+        const ver = quieto && t - a.quietoDesde > 900 && vv.readyState >= 3
+        const caja = `${ox | 0}|${oy | 0}|${(p.ancho * k) | 0}`
+        if (vv.dataset.caja !== caja) {
+          vv.dataset.caja = caja
+          Object.assign(vv.style, { left: `${ox}px`, top: `${oy}px`, width: `${p.ancho * k}px`, height: `${p.alto * k}px` })
+        }
+        if (ver !== (vv.dataset.ver === '1')) {
+          vv.dataset.ver = ver ? '1' : '0'
+          vv.style.opacity = ver ? '1' : '0'
+          if (ver) vv.play().catch(() => {})
+          else setTimeout(() => vv.dataset.ver === '0' && vv.pause(), 300)
+        }
+      }
       a.cabezaX = suave(a.cabezaX, mira * 0.06 * p.d * (0.4 + a.atencion * 0.6), Math.min(1, dt * 0.008))
       const objInclina = (piensa ? 7 : escucha ? -4 : serio ? -1.5 : 0) + vaiven * 1.6 + mira * (conDedo ? 5 : 2.5) + (conDedo ? (dedo.y ?? 0) * -2 : 0)
       const asiente = habla ? a.energiaSuave * 3.2 : 0
@@ -588,6 +614,24 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
         className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
         style={{ objectPosition: `${posicion[0] * 100}% ${posicion[1] * 100}%`, opacity: enPelicula ? 1 : 0, pointerEvents: 'none' }}
       />
+      {vivo && VIDEO_REPOSO[escena] && !ahorroDatos() && (
+        <video
+          key={escena}
+          ref={capaViva}
+          data-escena={escena}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          aria-hidden="true"
+          className="absolute max-w-none"
+          style={{ opacity: 0, transition: 'opacity 260ms ease', pointerEvents: 'none' }}
+        >
+          <source src={`${VIDEO_REPOSO[escena]}.webm`} type="video/webm" />
+          <source src={`${VIDEO_REPOSO[escena]}.mp4`} type="video/mp4" />
+        </video>
+      )}
       {pantalla && rect && !enPelicula && (
         <div className="pantalla-estudio absolute overflow-hidden" style={{ left: rect[0], top: rect[1], width: rect[2], height: rect[3] }}>
           {pantalla}
