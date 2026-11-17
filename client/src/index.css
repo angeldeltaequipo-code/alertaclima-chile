@@ -1099,3 +1099,19 @@ body {
 [id^='t-'] {
   scroll-margin-top: 7.5rem;
 }
+
+/* ---- Bienvenida por pasos ---- */
+.paso-entra {
+  animation: paso-entra 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+@keyframes paso-entra {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paso-entra {
+    animation: none;
+  }
+}
