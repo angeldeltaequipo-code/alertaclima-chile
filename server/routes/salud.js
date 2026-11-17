@@ -7,7 +7,9 @@ export const saludRouter = Router()
 
 saludRouter.get('/', async (req, res) => {
   const db = await dbDisponible()
-  res.status(db.ok ? 200 : 503).json({
+  // 200 aunque la base no responda: el servidor está vivo y atiende clima, alertas y ZUMI.
+  // (Render usa esta ruta para decidir si el despliegue funciona.)
+  res.status(200).json({
     servicio: 'alertaclima',
     estado: db.ok ? 'ok' : 'degradado',
     baseDeDatos: db,
