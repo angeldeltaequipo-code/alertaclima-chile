@@ -1,4 +1,5 @@
 import { poseZumi } from './ZumiTeCuenta'
+import Plegable, { Flecha } from './Plegable'
 import { useEntrada } from '../hooks/useEntrada'
 import { useState } from 'react'
 import MapaSismos from './MapaSismos'
@@ -81,17 +82,15 @@ function Guia({ id }) {
     <div className="rounded-2xl bg-superficie-2">
       <button type="button" onClick={() => setAbierta(!abierta)} aria-expanded={abierta} className="flex min-h-12 w-full items-center justify-between px-3 text-left text-[16px] font-bold">
         {g.titulo}
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style={{ transform: abierta ? 'rotate(180deg)' : 'none' }}>
-          <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <Flecha abierto={abierta} size={14} />
       </button>
-      {abierta && (
+      <Plegable abierto={abierta}>
         <ol className="list-decimal space-y-1 px-3 pb-3 pl-8 text-[15px] leading-snug">
           {g.pasos.map((p) => (
             <li key={p}>{p}</li>
           ))}
         </ol>
-      )}
+      </Plegable>
     </div>
   )
 }

@@ -13,6 +13,7 @@ import { VISEMAS, alCambiarBoca, energiaVoz } from '../services/labios'
 import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
 import { RUTA_CINE, marcarVista } from '../services/cine'
 import { crearMalla } from './zumiMalla'
+import { pintor2D, pintorGL, texturasPelota } from './zumiGL'
 
 const BASE = import.meta.env.BASE_URL
 const RUTA = `${BASE}zumi/marioneta/`
@@ -74,27 +75,19 @@ function cargarEscena(escena) {
 
 const suave = (a, b, k) => a + (b - a) * k
 
-/** Pelota de playa con luz y sombra (se dibuja, no es una imagen). */
+/** Pelota de playa (texturas hechas una vez): los gajos giran, la luz no. */
+let PELOTA = null
+// Un pintor por lienzo (un lienzo con WebGL no puede volver a 2D)
+const PINTORES = new WeakMap()
 function dibujarPelota(g, { x, y, r, giro }) {
+  PELOTA ??= texturasPelota()
   g.save()
   g.translate(x, y)
-  g.beginPath()
-  g.arc(0, 0, r, 0, Math.PI * 2)
-  g.clip()
-  const colores = ['#ef4444', '#ffffff', '#3b82f6', '#ffffff', '#facc15', '#ffffff']
-  for (let i = 0; i < 6; i++) {
-    g.fillStyle = colores[i]
-    g.beginPath()
-    g.moveTo(0, 0)
-    g.arc(0, 0, r, giro + (i * Math.PI) / 3, giro + ((i + 1) * Math.PI) / 3)
-    g.fill()
-  }
-  const luz = g.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.05, 0, 0, r)
-  luz.addColorStop(0, 'rgba(255,255,255,0.55)')
-  luz.addColorStop(0.45, 'rgba(255,255,255,0.05)')
-  luz.addColorStop(1, 'rgba(40,20,10,0.45)')
-  g.fillStyle = luz
-  g.fillRect(-r, -r, r * 2, r * 2)
+  g.save()
+  g.rotate(giro)
+  g.drawImage(PELOTA.gajos, -r, -r, r * 2, r * 2)
+  g.restore()
+  g.drawImage(PELOTA.luz, -r, -r, r * 2, r * 2)
   g.restore()
 }
 
@@ -179,6 +172,22 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Sigue tu dedo: donde tocas o deslizas, ZUMI gira la cabeza hacia ahí.
+  useEffect(() => {
+    const el = caja.current?.parentElement
+    if (!el) return
+    const f = (ev) => {
+      const r = caja.current.getBoundingClientRect()
+      s.current.dedo = { x: ((ev.clientX - r.left) / r.width - 0.5) * 2, y: ((ev.clientY - r.top) / r.height - 0.45) * 2, t: performance.now() }
+    }
+    el.addEventListener('pointerdown', f, { passive: true })
+    el.addEventListener('pointermove', f, { passive: true })
+    return () => {
+      el.removeEventListener('pointerdown', f)
+      el.removeEventListener('pointermove', f)
+    }
+  }, [])
+
   // Fuera de la vista (pestaña oculta o lejos al bajar) no dibuja: ahorra batería.
   const visible = useRef(true)
   useEffect(() => {
@@ -206,6 +215,9 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       doble: false,
       mirar: 0,
       proximaMirada: 4000,
+      // mirada hacia el dedo de la persona (cabeza se gira y se inclina un poco hacia ahí)
+      cabezaX: 0,
+      atencion: 0,
       formaPrev: 'reposo',
       formaMezcla: 1,
       formaVis: 'reposo',
@@ -320,7 +332,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       g.rotate(((vaiven * 0.8 + pasoS * 4.5 + andando * 2) * Math.PI) / 180)
       g.scale(1 - resp * 0.003, 1 + resp * 0.007 + brinco)
       g.translate(-px, -py)
-      if (e.malla === undefined) {
+      if (e.malla === undefined && g.malla) {
         try {
           e.malla = crearMalla(p, img)
         } catch {
@@ -383,10 +395,9 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
         a.brazos[i] += a.velBrazos[i] * h
       }
       const [hI, cI, hD, cD] = a.brazos
-      if (e.malla) {
+      if (e.malla && g.malla) {
         // brazos con malla deformable: se doblan en el codo y nacen fijos del hombro
-        e.malla.dibujar({ izq: { hombro: hI, codo: cI }, der: { hombro: hD, codo: cD } })
-        g.drawImage(e.malla.lienzo, e.malla.x, e.malla.y, e.malla.w, e.malla.h)
+        g.malla(e.malla, e.malla.posiciones({ izq: { hombro: hI, codo: cI }, der: { hombro: hD, codo: cD } }), e.malla.x, e.malla.y)
       } else {
         // sin WebGL: piezas, con giros más chicos
         const brazo = (lado, ang) => {
@@ -409,15 +420,21 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       const d = p.d
       const [hx, hy] = p.pivoteCabeza
       // mirada a los lados de vez en cuando
-      if (t > a.proximaMirada) {
+      // ¿Te está mirando? Si tocaste o moviste el dedo hace poco, mira hacia ahí; si no, mira a su alrededor.
+      const dedo = c.dedo
+      const conDedo = dedo && performance.now() - dedo.t < 2600
+      a.atencion = suave(a.atencion, conDedo ? 1 : 0, Math.min(1, dt * 0.006))
+      if (t > a.proximaMirada && !conDedo) {
         a.mirar = habla ? 0 : (Math.random() - 0.5) * 2
         a.proximaMirada = t + 2500 + Math.random() * 4000
       }
-      const objInclina = (piensa ? 7 : escucha ? -4 : serio ? -1.5 : 0) + vaiven * 1.6 + a.mirar * 2.5
+      const mira = conDedo ? Math.max(-1, Math.min(1, dedo.x)) : a.mirar * 0.4
+      a.cabezaX = suave(a.cabezaX, mira * 0.06 * p.d * (0.4 + a.atencion * 0.6), Math.min(1, dt * 0.008))
+      const objInclina = (piensa ? 7 : escucha ? -4 : serio ? -1.5 : 0) + vaiven * 1.6 + mira * (conDedo ? 5 : 2.5) + (conDedo ? (dedo.y ?? 0) * -2 : 0)
       const asiente = habla ? a.energiaSuave * 3.2 : 0
       a.inclina = suave(a.inclina, objInclina, Math.min(1, dt * 0.004))
       a.cabezaY = suave(a.cabezaY, (escucha ? 0.04 : 0) * d + asiente * 0.006 * d, Math.min(1, dt * 0.01))
-      g.translate(hx, hy + a.cabezaY)
+      g.translate(hx + a.cabezaX, hy + a.cabezaY)
       g.rotate(((a.inclina + asiente * 0.4) * Math.PI) / 180)
       g.scale(1 + (escucha ? 0.015 : 0), 1 + (escucha ? 0.015 : 0))
       g.translate(-hx, -hy)
@@ -510,18 +527,21 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const cw = el.clientWidth
       const ch = el.clientHeight
-      if (cv.width !== Math.round(cw * dpr) || cv.height !== Math.round(ch * dpr)) {
-        cv.width = Math.round(cw * dpr)
-        cv.height = Math.round(ch * dpr)
+      // Pintor: WebGL (todo en la tarjeta gráfica) o, si no hay, lienzo 2D
+      let g = PINTORES.get(cv)
+      if (!g) {
+        try {
+          g = pintorGL(cv)
+        } catch {
+          g = null
+        }
+        g ??= pintor2D(cv)
+        PINTORES.set(cv, g)
       }
-      const g = cv.getContext('2d')
-      g.setTransform(dpr, 0, 0, dpr, 0, 0)
-      g.imageSmoothingQuality = 'high'
+      g.empezar(cw, ch, dpr, c.anterior && c.mezcla < 1 ? [0.043, 0.031, 0.024] : undefined)
       if (c.anterior && c.mezcla < 1) {
         // Corte de cámara: funde a oscuro y vuelve (nunca dos ZUMI a la vez)
         c.mezcla = Math.min(1, c.mezcla + dt / 500)
-        g.fillStyle = '#0b0806'
-        g.fillRect(0, 0, cw, ch)
         if (c.mezcla < 0.5) dibujarEscena(g, c.anterior, 1 - c.mezcla * 2, cw, ch, t, dt)
         else dibujarEscena(g, c.actual, c.mezcla * 2 - 1, cw, ch, t, dt)
         if (c.mezcla >= 1) c.anterior = null

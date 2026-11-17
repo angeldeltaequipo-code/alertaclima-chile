@@ -8,34 +8,48 @@ const clp = (n) => `$${Math.round(n).toLocaleString('es-CL')}`
 
 const MOTIVOS = {
   familia: 'Para cuidar a más de un familiar necesitas el plan Familia.',
-  comunas: 'Para recibir avisos de más de una comuna necesitas el plan Familia.',
-  zumi: 'Usaste tus preguntas de hoy a ZUMI. Con el plan Familia conversas sin límite.',
+  comunas: 'Para recibir avisos de más comunas, elige un plan.',
+  zumi: 'Usaste tus preguntas de hoy a ZUMI. Con ZUMI+ conversas con él cuando quieras.',
   general: null,
   'pago-gracias': '¡Listo! Estamos confirmando tu suscripción, tarda unos segundos.',
   'pago-cancelado': 'No se registró la tarjeta. Puedes intentarlo de nuevo cuando quieras.',
   'pago-error': 'Hubo un problema con el pago. No se te cobró nada; inténtalo de nuevo en un momento.',
 }
 
-const BENEFICIOS = [
-  ['👨‍👩‍👧', 'Hasta 5 familiares', 'Mira el clima y las alertas de donde vive cada uno.'],
-  ['🔔', 'Avisos de 5 comunas', 'Tu casa, tu trabajo, la de tus padres o tus hijos.'],
-  ['💬', 'ZUMI sin límite', 'Pregúntale lo que quieras, todas las veces que quieras.'],
-  ['🤝', 'Alertas gratis para todos', 'Tu plan ayuda a que los avisos de emergencia sigan gratis para cada vecino de Chile.'],
-]
+// Lo que trae cada nivel (lo que protege la vida es gratis en todos)
+const NIVELES = {
+  zumi: {
+    nombre: 'ZUMI+',
+    lema: 'Tu amigo del clima, cuando quieras',
+    beneficios: [
+      ['📞', 'Llama a ZUMI cuando quieras', 'Conversa por voz y pregúntale lo que quieras del clima.'],
+      ['🔔', 'Avisos de 3 comunas', 'Tu casa, tu trabajo y una más.'],
+      ['📅', '3 meses de historial', 'Tus reportes y avisos anteriores.'],
+    ],
+  },
+  familia: {
+    nombre: 'Familia',
+    lema: 'Todo ZUMI+ para hasta 5 personas',
+    beneficios: [
+      ['👨‍👩‍👧', 'Hasta 5 familiares', 'Mira el clima y las alertas de donde vive cada uno.'],
+      ['🔔', 'Avisos de 5 comunas', 'Tu casa, la de tus padres o la de tus hijos.'],
+      ['📞', 'ZUMI para todos', 'Cada uno conversa con ZUMI cuando quiera.'],
+    ],
+  },
+}
 
-/**
- * Pantalla del plan «AlertaClima Familia». Se abre desde Ajustes o cuando la persona llega a
- * un límite del plan gratis. Lo que protege la vida (alertas, SOS, evacuación) sigue gratis.
- */
 export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cuenta }) {
   const [periodo, setPeriodo] = useState('anual')
+  const [nivel, setNivel] = useState(motivo === 'familia' ? 'familia' : 'zumi')
   const [correo, setCorreo] = useState('')
   const [pidiendoCorreo, setPidiendoCorreo] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState(null)
   const [ofertas, setOfertas] = useState(null)
   const enApp = compraEnApp()
-  const p = plan.precios ?? { mensual: 1990, anual: 14990, pruebaDias: 7 }
+  const todos = plan.precios ?? { pruebaDias: 7 }
+  const preciosDe = (n) => todos.planes?.[n] ?? (n === 'familia' ? { mensual: todos.mensual ?? 2490, anual: todos.anual ?? 17990 } : { mensual: 1490, anual: 9990 })
+  const p = { ...preciosDe(nivel), pruebaDias: todos.pruebaDias ?? 7 }
   const usuarioId = cuenta.usuario?.id
 
   useEffect(() => {
@@ -47,17 +61,17 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
     if (!abierto) {
       setError(null)
       setPidiendoCorreo(false)
-    }
-  }, [abierto])
+    } else setNivel(motivo === 'familia' ? 'familia' : 'zumi')
+  }, [abierto, motivo])
 
   if (!abierto) return null
 
   // Precio a mostrar: el de la tienda (en su moneda) o el nuestro en pesos.
-  const precioTienda = (per) => ofertas?.[per]?.product?.priceString
+  const precioTienda = (per) => ofertas?.[nivel]?.[per]?.product?.priceString
   const precioMes = precioTienda('mensual') ?? clp(p.mensual)
   const precioAnio = precioTienda('anual') ?? clp(p.anual)
   const ahorro = Math.round((1 - p.anual / (p.mensual * 12)) * 100)
-  const disponible = enApp ? Boolean(ofertas?.[periodo]) : plan.pagos?.web
+  const disponible = enApp ? Boolean(ofertas?.[nivel]?.[periodo]) : plan.pagos?.web
 
   const empezar = async () => {
     setError(null)
@@ -65,7 +79,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
     if (enApp) {
       setOcupado(true)
       try {
-        const ok = await comprarEnTienda(usuarioId, ofertas[periodo])
+        const ok = await comprarEnTienda(usuarioId, ofertas[nivel][periodo])
         if (ok) {
           // El servidor se entera por RevenueCat; se consulta varias veces hasta que llegue.
           for (let i = 0; i < 5; i++) {
@@ -84,7 +98,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
     if (!pidiendoCorreo) return setPidiendoCorreo(true)
     setOcupado(true)
     try {
-      await pagarEnWeb(periodo, correo.trim())
+      await pagarEnWeb(nivel, periodo, correo.trim())
     } catch (e) {
       setError(e.message)
       setOcupado(false)
@@ -101,21 +115,43 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
         className="hoja-capas safe-bottom max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-t-[32px] px-5 pt-4 pb-6 shadow-2xl sm:rounded-[32px]"
       >
         <div className="flex items-start justify-between">
-          <img src={poseZumi(plan.familia ? 'celebrando' : 'corazon')} alt="" width="96" height="128" className="zumi-pose -mb-2 h-28 w-auto" />
+          <img src={poseZumi(plan.pago ? 'celebrando' : 'corazon')} alt="" width="96" height="128" className="zumi-pose -mb-2 h-28 w-auto" />
           <button type="button" onClick={onCerrar} aria-label="Cerrar" className="grid size-12 place-items-center rounded-full text-[28px]">
             ×
           </button>
         </div>
 
-        {plan.familia ? (
+        {plan.pago && !(plan.plan === 'zumi' && motivo === 'familia') ? (
           <TuPlan plan={plan} onCerrar={onCerrar} />
         ) : (
           <>
-            <h2 id="t-planes" className="text-[28px] leading-tight font-bold">AlertaClima Familia</h2>
-            <p className="mt-1 text-[17px] text-texto-2">{MOTIVOS[motivo] ?? 'Cuida a toda tu familia con una sola cuenta.'}</p>
+            <h2 id="t-planes" className="text-[28px] leading-tight font-bold">Elige tu plan</h2>
+            <p className="mt-1 text-[17px] text-texto-2">{MOTIVOS[motivo] ?? 'Alertas, SOS y clima siguen gratis siempre. Con un plan, ZUMI está contigo cuando quieras.'}</p>
+
+            <div role="radiogroup" aria-label="Plan" className="mt-4 grid grid-cols-2 gap-2">
+              {['zumi', 'familia'].map((n) => {
+                const pr = preciosDe(n)
+                const mes = ofertas?.[n]?.mensual?.product?.priceString ?? clp(pr.mensual)
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={nivel === n}
+                    onClick={() => setNivel(n)}
+                    className={`relative rounded-2xl px-3 pt-3 pb-3 text-left ring-2 transition ${nivel === n ? 'bg-senal/15 ring-senal' : 'ring-linea'}`}
+                  >
+                    {n === 'zumi' && <span className="absolute -top-3 right-2 rounded-full bg-ok px-2 py-0.5 text-[12px] font-black text-white">Recomendado</span>}
+                    <span className="block text-[19px] font-black">{NIVELES[n].nombre}</span>
+                    <span className="block text-[13px] leading-tight text-texto-2">{NIVELES[n].lema}</span>
+                    <span className="mt-1.5 block text-[16px] font-bold">{mes}/mes</span>
+                  </button>
+                )
+              })}
+            </div>
 
             <ul className="mt-4 space-y-3">
-              {BENEFICIOS.map(([i, t, d]) => (
+              {NIVELES[nivel].beneficios.map(([i, t, d]) => (
                 <li key={t} className="flex items-start gap-3">
                   <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-senal/15 text-[22px]" aria-hidden="true">
                     {i}
@@ -192,7 +228,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                       ? 'Registrar mi tarjeta en Flow'
                       : p.pruebaDias > 0
                         ? `Probar ${p.pruebaDias} días gratis`
-                        : 'Activar el plan Familia'}
+                        : `Activar ${NIVELES[nivel].nombre}`}
             </button>
 
             <p className="mt-3 text-center text-[13px] leading-snug text-texto-2">
@@ -274,7 +310,7 @@ function TuPlan({ plan, onCerrar }) {
   const estado = { prueba: 'En prueba gratis', activa: 'Activo', cancelada: 'Cancelado (sigue vigente hasta el final del periodo)', problema_pago: 'Hay un problema con el pago' }[m.estado] ?? 'Activo'
   return (
     <>
-      <h2 id="t-planes" className="text-[28px] leading-tight font-bold">Tienes el plan Familia</h2>
+      <h2 id="t-planes" className="text-[28px] leading-tight font-bold">Tienes el plan {plan.plan === 'zumi' ? 'ZUMI+' : 'Familia'}</h2>
       <p className="mt-1 text-[17px]">¡Gracias por cuidar a los tuyos con AlertaClima!</p>
       <dl className="mt-4 space-y-2 rounded-2xl bg-superficie-2 p-4 text-[16px]">
         <div className="flex justify-between gap-3">

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Plegable from './Plegable'
 import IconoClima from './IconoClima'
 import { describir, direccionViento, nivelUV } from '../services/clima'
 import { colorTemp } from '../services/graficos'
@@ -76,7 +77,9 @@ export default function Semana({ dias, actual }) {
               </span>
               <span className="text-[17px] font-bold tabular-nums">{grados(d.max)}</span>
             </button>
-            {abiertoAqui && <DetalleDia dia={d} />}
+            <Plegable abierto={abiertoAqui}>
+              <DetalleDia dia={d} />
+            </Plegable>
           </li>
         )
       })}

@@ -168,12 +168,12 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
         <Seccion titulo="Tu plan">
           <button type="button" onClick={onPlanes} className="flex w-full items-center gap-3 rounded-2xl bg-superficie-2 p-3 text-left">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-senal/20 text-[24px]" aria-hidden="true">
-              {plan.familia ? '💛' : '🎁'}
+              {plan.pago ? '💛' : '🎁'}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[18px] font-bold">{plan.familia ? 'Plan Familia' : 'Plan gratis'}</span>
+              <span className="block text-[18px] font-bold">{plan.familia ? 'Plan Familia' : plan.plan === 'zumi' ? 'Plan ZUMI+' : 'Plan gratis'}</span>
               <span className="block text-[15px] text-texto-2">
-                {plan.familia ? 'Ver detalles, renovación o cancelar' : 'Conoce el plan Familia: 5 familiares, 5 comunas y ZUMI sin límite'}
+                {plan.pago ? 'Ver detalles, renovación o cancelar' : 'Conversa con ZUMI cuando quieras desde $1.490 al mes'}
               </span>
             </span>
             <span aria-hidden="true" className="text-[22px]">›</span>

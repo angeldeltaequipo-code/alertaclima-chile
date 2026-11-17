@@ -60,7 +60,7 @@ test('suscripción web con Flow: crea cliente y devuelve el enlace para registra
   const crear = llamadas.find((l) => l.ruta === '/customer/create')
   assert.equal(crear.params.externalId, 'u:5')
   assert.equal(crear.params.s, firmaFlow(Object.fromEntries(Object.entries(crear.params).filter(([k]) => k !== 's')), 'S'))
-  assert.match(llamadas.find((l) => l.ruta === '/customer/register').params.url_return, /\/api\/pagos\/flow\/tarjeta\?p=anual$/)
+  assert.match(llamadas.find((l) => l.ruta === '/customer/register').params.url_return, /\/api\/pagos\/flow\/tarjeta\?p=anual&plan=familia$/)
   await assert.rejects(suscribirWeb(db, { id: 5 }, { periodo: 'anual', correo: 'malo' }, { fetchFn: f }), /correo/)
 })
 
@@ -115,4 +115,21 @@ test('eventos de RevenueCat: compra, prueba, vencimiento y autorización', async
 test('cupo diario de ZUMI según el plan', () => {
   for (let i = 0; i < 5; i++) revisarCupo('plan-test', 1000 + i * 4000e3, { porDia: 5 })
   assert.throws(() => revisarCupo('plan-test', 1000 + 5 * 4000e3, { porDia: 5 }), (e) => e.motivo === 'limite-plan')
+})
+
+test('3 niveles: precios por plan, límites y plan según el producto de la tienda', async () => {
+  const { precios, LIMITES, planDeProducto, eventoRevenueCat } = await import('../services/planes.js')
+  const p = precios()
+  assert.equal(p.planes.zumi.mensual, 1490)
+  assert.equal(p.planes.zumi.anual, 9990)
+  assert.equal(p.planes.familia.mensual, 2490)
+  assert.equal(p.mensual, p.planes.familia.mensual) // compatibilidad
+  assert.ok(LIMITES.zumi.zumiDia > LIMITES.gratis.zumiDia && LIMITES.familia.familiares > LIMITES.zumi.familiares)
+  assert.equal(planDeProducto('zumi_plus_mensual'), 'zumi')
+  assert.equal(planDeProducto('alertaclima_familia_anual'), 'familia')
+  const guardadas = []
+  const db = { query: async (sql, args) => (sql.startsWith('INSERT INTO suscripciones') ? (guardadas.push(args), { rows: [{ id: 1, nueva: true }] }) : { rows: [] }) }
+  await eventoRevenueCat(db, { event: { type: 'INITIAL_PURCHASE', app_user_id: 'u:7', product_id: 'zumi_plus_anual', store: 'PLAY_STORE', id: 'x' } })
+  assert.equal(guardadas[0][7], 'zumi')
+  assert.equal(guardadas[0][3], 'anual')
 })

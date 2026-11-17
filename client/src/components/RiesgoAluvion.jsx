@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Plegable from './Plegable'
 import { NIVEL_ALUVION, riesgoAluvion } from '../services/aluvion'
 import { hhmm } from '../services/formato'
 
@@ -98,14 +99,14 @@ export default function RiesgoAluvion({ horas, onVerRios }) {
           {abierta ? 'Ocultar' : '¿Cómo se calcula?'}
         </button>
       </div>
-      {abierta && (
+      <Plegable abierto={abierta}>
         <p className="mt-2 text-[14px] leading-snug text-texto-2">
           Miramos la lluvia esperada en 24 horas, la hora más intensa y la <strong>isoterma 0 °C</strong> (la altura sobre la que el agua se
           congela). Cuando está sobre los 2.500–3.000 m, en la cordillera llueve en vez de nevar, y esa agua baja de golpe por las quebradas:
           así ocurrieron grandes aluviones en Santiago. Es una orientación de AlertaClima, <strong>no una alerta oficial</strong>; las alertas las
           emite SENAPRED.
         </p>
-      )}
+      </Plegable>
     </section>
   )
 }

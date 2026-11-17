@@ -31,5 +31,5 @@ export function usePlan({ enLinea, token }) {
   const cobro = Boolean(config?.cobroActivo)
   const plan = mio?.plan ?? 'gratis'
   const limites = !cobro ? LIMITES_LIBRES : (mio?.limites ?? config?.limites?.gratis ?? LIMITES_LIBRES)
-  return { cobro, plan, familia: plan === 'familia', mio, limites, precios: config?.precios ?? null, pagos: config?.pagos ?? {}, refrescar }
+  return { cobro, plan, familia: plan === 'familia', pago: plan === 'familia' || plan === 'zumi', mio, limites, precios: config?.precios ?? null, pagos: config?.pagos ?? {}, refrescar }
 }

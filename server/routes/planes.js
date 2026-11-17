@@ -43,7 +43,7 @@ export function planesRouter() {
   })
   r.post('/web', exigirCuenta(pool), async (req, res, next) => {
     try {
-      res.json(await suscribirWeb(pool, req.usuario, { periodo: req.body?.periodo, correo: req.body?.correo }))
+      res.json(await suscribirWeb(pool, req.usuario, { plan: req.body?.plan, periodo: req.body?.periodo, correo: req.body?.correo }))
     } catch (e) {
       next(e)
     }
@@ -66,7 +66,7 @@ export function pagosRouter() {
   r.post('/flow/tarjeta', async (req, res) => {
     let destino
     try {
-      destino = await tarjetaRegistrada(pool, { token: req.body?.token, periodo: req.query.p })
+      destino = await tarjetaRegistrada(pool, { token: req.body?.token, periodo: req.query.p, plan: req.query.plan })
     } catch (e) {
       console.error('Registro de tarjeta Flow:', e.message)
       destino = `${process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'}?plan=error`

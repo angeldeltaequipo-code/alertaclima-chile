@@ -1,7 +1,9 @@
 // Planes de pago (SaaS con ingreso mensual recurrente).
 //
-// - Gratis para siempre: alertas oficiales, SOS, evacuación, clima, mapa (lo que protege la vida).
-// - «AlertaClima Familia»: más comunas con avisos, más familiares y ZUMI con IA sin límite.
+// - Gratis para siempre: alertas oficiales, SOS, evacuación, clima, mapa (lo que protege la vida),
+//   y ZUMI con su reporte y unas preguntas al día.
+// - «ZUMI+» (individual, barato): conversar con ZUMI por voz cuando quieras y avisos de 3 comunas.
+// - «AlertaClima Familia»: todo lo de ZUMI+ para hasta 5 familiares y avisos de 5 comunas.
 //
 // Cobro:
 // - Web: suscripción de Flow.cl (pesos chilenos, tarjetas, cobro automático). FLOW_API_KEY y FLOW_SECRET_KEY.
@@ -13,16 +15,22 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { ErrorValidacion } from './reportes.js'
 
 export const cobroActivo = () => process.env.COBRO_ACTIVO === 'true'
+export const PLANES = ['gratis', 'zumi', 'familia']
 export const LIMITES = {
   gratis: { comunas: 1, familiares: 1, zumiDia: 5, historialDias: 7 },
+  zumi: { comunas: 3, familiares: 1, zumiDia: 80, historialDias: 90 },
   familia: { comunas: 5, familiares: 5, zumiDia: 200, historialDias: 365 },
 }
-export const precios = () => ({
-  mensual: Number(process.env.PRECIO_MENSUAL_CLP ?? 1990),
-  anual: Number(process.env.PRECIO_ANUAL_CLP ?? 14990),
-  pruebaDias: Number(process.env.PRUEBA_DIAS ?? 7),
-  moneda: 'CLP',
-})
+const entero = (v, d) => (Number.isFinite(Number(v)) && v !== undefined && v !== '' ? Number(v) : d)
+/** Precios en pesos chilenos (se pueden cambiar con variables de entorno sin tocar código). */
+export const precios = () => {
+  const zumi = { mensual: entero(process.env.PRECIO_ZUMI_MENSUAL_CLP, 1490), anual: entero(process.env.PRECIO_ZUMI_ANUAL_CLP, 9990) }
+  const familia = { mensual: entero(process.env.PRECIO_MENSUAL_CLP, 2490), anual: entero(process.env.PRECIO_ANUAL_CLP, 17990) }
+  // mensual/anual sueltos = plan Familia (compatibilidad con versiones anteriores de la app)
+  return { ...familia, planes: { zumi, familia }, pruebaDias: entero(process.env.PRUEBA_DIAS, 7), moneda: 'CLP' }
+}
+/** Plan de un producto o identificador («zumi_plus_mensual», «alertaclima_familia_anual»…). */
+export const planDeProducto = (id) => (/zumi/i.test(String(id ?? '')) ? 'zumi' : 'familia')
 /** Límites que aplican de verdad: sin cobro activo, todos tienen los del plan Familia. */
 export const limitesDe = (plan) => (cobroActivo() ? LIMITES[plan] ?? LIMITES.gratis : LIMITES.familia)
 
@@ -34,7 +42,7 @@ export async function planDe(db, usuarioId) {
   const { rows } = await db.query(
     `SELECT * FROM suscripciones
      WHERE usuario_id = $1 AND estado = ANY($2) AND (vence_en IS NULL OR vence_en > now())
-     ORDER BY (estado = 'activa') DESC, vence_en DESC NULLS FIRST LIMIT 1`,
+     ORDER BY (plan = 'familia') DESC, (estado = 'activa') DESC, vence_en DESC NULLS FIRST LIMIT 1`,
     [usuarioId, VIGENTES],
   )
   const s = rows[0]
@@ -43,15 +51,15 @@ export async function planDe(db, usuarioId) {
 }
 
 /** Crea o actualiza una suscripción por (origen, externo_id) y anota el evento si cambió de estado. */
-export async function guardarSuscripcion(db, { usuarioId, origen, externoId, periodo = 'mensual', estado, montoClp = null, venceEn = null, detalle = null }) {
+export async function guardarSuscripcion(db, { usuarioId, origen, externoId, plan = 'familia', periodo = 'mensual', estado, montoClp = null, venceEn = null, detalle = null }) {
   const { rows } = await db.query(
-    `INSERT INTO suscripciones (usuario_id, origen, externo_id, periodo, estado, monto_clp, vence_en)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO suscripciones (usuario_id, origen, externo_id, periodo, estado, monto_clp, vence_en, plan)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (origen, externo_id) DO UPDATE SET
-       usuario_id = EXCLUDED.usuario_id, periodo = EXCLUDED.periodo, estado = EXCLUDED.estado,
+       usuario_id = EXCLUDED.usuario_id, periodo = EXCLUDED.periodo, estado = EXCLUDED.estado, plan = EXCLUDED.plan,
        monto_clp = COALESCE(EXCLUDED.monto_clp, suscripciones.monto_clp), vence_en = EXCLUDED.vence_en, actualizada_en = now()
      RETURNING id, (xmax = 0) AS nueva`,
-    [usuarioId, origen, externoId, periodo, estado, montoClp, venceEn],
+    [usuarioId, origen, externoId, periodo, estado, montoClp, venceEn, PLANES.includes(plan) && plan !== 'gratis' ? plan : 'familia'],
   )
   await db.query('INSERT INTO suscripcion_eventos (suscripcion_id, tipo, detalle) VALUES ($1, $2, $3)', [rows[0].id, estado, detalle])
   return { id: String(rows[0].id), nueva: rows[0].nueva }
@@ -65,7 +73,12 @@ export const flowActivo = () => Boolean(process.env.FLOW_API_KEY && process.env.
 const flowBase = () => (process.env.FLOW_SANDBOX === 'true' ? 'https://sandbox.flow.cl/api' : 'https://www.flow.cl/api')
 const appUrl = () => process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
 const apiUrl = () => (process.env.API_PUBLICA ?? process.env.RENDER_EXTERNAL_URL ?? 'https://alertaclima-api.onrender.com').replace(/\/$/, '')
-export const PLANES_FLOW = { mensual: () => process.env.FLOW_PLAN_MENSUAL ?? 'alertaclima_familia_mensual', anual: () => process.env.FLOW_PLAN_ANUAL ?? 'alertaclima_familia_anual' }
+export const PLANES_FLOW = {
+  familia: { mensual: () => process.env.FLOW_PLAN_MENSUAL ?? 'alertaclima_familia_mensual', anual: () => process.env.FLOW_PLAN_ANUAL ?? 'alertaclima_familia_anual' },
+  zumi: { mensual: () => process.env.FLOW_PLAN_ZUMI_MENSUAL ?? 'alertaclima_zumi_mensual', anual: () => process.env.FLOW_PLAN_ZUMI_ANUAL ?? 'alertaclima_zumi_anual' },
+}
+const NOMBRE_PLAN = { zumi: 'ZUMI+', familia: 'AlertaClima Familia' }
+const planValido = (p) => (p === 'zumi' ? 'zumi' : 'familia')
 
 /** Firma de Flow: parámetros ordenados por nombre, «nombre+valor» concatenados, HMAC-SHA256 con la clave secreta. */
 export function firmaFlow(params, secreto = process.env.FLOW_SECRET_KEY) {
@@ -103,23 +116,24 @@ let planesListos = null
 export async function asegurarPlanesFlow({ fetchFn = fetch } = {}) {
   planesListos ??= (async () => {
     const p = precios()
-    for (const periodo of ['mensual', 'anual']) {
-      const planId = PLANES_FLOW[periodo]()
-      try {
-        await flow('/plans/get', { planId }, { metodo: 'GET', fetchFn })
-      } catch {
-        await flow('/plans/create', {
-          planId,
-          name: `AlertaClima Familia (${periodo})`,
-          currency: 'CLP',
-          amount: periodo === 'anual' ? p.anual : p.mensual,
-          interval: periodo === 'anual' ? 4 : 3,
-          interval_count: 1,
-          trial_period_days: p.pruebaDias,
-          urlCallback: `${apiUrl()}/api/pagos/flow`,
-        }, { fetchFn })
+    for (const plan of ['zumi', 'familia'])
+      for (const periodo of ['mensual', 'anual']) {
+        const planId = PLANES_FLOW[plan][periodo]()
+        try {
+          await flow('/plans/get', { planId }, { metodo: 'GET', fetchFn })
+        } catch {
+          await flow('/plans/create', {
+            planId,
+            name: `${NOMBRE_PLAN[plan]} (${periodo})`,
+            currency: 'CLP',
+            amount: p.planes[plan][periodo],
+            interval: periodo === 'anual' ? 4 : 3,
+            interval_count: 1,
+            trial_period_days: p.pruebaDias,
+            urlCallback: `${apiUrl()}/api/pagos/flow`,
+          }, { fetchFn })
+        }
       }
-    }
   })().catch((e) => {
     planesListos = null
     throw e
@@ -128,7 +142,8 @@ export async function asegurarPlanesFlow({ fetchFn = fetch } = {}) {
 }
 
 /** Paso 1: cliente en Flow y enlace para registrar la tarjeta. Devuelve { url } para abrir. */
-export async function suscribirWeb(db, usuario, { periodo, correo }, { fetchFn = fetch } = {}) {
+export async function suscribirWeb(db, usuario, { plan = 'familia', periodo, correo }, { fetchFn = fetch } = {}) {
+  plan = planValido(plan)
   if (!cobroActivo() || !flowActivo()) throw new ErrorValidacion('Los pagos en la web aún no están disponibles.', 503)
   if (periodo !== 'mensual' && periodo !== 'anual') throw new ErrorValidacion('Elige mensual o anual')
   if (!correoValido(correo)) throw new ErrorValidacion('Escribe un correo válido para el comprobante de pago')
@@ -140,7 +155,7 @@ export async function suscribirWeb(db, usuario, { periodo, correo }, { fetchFn =
     cliente = c.customerId
   }
   await db.query('UPDATE usuarios SET correo_cobro = $2, flow_cliente = $3 WHERE id = $1', [usuario.id, correo, cliente])
-  const reg = await flow('/customer/register', { customerId: cliente, url_return: `${apiUrl()}/api/pagos/flow/tarjeta?p=${periodo}` }, { fetchFn })
+  const reg = await flow('/customer/register', { customerId: cliente, url_return: `${apiUrl()}/api/pagos/flow/tarjeta?p=${periodo}&plan=${plan}` }, { fetchFn })
   return { url: `${reg.url}?token=${encodeURIComponent(reg.token)}` }
 }
 
@@ -161,12 +176,14 @@ export function estadoFlow(s) {
 /** Guarda una suscripción de Flow con su estado actual. */
 async function guardarFlow(db, usuarioId, s) {
   const { estado, venceEn } = estadoFlow(s)
-  const anual = s.planId === PLANES_FLOW.anual()
-  const p = precios()
+  const plan = s.planId === PLANES_FLOW.zumi.mensual() || s.planId === PLANES_FLOW.zumi.anual() ? 'zumi' : 'familia'
+  const anual = s.planId === PLANES_FLOW[plan].anual()
+  const p = precios().planes[plan]
   await guardarSuscripcion(db, {
     usuarioId,
     origen: 'flow',
     externoId: String(s.subscriptionId),
+    plan,
     periodo: anual ? 'anual' : 'mensual',
     estado,
     montoClp: anual ? p.anual : p.mensual,
@@ -177,7 +194,7 @@ async function guardarFlow(db, usuarioId, s) {
 }
 
 /** Paso 2 (Flow vuelve con el token del registro de tarjeta): crea la suscripción. Devuelve a dónde redirigir. */
-export async function tarjetaRegistrada(db, { token, periodo }, { fetchFn = fetch } = {}) {
+export async function tarjetaRegistrada(db, { token, periodo, plan = 'familia' }, { fetchFn = fetch } = {}) {
   if (!token) return `${appUrl()}?plan=error`
   const r = await flow('/customer/getRegisterStatus', { token }, { metodo: 'GET', fetchFn })
   if (String(r.status) !== '1') return `${appUrl()}?plan=cancelado`
@@ -187,7 +204,7 @@ export async function tarjetaRegistrada(db, { token, periodo }, { fetchFn = fetc
   // ¿Ya tiene una vigente en Flow? (por si recarga la página)
   const { rows: ya } = await db.query(`SELECT 1 FROM suscripciones WHERE usuario_id = $1 AND origen = 'flow' AND estado IN ('prueba', 'activa', 'problema_pago')`, [usuarioId])
   if (!ya.length) {
-    const s = await flow('/subscription/create', { planId: PLANES_FLOW[periodo === 'anual' ? 'anual' : 'mensual'](), customerId: r.customerId }, { fetchFn })
+    const s = await flow('/subscription/create', { planId: PLANES_FLOW[planValido(plan)][periodo === 'anual' ? 'anual' : 'mensual'](), customerId: r.customerId }, { fetchFn })
     await guardarFlow(db, usuarioId, s)
   }
   return `${appUrl()}?plan=gracias`
@@ -256,11 +273,13 @@ export async function eventoRevenueCat(db, evento) {
   if (!usuarioId) return { ignorado: true }
   if (estado === 'activa' && e.period_type === 'TRIAL') estado = 'prueba'
   const anual = /anual|annual|year/i.test(e.product_id ?? '')
-  const p = precios()
+  const plan = planDeProducto(e.product_id ?? e.entitlement_ids?.join(' '))
+  const p = precios().planes[plan]
   await guardarSuscripcion(db, {
     usuarioId,
     origen: e.store === 'PLAY_STORE' ? 'google' : 'apple',
     externoId: String(e.original_transaction_id ?? e.transaction_id ?? e.id),
+    plan,
     periodo: anual ? 'anual' : 'mensual',
     estado,
     montoClp: e.currency === 'CLP' && e.price_in_purchased_currency ? Math.round(e.price_in_purchased_currency) : anual ? p.anual : p.mensual,

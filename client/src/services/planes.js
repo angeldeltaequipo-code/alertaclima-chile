@@ -1,4 +1,4 @@
-// Planes: Gratis y «AlertaClima Familia». El servidor decide los límites y si el cobro está activo.
+// Planes: Gratis, «ZUMI+» (individual) y «AlertaClima Familia». El servidor decide los límites y si el cobro está activo.
 // Cobro: compras de la tienda en la app de iPhone y Android (RevenueCat). El cobro web (Flow) queda apagado.
 import { API_URL } from './reportes'
 import { sesionActual } from './sesion'
@@ -33,8 +33,8 @@ async function enviar(ruta, cuerpo) {
 }
 
 /** Web: abre la página de Flow para registrar la tarjeta; al volver, la suscripción queda creada. */
-export async function pagarEnWeb(periodo, correo) {
-  const { url } = await enviar('/web', { periodo, correo })
+export async function pagarEnWeb(plan, periodo, correo) {
+  const { url } = await enviar('/web', { plan, periodo, correo })
   window.location.href = url
 }
 
@@ -53,20 +53,29 @@ async function revenueCat(usuarioId) {
   return Purchases
 }
 
-/** Precios de la tienda (en la moneda del teléfono) para mostrarlos tal cual. */
+/**
+ * Precios de la tienda (en la moneda del teléfono) para mostrarlos tal cual.
+ * En RevenueCat: oferta «zumi» (ZUMI+) y oferta «familia» (o la oferta actual), cada una con paquete
+ * mensual y anual; derechos (entitlements) «zumi» y «familia».
+ */
 export async function ofertasTienda(usuarioId) {
   const P = await revenueCat(usuarioId)
-  const { current } = await P.getOfferings()
-  const paquetes = current?.availablePackages ?? []
-  const buscar = (tipo) => paquetes.find((p) => p.packageType === tipo)
-  return { mensual: buscar('MONTHLY') ?? null, anual: buscar('ANNUAL') ?? null }
+  const { current, all = {} } = await P.getOfferings()
+  const de = (oferta) => {
+    const paquetes = oferta?.availablePackages ?? []
+    const buscar = (tipo) => paquetes.find((p) => p.packageType === tipo) ?? null
+    return { mensual: buscar('MONTHLY'), anual: buscar('ANNUAL') }
+  }
+  return { zumi: de(all.zumi), familia: de(all.familia ?? current) }
 }
+
+const tienePlan = (info) => Boolean(info?.entitlements?.active?.familia || info?.entitlements?.active?.zumi)
 
 export async function comprarEnTienda(usuarioId, paquete) {
   const P = await revenueCat(usuarioId)
   try {
     const { customerInfo } = await P.purchasePackage({ aPackage: paquete })
-    return Boolean(customerInfo.entitlements.active.familia)
+    return tienePlan(customerInfo)
   } catch (e) {
     if (e?.userCancelled || e?.code === '1') return false
     throw new Error('La tienda no pudo completar la compra. Inténtalo de nuevo.')
@@ -77,7 +86,7 @@ export async function comprarEnTienda(usuarioId, paquete) {
 export async function restaurarCompras(usuarioId) {
   const P = await revenueCat(usuarioId)
   const { customerInfo } = await P.restorePurchases()
-  return Boolean(customerInfo.entitlements.active.familia)
+  return tienePlan(customerInfo)
 }
 
 /** Para cambiar o cancelar una suscripción de tienda se abre la página de la tienda. */

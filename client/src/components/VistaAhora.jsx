@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Plegable, { Flecha } from './Plegable'
 import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
 import GraficoHoras from './GraficoHoras'
@@ -64,11 +65,9 @@ function Explorar({ horas, dias, punto, comuna }) {
           <span className="block text-[18px] font-bold">Cielo y espacio en vivo</span>
           <span className="block text-[14px] text-white/80">La Luna, los planetas sobre ti, observatorios, la Estación Espacial y el Sol.</span>
         </span>
-        <svg width="18" height="18" viewBox="0 0 14 14" aria-hidden="true" style={{ transform: abierto ? 'rotate(180deg)' : 'none' }} className="shrink-0 transition-transform">
-          <path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <Flecha abierto={abierto} size={18} />
       </button>
-      {abierto && (
+      <Plegable abierto={abierto}>
         <div className="mt-3 space-y-3">
           <Resguardo>
             <MiraElCielo horas={horas} hoy={dias[0]} punto={punto} comuna={comuna} />
@@ -77,7 +76,7 @@ function Explorar({ horas, dias, punto, comuna }) {
             <EspacioEnVivo punto={punto} />
           </Resguardo>
         </div>
-      )}
+      </Plegable>
     </section>
   )
 }
