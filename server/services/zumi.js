@@ -10,7 +10,7 @@ import { ErrorValidacion } from './reportes.js'
 
 export const iaActiva = () => Boolean(process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY)
 const MODELO = () => process.env.ZUMI_MODELO || 'claude-haiku-5-5'
-export const LIMITES_ZUMI = { pregunta: 300, contexto: 9000, porHora: 30, historial: 6 }
+export const LIMITES_ZUMI = { pregunta: 300, contexto: 9000, porHora: 30, historial: 8, memoria: 1000 }
 
 const usos = new Map() // clave -> [horas]
 /**
@@ -37,7 +37,9 @@ Usa SOLO los datos entregados en <datos>. Si algo no está en los datos, dilo co
 Seguridad: si la persona describe una emergencia o peligro, dile primero que llame al 133 (Carabineros), 132 (Bomberos) o 131 (SAMU) y que use el botón SOS de la app. Las alertas oficiales las da SENAPRED; los tsunamis, el SHOA; los sismos, el Centro Sismológico Nacional.
 Los datos pueden traer «loQueSeComenta»: titulares de prensa y publicaciones de redes sociales (NO oficiales). Úsalos solo si vienen al caso, siempre diciendo que es lo que se comenta y que no está confirmado; nunca los presentes como alerta oficial.
 No des consejos médicos, legales ni financieros. Si te piden algo fuera del clima, la naturaleza o la seguridad, responde con cariño en una frase y vuelve al tema del clima.
-Si conoces el nombre de la persona, úsalo de vez en cuando.`
+Si conoces el nombre de la persona, úsalo de vez en cuando.
+Tienes memoria: en <memoria> está lo que la persona te contó antes y lo que te preguntó hace poco. Úsala con naturalidad y cariño, como un amigo que se acuerda (por ejemplo, su mascota, su trabajo o lo que le preocupaba ayer), sin recitarla ni repetirla en cada respuesta.
+Aprendes: si en su mensaje la persona te cuenta algo personal que te sirva para acompañarla mejor (cómo se llama, con quién vive, mascotas, en qué trabaja, qué le gusta hacer, planes próximos, si algo del clima le afecta), agrega AL FINAL una línea aparte exactamente así: [[recordar: hecho breve en tercera persona]]. Máximo 2 por respuesta y solo si es nuevo. Nunca guardes direcciones exactas, teléfonos, correos, documentos, claves ni datos de salud detallados.`
 
 /** Valida y deja el contexto (datos de la comuna) como texto compacto. */
 export function prepararContexto(contexto) {
@@ -64,17 +66,37 @@ function prepararHistorial(h) {
 }
 
 /** Pregunta a Claude. Devuelve el texto de la respuesta. */
-export async function preguntarIA({ pregunta, contexto, historial, nombre }, { fetchFn = fetch } = {}) {
+/** Memoria que manda la app (texto plano, corto). */
+export function prepararMemoria(m) {
+  if (typeof m !== 'string') return ''
+  return m.normalize('NFKC').replace(/[\u0000-\u001f\u007f<>]/g, ' ').trim().slice(0, LIMITES_ZUMI.memoria)
+}
+
+/** Separa del texto las líneas [[recordar: …]] que ZUMI agrega para aprender. */
+export function separarRecuerdos(texto) {
+  const recuerdos = []
+  const limpio = String(texto ?? '')
+    .replace(/\[\[\s*recordar\s*:\s*([^\]]{3,160})\]\]/gi, (_, h) => {
+      if (recuerdos.length < 2) recuerdos.push(h.trim())
+      return ' '
+    })
+    .replace(/\s+/g, ' ')
+    .trim()
+  return { texto: limpio, recuerdos }
+}
+
+export async function preguntarIA({ pregunta, contexto, historial, nombre, memoria }, { fetchFn = fetch } = {}) {
   const datos = prepararContexto(contexto)
   const p = prepararPregunta(pregunta)
-  const mensajes = [...prepararHistorial(historial), { role: 'user', content: `<datos>${datos}</datos>\n${nombre ? `La persona se llama ${String(nombre).slice(0, 30)}.\n` : ''}Pregunta: ${p}` }]
+  const mem = prepararMemoria(memoria)
+  const mensajes = [...prepararHistorial(historial), { role: 'user', content: `<datos>${datos}</datos>\n${mem ? `<memoria>${mem}</memoria>\n` : ''}${nombre ? `La persona se llama ${String(nombre).slice(0, 30)}.\n` : ''}Pregunta: ${p}` }]
   // La API exige que el primer mensaje sea de la persona.
   while (mensajes.length && mensajes[0].role !== 'user') mensajes.shift()
   if (!process.env.ANTHROPIC_API_KEY && process.env.GEMINI_API_KEY) return limpiar(await preguntarGemini(mensajes, fetchFn))
   const r = await fetchFn('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODELO(), max_tokens: 220, temperature: 0.6, system: PERSONALIDAD, messages: mensajes }),
+    body: JSON.stringify({ model: MODELO(), max_tokens: 320, temperature: 0.6, system: PERSONALIDAD, messages: mensajes }),
     signal: AbortSignal.timeout(20000),
   })
   if (!r.ok) {

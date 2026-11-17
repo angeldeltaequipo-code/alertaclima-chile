@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { leerMemoria, olvidar, olvidarTodo } from '../services/zumiMemoria'
 import { useInstalar } from '../hooks/useInstalar'
 import { AjustesNotificaciones } from './Notificaciones'
 import BotonGoogle from './BotonGoogle'
@@ -62,6 +63,43 @@ function VozDeZumi() {
       >
         Escuchar una prueba
       </button>
+    </Seccion>
+  )
+}
+
+function MemoriaDeZumi() {
+  const [m, setM] = useState(leerMemoria)
+  useEffect(() => {
+    const f = () => setM(leerMemoria())
+    window.addEventListener('ac:zumi-memoria', f)
+    return () => window.removeEventListener('ac:zumi-memoria', f)
+  }, [])
+  return (
+    <Seccion titulo="Lo que ZUMI recuerda de ti">
+      <p className="text-[15px] text-texto-2">
+        ZUMI aprende de lo que le cuentas para acompañarte mejor. Lo guarda solo en este teléfono y puedes borrarlo cuando quieras.
+      </p>
+      {m.hechos.length ? (
+        <ul className="mt-2 space-y-1.5">
+          {m.hechos.map((h, i) => (
+            <li key={`${h.fecha}-${i}`} className="flex items-center gap-2 rounded-2xl bg-superficie-2 px-3 py-2 text-[16px]">
+              <span className="flex-1">{h.texto}</span>
+              <button type="button" onClick={() => olvidar(i)} aria-label={`Olvidar: ${h.texto}`} className="grid size-10 shrink-0 place-items-center rounded-full text-texto-2 active:scale-95">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 rounded-2xl bg-superficie-2 px-3 py-2 text-[15px]">Todavía nada. Cuéntale tu nombre, si tienes mascota o qué te gusta hacer.</p>
+      )}
+      {(m.hechos.length > 0 || m.temas.length > 0) && (
+        <button type="button" onClick={olvidarTodo} className="mt-2 min-h-12 rounded-full border-2 border-borde px-4 text-[16px] font-bold">
+          Que ZUMI olvide todo
+        </button>
+      )}
     </Seccion>
   )
 }
@@ -173,7 +211,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
             <span className="min-w-0 flex-1">
               <span className="block text-[18px] font-bold">{plan.familia ? 'Plan Familia' : plan.plan === 'zumi' ? 'Plan ZUMI+' : 'Plan gratis'}</span>
               <span className="block text-[15px] text-texto-2">
-                {plan.pago ? 'Ver detalles, renovación o cancelar' : 'Conversa con ZUMI cuando quieras desde $1.490 al mes'}
+                {plan.pago ? 'Ver detalles, renovación o cancelar' : 'Conversa con ZUMI cuando quieras desde $3.990 al mes'}
               </span>
             </span>
             <span aria-hidden="true" className="text-[22px]">›</span>
@@ -211,6 +249,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
       </Seccion>
 
       <VozDeZumi />
+      <MemoriaDeZumi />
 
       <Seccion titulo="Pantalla">
         <Opciones

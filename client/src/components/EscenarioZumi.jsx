@@ -7,6 +7,11 @@ import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
 import { PELICULAS, consejoDelDia } from '../services/cine'
 import { alertaPrincipal, NIVELES } from '../services/alertas'
+import { fraseDeReencuentro, registrarVisita } from '../services/zumiMemoria'
+
+// La visita de hoy se anota una sola vez por sesión (para saber si vuelves después de días).
+let visitaDeHoy = null
+const visita = () => (visitaDeHoy ??= registrarVisita())
 
 const grados = (v) => `${Math.round(v)}°`
 
@@ -47,7 +52,8 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       .filter((x) => x.tarjeta?.tipo !== 'luna' && x.tarjeta?.tipo !== 'vecinos')
       .slice(0, 3)
       .map((x) => x.texto)
-    return [`${hola}${quien ? `, ${quien}` : ''}! Soy ZUMI.`, ...cuerpo]
+    const reencuentro = fraseDeReencuentro(visita(), { nombre: quien })
+    return [`${hola}${quien ? `, ${quien}` : ''}!${visita().total > 1 ? '' : ' Soy ZUMI.'}`, ...(reencuentro ? [reencuentro] : []), ...cuerpo]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos.ahora?.temperatura, datos.ahora?.texto, datos.horas, datos.alertas, quien])
 

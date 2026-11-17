@@ -39,3 +39,13 @@ test('sin clave de Claude, ZUMI conversa con Gemini', async () => {
   delete process.env.GEMINI_API_KEY
   if (prev) process.env.ANTHROPIC_API_KEY = prev
 })
+
+test('memoria de ZUMI: separa las líneas [[recordar: …]] y limpia la memoria que manda la app', async () => {
+  const { separarRecuerdos, prepararMemoria } = await import('../services/zumi.js')
+  const r = separarRecuerdos('¡Qué lindo nombre! Mañana llueve. [[recordar: Tiene una perrita llamada Luna]] [[recordar: Trabaja de noche]] [[recordar: tercero]]')
+  assert.equal(r.texto, '¡Qué lindo nombre! Mañana llueve.')
+  assert.deepEqual(r.recuerdos, ['Tiene una perrita llamada Luna', 'Trabaja de noche'])
+  assert.equal(prepararMemoria('<x>hola</x>'), 'x hola /x')
+  assert.equal(prepararMemoria(42), '')
+  assert.ok(prepararMemoria('a'.repeat(5000)).length <= 1000)
+})

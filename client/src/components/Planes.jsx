@@ -23,8 +23,8 @@ const NIVELES = {
     lema: 'Tu amigo del clima, cuando quieras',
     beneficios: [
       ['📞', 'Llama a ZUMI cuando quieras', 'Conversa por voz y pregúntale lo que quieras del clima.'],
-      ['🔔', 'Avisos de 3 comunas', 'Tu casa, tu trabajo y una más.'],
-      ['📅', '3 meses de historial', 'Tus reportes y avisos anteriores.'],
+      ['🔔', 'Avisos de 5 comunas', 'Tu casa, tu trabajo, tu familia y tus lugares favoritos.'],
+      ['📅', 'Un año de historial', 'Tus reportes y avisos anteriores.'],
     ],
   },
   familia: {
@@ -32,7 +32,7 @@ const NIVELES = {
     lema: 'Todo ZUMI+ para hasta 5 personas',
     beneficios: [
       ['👨‍👩‍👧', 'Hasta 5 familiares', 'Mira el clima y las alertas de donde vive cada uno.'],
-      ['🔔', 'Avisos de 5 comunas', 'Tu casa, la de tus padres o la de tus hijos.'],
+      ['🔔', 'Avisos de 10 comunas', 'Tu casa, la de tus padres, la de tus hijos y más.'],
       ['📞', 'ZUMI para todos', 'Cada uno conversa con ZUMI cuando quiera.'],
     ],
   },
@@ -48,7 +48,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
   const [ofertas, setOfertas] = useState(null)
   const enApp = compraEnApp()
   const todos = plan.precios ?? { pruebaDias: 7 }
-  const preciosDe = (n) => todos.planes?.[n] ?? (n === 'familia' ? { mensual: todos.mensual ?? 2490, anual: todos.anual ?? 17990 } : { mensual: 1490, anual: 9990 })
+  const preciosDe = (n) => todos.planes?.[n] ?? (n === 'familia' ? { mensual: todos.mensual ?? 5990, anual: todos.anual ?? 49990 } : { mensual: 3990, anual: 34990 })
   const p = { ...preciosDe(nivel), pruebaDias: todos.pruebaDias ?? 7 }
   const usuarioId = cuenta.usuario?.id
 

@@ -9,7 +9,7 @@ const conSesion = () => {
   return t ? { authorization: `Bearer ${t}` } : {}
 }
 
-export const LIMITES_LIBRES = { comunas: 5, familiares: 5, zumiDia: 200, historialDias: 365 }
+export const LIMITES_LIBRES = { comunas: 10, familiares: 5, zumiDia: 300, historialDias: 365 }
 
 export async function configPlanes() {
   if (!API_URL) return { cobroActivo: false }

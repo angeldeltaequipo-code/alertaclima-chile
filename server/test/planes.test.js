@@ -19,7 +19,7 @@ function dbFalsa() {
 
 test('sin cobro activo todos tienen los límites del plan Familia', () => {
   delete process.env.COBRO_ACTIVO
-  assert.equal(limitesDe('gratis').comunas, 5)
+  assert.equal(limitesDe('gratis').comunas, 10)
   process.env.COBRO_ACTIVO = 'true'
   assert.equal(limitesDe('gratis').comunas, 1)
   assert.equal(limitesDe('familia').familiares, 5)
@@ -120,9 +120,9 @@ test('cupo diario de ZUMI según el plan', () => {
 test('3 niveles: precios por plan, límites y plan según el producto de la tienda', async () => {
   const { precios, LIMITES, planDeProducto, eventoRevenueCat } = await import('../services/planes.js')
   const p = precios()
-  assert.equal(p.planes.zumi.mensual, 1490)
-  assert.equal(p.planes.zumi.anual, 9990)
-  assert.equal(p.planes.familia.mensual, 2490)
+  assert.equal(p.planes.zumi.mensual, 3990)
+  assert.equal(p.planes.zumi.anual, 34990)
+  assert.equal(p.planes.familia.mensual, 5990)
   assert.equal(p.mensual, p.planes.familia.mensual) // compatibilidad
   assert.ok(LIMITES.zumi.zumiDia > LIMITES.gratis.zumiDia && LIMITES.familia.familiares > LIMITES.zumi.familiares)
   assert.equal(planDeProducto('zumi_plus_mensual'), 'zumi')

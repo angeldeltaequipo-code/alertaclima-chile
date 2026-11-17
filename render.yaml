@@ -46,10 +46,14 @@ services:
         sync: false
       - key: COBRO_ACTIVO # "true" muestra precios y límites del plan Familia. Mientras no, todo funciona como siempre.
         value: "false"
-      - key: PRECIO_MENSUAL_CLP
-        value: "1990"
+      - key: PRECIO_ZUMI_MENSUAL_CLP # plan ZUMI+
+        value: "3990"
+      - key: PRECIO_ZUMI_ANUAL_CLP
+        value: "34990"
+      - key: PRECIO_MENSUAL_CLP # plan Familia (hasta 5 personas)
+        value: "5990"
       - key: PRECIO_ANUAL_CLP
-        value: "14990"
+        value: "49990"
       - key: PRUEBA_DIAS
         value: "7"
       - key: FLOW_API_KEY # flow.cl → Mis datos → Integración → API Key (cobro web del plan Familia)

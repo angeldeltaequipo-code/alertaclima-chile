@@ -95,8 +95,8 @@ function dibujarPelota(g, { x, y, r, giro }) {
 // y terminan en ese mismo cuadro, así el bucle y el regreso a la marioneta no se notan). Cubren la escena
 // completa. «reposo» se repite mientras está quieto; los demás son gestos que se reproducen una vez.
 const VIDEOS = {
-  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar'],
-  noche: ['reposo', 'saludo'],
+  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar', 'habla', 'habla2', 'habla3'],
+  noche: ['reposo', 'saludo', 'habla'],
   lluvia: ['reposo', 'saludo'],
   alerta: ['reposo', 'calma'],
   estudio: ['reposo'],
@@ -307,12 +307,19 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
 
       // ---------- caminar por el escenario ----------
       const lugares = LUGARES[c.escena] ?? [[0, 1, 0]]
-      const pedido = c.gestoPedido
+      let pedido = c.gestoPedido
       if (pedido) {
         c.gestoPedido = null
         if (pedido === 'caminar') a.proximaCaminata = t
         else if (pedido === 'pelota') a.proximaPelota = t
-        else if (capas.current[pedido]?.readyState >= 3 && capas.current[pedido].dataset.escena === c.escena && !habla && !piensa) {
+        // en modo video, si esta escena no tiene filmado ese gesto, hace otro que sí tenga (nunca brazos dibujados)
+        if (c.cine && !capas.current[pedido]) {
+          const otros = Object.keys(capas.current).filter((n) => n !== 'reposo' && !n.startsWith('habla') && n !== 'pensar')
+          pedido = otros.includes('saludo') && Math.random() < 0.5 ? 'saludo' : otros[Math.floor(Math.random() * otros.length)] ?? pedido
+        }
+        if (pedido === 'caminar' || pedido === 'pelota') {
+          /* ya resuelto arriba */
+        } else if (capas.current[pedido]?.readyState >= 2 && capas.current[pedido].dataset.escena === c.escena && !habla && !piensa) {
           // gesto filmado: lo hace el video real; la marioneta se queda en reposo debajo
           const vg = capas.current[pedido]
           if (c.videoGesto && capas.current[c.videoGesto]) capas.current[c.videoGesto].style.opacity = '0'
@@ -499,27 +506,48 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
           ? alfa === 1 && vv.dataset.escena === c.escena
           : !habla && !piensa && !escucha && !andando && !conDedo && a.pelotaDesde < 0 && a.gesto === 'reposo' && Math.abs(a.x) < 2 && Math.abs(a.esc - 1) < 0.01 && alfa === 1 && vv.dataset.escena === c.escena
         a.quietoDesde = quieto ? (a.quietoDesde ?? t) : null
-        const ver = (quieto && t - a.quietoDesde > (c.cine ? 0 : 900) && vv.readyState >= 3) || !!c.videoGesto
+        // una vez visible no se apaga por un bajón de búfer (si no, se pausa y nunca vuelve a cargar)
+        const ver = (quieto && t - a.quietoDesde > (c.cine ? 0 : 900) && (vv.readyState >= 3 || vv.dataset.ver === '1')) || !!c.videoGesto
         if (ver !== (vv.dataset.ver === '1')) {
           vv.dataset.ver = ver ? '1' : '0'
           vv.style.opacity = ver ? '1' : '0'
           if (ver) vv.play().catch(() => {})
           else setTimeout(() => vv.dataset.ver === '0' && vv.pause(), 300)
         }
+        // tapado por un gesto o por él hablando: el reposo se pausa (un solo video decodificando a la vez)
+        const tapado = !!c.videoGesto || !!c.tomaHabla
+        if (vv.dataset.ver === '1') {
+          if (tapado && !vv.paused && t - (c.tapadoDesde ?? t) > 400) vv.pause()
+          else if (!tapado && vv.paused) vv.play().catch(() => {})
+        }
+        c.tapadoDesde = tapado ? (c.tapadoDesde ?? t) : null
       }
       // Hablando: un video real suyo conversando (boca, cejas y manos de verdad), en bucle desde un punto
       // al azar para que no se note la repetición. Mientras piensa, el video de pensar.
-      const vh = capas.current.habla
       const vp = capas.current.pensar
       if (c.cine) {
-        const verH = !!vh && habla && vh.readyState >= 3 && alfa === 1
-        if (vh && verH !== (vh.dataset.ver === '1')) {
-          vh.dataset.ver = verH ? '1' : '0'
-          if (verH) {
-            if (vh.duration) vh.currentTime = Math.random() * vh.duration * 0.7
-            vh.play().catch(() => {})
-          } else setTimeout(() => vh.dataset.ver === '0' && vh.pause(), 300)
-          vh.style.opacity = verH ? '1' : '0'
+        // varias tomas de él hablando: se encadenan al azar mientras dure la voz
+        const tomas = Object.keys(capas.current).filter((n) => n.startsWith('habla') && capas.current[n]?.readyState >= 3)
+        const quiere = habla && alfa === 1 && tomas.length > 0
+        if (quiere && !c.tomaHabla) {
+          const n = tomas[Math.floor(Math.random() * tomas.length)]
+          const vh = capas.current[n]
+          c.tomaHabla = n
+          vh.loop = tomas.length === 1
+          vh.currentTime = tomas.length === 1 && vh.duration ? Math.random() * vh.duration * 0.6 : 0.25
+          vh.style.opacity = '1'
+          vh.play().catch(() => {})
+          vh.onended = () => {
+            vh.style.opacity = '0'
+            if (c.tomaHabla === n) c.tomaHabla = null // si sigue hablando, el próximo cuadro elige otra toma
+          }
+        } else if (!quiere && c.tomaHabla) {
+          const vh = capas.current[c.tomaHabla]
+          if (vh) {
+            vh.style.opacity = '0'
+            setTimeout(() => vh.style.opacity === '0' && vh.pause(), 300)
+          }
+          c.tomaHabla = null
         }
         const verP = !!vp && piensa && !c.videoGesto && vp.readyState >= 3 && alfa === 1
         if (vp && verP !== (vp.dataset.piensa === '1')) {
@@ -624,6 +652,12 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
       const el = caja.current
       const c = s.current
       if (!cv || !el || !c.actual || document.hidden || !visible.current) return
+      // Con el video real a la vista, la marioneta queda tapada: se actualiza solo 5 veces por segundo
+      // (lo justo para reaccionar a la voz y a los toques) y el teléfono gasta su fuerza en el video.
+      if (c.cine && !c.anterior && capas.current.reposo?.dataset.ver === '1') {
+        if (t - (c.ultimoCuadro ?? 0) < 200) return
+        c.ultimoCuadro = t
+      }
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const cw = el.clientWidth
       const ch = el.clientHeight
@@ -681,7 +715,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
             }}
             data-escena={escena}
             muted
-            loop={nombre === 'reposo' || nombre === 'habla'}
+            loop={nombre === 'reposo'}
             playsInline
             preload="auto"
             disablePictureInPicture

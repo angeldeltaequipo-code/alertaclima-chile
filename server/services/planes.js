@@ -2,7 +2,7 @@
 //
 // - Gratis para siempre: alertas oficiales, SOS, evacuación, clima, mapa (lo que protege la vida),
 //   y ZUMI con su reporte y unas preguntas al día.
-// - «ZUMI+» (individual, barato): conversar con ZUMI por voz cuando quieras y avisos de 3 comunas.
+// - «ZUMI+» (individual, barato): conversar con ZUMI por voz cuando quieras y avisos de 5 comunas ($3.990 al mes).
 // - «AlertaClima Familia»: todo lo de ZUMI+ para hasta 5 familiares y avisos de 5 comunas.
 //
 // Cobro:
@@ -18,14 +18,14 @@ export const cobroActivo = () => process.env.COBRO_ACTIVO === 'true'
 export const PLANES = ['gratis', 'zumi', 'familia']
 export const LIMITES = {
   gratis: { comunas: 1, familiares: 1, zumiDia: 5, historialDias: 7 },
-  zumi: { comunas: 3, familiares: 1, zumiDia: 80, historialDias: 90 },
-  familia: { comunas: 5, familiares: 5, zumiDia: 200, historialDias: 365 },
+  zumi: { comunas: 5, familiares: 1, zumiDia: 150, historialDias: 365 },
+  familia: { comunas: 10, familiares: 5, zumiDia: 300, historialDias: 365 },
 }
 const entero = (v, d) => (Number.isFinite(Number(v)) && v !== undefined && v !== '' ? Number(v) : d)
 /** Precios en pesos chilenos (se pueden cambiar con variables de entorno sin tocar código). */
 export const precios = () => {
-  const zumi = { mensual: entero(process.env.PRECIO_ZUMI_MENSUAL_CLP, 1490), anual: entero(process.env.PRECIO_ZUMI_ANUAL_CLP, 9990) }
-  const familia = { mensual: entero(process.env.PRECIO_MENSUAL_CLP, 2490), anual: entero(process.env.PRECIO_ANUAL_CLP, 17990) }
+  const zumi = { mensual: entero(process.env.PRECIO_ZUMI_MENSUAL_CLP, 3990), anual: entero(process.env.PRECIO_ZUMI_ANUAL_CLP, 34990) }
+  const familia = { mensual: entero(process.env.PRECIO_MENSUAL_CLP, 5990), anual: entero(process.env.PRECIO_ANUAL_CLP, 49990) }
   // mensual/anual sueltos = plan Familia (compatibilidad con versiones anteriores de la app)
   return { ...familia, planes: { zumi, familia }, pruebaDias: entero(process.env.PRUEBA_DIAS, 7), moneda: 'CLP' }
 }

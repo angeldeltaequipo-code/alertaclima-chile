@@ -1,3 +1,4 @@
+import { anotarPregunta, aprenderSolo, leerMemoria, recordar, resumenParaIA } from './zumiMemoria'
 // El «cerebro» de ZUMI para conversar.
 // 1. Si el servidor tiene IA activa (Claude) y la persona tiene cuenta, ZUMI responde con IA
 //    usando solo los datos de la comuna que se le entregan aquí.
@@ -66,15 +67,20 @@ export async function hayIA() {
 
 /** Pregunta a ZUMI. Devuelve { texto, fuente: 'ia' | 'zumi' }. Nunca lanza: si la IA falla, responde ZUMI solo. */
 export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
+  anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
   if (conCuenta && navigator.onLine && (await hayIA())) {
     try {
       const r = await fetch(`${API_URL}/api/zumi/preguntar`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...cabeceraSesion() },
-        body: JSON.stringify({ pregunta, contexto: armarContexto(datos), historial }),
+        body: JSON.stringify({ pregunta, contexto: armarContexto(datos), historial, memoria: resumenParaIA() }),
         signal: AbortSignal.timeout(22000),
       })
-      if (r.ok) return { texto: (await r.json()).respuesta, fuente: 'ia' }
+      if (r.ok) {
+        const d = await r.json()
+        const aprendio = recordar(d.recuerdos, 'zumi')
+        return { texto: d.respuesta, fuente: 'ia', aprendio }
+      }
       if (r.status === 429) {
         const d = await r.json()
         // Llegó al límite diario del plan gratis: ZUMI lo dice y luego se muestra el plan Familia.
@@ -93,6 +99,7 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
 const QUIERE = {
   emergencia: /emergencia|ayuda|auxilio|atrapad|herid|incendio|me ahogo|peligro|socorro|sos\b/,
   saludo: /^(hola|holi|buenas|buen dia|buenos dias|buenas tardes|buenas noches|hey|wena|que tal)\b/,
+  memoria: /te acuerdas de mi|que sabes de mi|me recuerdas|que recuerdas|sabes quien soy/,
   quien: /quien eres|como te llamas|que eres|eres (un|una)|tu nombre/,
   gracias: /gracias|te quiero|eres (lo mejor|genial|bacan)|buena zumi/,
   chiste: /chiste|algo gracioso|hazme reir/,
@@ -131,6 +138,15 @@ export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, a
 
   if (QUIERE.emergencia.test(t))
     return `${tu}si estás en peligro, llama ahora al 133 de Carabineros, al 132 de Bomberos o al 131 del SAMU. También puedes tocar el botón rojo SOS para enviar tu ubicación a tu familia.`
+  if (QUIERE.memoria.test(t)) {
+    const h = leerMemoria().hechos.slice(-4).map((x) => x.texto.charAt(0).toLowerCase() + x.texto.slice(1))
+    return h.length
+      ? `¡Claro que me acuerdo${nombre ? `, ${nombre}` : ''}! Sé que ${h.join(', que ').replace(/^se llama/, 'te llamas')}. Si quieres que olvide algo, entra a Ajustes.`
+      : '¡Todavía te estoy conociendo! Cuéntame de ti: cómo te llamas, si tienes mascota o qué te gusta hacer, y lo voy a recordar.'
+  }
+  const aprendido = aprenderSolo(pregunta)
+  if (aprendido.length && pregunta.length < 90 && !QUIERE.lluvia.test(t) && !QUIERE.temperatura.test(t))
+    return `¡Anotado${nombre ? `, ${nombre}` : ''}! Lo voy a recordar para cuidarte mejor. ¿Quieres que te cuente cómo viene el clima?`
   if (QUIERE.quien.test(t)) return `¡Soy ZUMI, un panda rojo que vive en el estudio del clima de AlertaClima! Te cuento cómo está ${lugar}, te aviso de las alertas y te acompaño cuando el tiempo se pone feo.`
   if (QUIERE.gracias.test(t)) return azar([`¡Gracias a ti${nombre ? `, ${nombre}` : ''}! Me alegra mucho acompañarte.`, '¡Ay, me hiciste mover la cola de felicidad! Aquí estoy cuando me necesites.'])
   if (QUIERE.chiste.test(t))
