@@ -91,13 +91,20 @@ function dibujarPelota(g, { x, y, r, giro }) {
   g.restore()
 }
 
-// Videos reales de ZUMI en reposo (hechos con Google Flow a partir de su pose de descanso; empiezan y
-// terminan en el mismo cuadro, así el bucle no se nota). Cubren la escena completa.
-const VIDEO_REPOSO = { sala: `${RUTA}sala/reposo` }
+// Videos reales de ZUMI (hechos con Google Flow a partir de su pose de descanso de cada escena; empiezan
+// y terminan en ese mismo cuadro, así el bucle y el regreso a la marioneta no se notan). Cubren la escena
+// completa. «reposo» se repite mientras está quieto; los demás son gestos que se reproducen una vez.
+const VIDEOS = {
+  sala: ['reposo', 'saludo', 'celebrar'],
+  noche: ['reposo'],
+  lluvia: ['reposo'],
+  alerta: ['reposo'],
+  estudio: ['reposo'],
+}
 const ahorroDatos = () => typeof navigator !== 'undefined' && !!navigator.connection?.saveData
 
 export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null, vivo = false }) {
-  const capaViva = useRef(null)
+  const capas = useRef({}) // nombre → <video>
   const caja = useRef(null)
   const lienzo = useRef(null)
   const peli = useRef(null)
@@ -302,7 +309,19 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
         c.gestoPedido = null
         if (pedido === 'caminar') a.proximaCaminata = t
         else if (pedido === 'pelota') a.proximaPelota = t
-        else if (GESTOS[pedido]) {
+        else if (capas.current[pedido]?.readyState >= 3 && capas.current[pedido].dataset.escena === c.escena && !habla && !piensa) {
+          // gesto filmado: lo hace el video real; la marioneta se queda en reposo debajo
+          const vg = capas.current[pedido]
+          if (c.videoGesto && capas.current[c.videoGesto]) capas.current[c.videoGesto].style.opacity = '0'
+          c.videoGesto = pedido
+          vg.currentTime = 0
+          vg.style.opacity = '1'
+          vg.play().catch(() => {})
+          vg.onended = () => {
+            vg.style.opacity = '0'
+            if (c.videoGesto === pedido) c.videoGesto = null
+          }
+        } else if (GESTOS[pedido]) {
           a.gesto = pedido
           a.gestoHasta = t + (GESTOS[pedido].dur ?? 2000)
         }
@@ -457,16 +476,25 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
 
       // Capa «viva»: cuando ZUMI está en reposo de verdad, se funde un video real suyo (respira,
       // parpadea, mueve las orejas). Cualquier gesto, el dedo, la voz o un paseo vuelven a la marioneta.
-      const vv = capaViva.current
+      const vv = capas.current.reposo
+      for (const v of Object.values(capas.current)) {
+        if (!v) continue
+        const caja = `${ox | 0}|${oy | 0}|${(p.ancho * k) | 0}`
+        if (v.dataset.caja !== caja) {
+          v.dataset.caja = caja
+          Object.assign(v.style, { left: `${ox}px`, top: `${oy}px`, width: `${p.ancho * k}px`, height: `${p.alto * k}px` })
+        }
+      }
+      // si empieza a hablar o cambia de escena, el gesto filmado se corta
+      if (c.videoGesto && (habla || piensa || e !== c.actual || alfa < 1)) {
+        const vg = capas.current[c.videoGesto]
+        if (vg) vg.style.opacity = '0'
+        c.videoGesto = null
+      }
       if (vv && e === c.actual) {
         const quieto = !habla && !piensa && !escucha && !andando && !conDedo && a.pelotaDesde < 0 && a.gesto === 'reposo' && Math.abs(a.x) < 2 && Math.abs(a.esc - 1) < 0.01 && alfa === 1 && vv.dataset.escena === c.escena
         a.quietoDesde = quieto ? (a.quietoDesde ?? t) : null
-        const ver = quieto && t - a.quietoDesde > 900 && vv.readyState >= 3
-        const caja = `${ox | 0}|${oy | 0}|${(p.ancho * k) | 0}`
-        if (vv.dataset.caja !== caja) {
-          vv.dataset.caja = caja
-          Object.assign(vv.style, { left: `${ox}px`, top: `${oy}px`, width: `${p.ancho * k}px`, height: `${p.alto * k}px` })
-        }
+        const ver = (quieto && t - a.quietoDesde > 900 && vv.readyState >= 3) || !!c.videoGesto
         if (ver !== (vv.dataset.ver === '1')) {
           vv.dataset.ver = ver ? '1' : '0'
           vv.style.opacity = ver ? '1' : '0'
@@ -614,24 +642,30 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
         className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
         style={{ objectPosition: `${posicion[0] * 100}% ${posicion[1] * 100}%`, opacity: enPelicula ? 1 : 0, pointerEvents: 'none' }}
       />
-      {vivo && VIDEO_REPOSO[escena] && !ahorroDatos() && (
-        <video
-          key={escena}
-          ref={capaViva}
-          data-escena={escena}
-          muted
-          loop
-          playsInline
-          preload="auto"
-          disablePictureInPicture
-          aria-hidden="true"
-          className="absolute max-w-none"
-          style={{ opacity: 0, transition: 'opacity 260ms ease', pointerEvents: 'none' }}
-        >
-          <source src={`${VIDEO_REPOSO[escena]}.webm`} type="video/webm" />
-          <source src={`${VIDEO_REPOSO[escena]}.mp4`} type="video/mp4" />
-        </video>
-      )}
+      {vivo &&
+        !enPelicula &&
+        !ahorroDatos() &&
+        (VIDEOS[escena] ?? []).map((nombre) => (
+          <video
+            key={`${escena}-${nombre}`}
+            ref={(el) => {
+              if (el) capas.current[nombre] = el
+              else delete capas.current[nombre]
+            }}
+            data-escena={escena}
+            muted
+            loop={nombre === 'reposo'}
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            aria-hidden="true"
+            className="absolute max-w-none"
+            style={{ opacity: 0, transition: `opacity ${nombre === 'reposo' ? 260 : 160}ms ease`, pointerEvents: 'none' }}
+          >
+            <source src={`${RUTA}${escena}/${nombre}.webm`} type="video/webm" />
+            <source src={`${RUTA}${escena}/${nombre}.mp4`} type="video/mp4" />
+          </video>
+        ))}
       {pantalla && rect && !enPelicula && (
         <div className="pantalla-estudio absolute overflow-hidden" style={{ left: rect[0], top: rect[1], width: rect[2], height: rect[3] }}>
           {pantalla}

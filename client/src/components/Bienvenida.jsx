@@ -107,7 +107,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
     <div className="bienvenida fixed inset-0 z-[1000] flex flex-col overflow-hidden bg-[#0b0806] text-white" role="dialog" aria-modal="true" aria-labelledby="t-bienvenida">
       {/* ZUMI en su casa */}
       <div className="relative min-h-0 flex-1">
-        <ZumiMarioneta escena={escena} estado={hablando ? 'hablando' : 'reposo'} gesto={gesto} posicion={[0.5, 0.22]} peliculas={false} />
+        <ZumiMarioneta escena={escena} estado={hablando ? 'hablando' : 'reposo'} gesto={gesto} posicion={[0.5, 0.22]} peliculas={false} vivo />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-[#0b0806]" aria-hidden="true" />
         <div className="safe-top absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3">
           <span className="flex items-center gap-2 text-[17px] font-black tracking-tight">

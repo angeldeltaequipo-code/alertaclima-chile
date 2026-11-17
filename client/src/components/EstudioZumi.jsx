@@ -388,6 +388,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
           estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
           gesto={gestoEscena}
           posicion={[0.5, 0.3]}
+          vivo
           pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
         />
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
