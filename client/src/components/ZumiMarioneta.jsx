@@ -553,7 +553,12 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
   }, [posicion[0], posicion[1]])
 
   return (
-    <div ref={caja} className={`zumi-marioneta escena-${escena} absolute inset-0 overflow-hidden bg-[#1b1410] ${className}`}>
+    <div
+      ref={caja}
+      className={`zumi-marioneta escena-${escena} absolute inset-0 overflow-hidden bg-[#1b1410] bg-cover ${className}`}
+      // mientras cargan las piezas se ve la habitación (no un hueco negro)
+      style={{ backgroundImage: `url(${RUTA}${escena}/fondo.webp)`, backgroundPosition: `${posicion[0] * 100}% ${posicion[1] * 100}%` }}
+    >
       <canvas ref={lienzo} aria-hidden="true" className="absolute inset-0 h-full w-full" />
       <video
         ref={peli}
