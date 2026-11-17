@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 process.env.DATABASE_URL = 'postgres://nadie:nada@127.0.0.1:1/nada'
 const { crearApp } = await import('../app.js')
 
-// Sin base de datos disponible, /api/salud debe responder 503 "degradado" (no caerse).
+// Sin base de datos disponible, /api/salud responde 200 "degradado" (el servidor sigue vivo; Render no lo da por caído).
 test('salud responde aunque la base de datos no esté', async () => {
   const app = crearApp()
   const srv = app.listen(0)
@@ -13,7 +13,7 @@ test('salud responde aunque la base de datos no esté', async () => {
     const { port } = srv.address()
     const r = await fetch(`http://127.0.0.1:${port}/api/salud`)
     const cuerpo = await r.json()
-    assert.equal(r.status, 503)
+    assert.equal(r.status, 200)
     assert.equal(cuerpo.estado, 'degradado')
     assert.equal(cuerpo.baseDeDatos.ok, false)
   } finally {
