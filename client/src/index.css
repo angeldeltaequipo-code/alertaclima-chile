@@ -1023,8 +1023,15 @@ body {
 }
 .escenario-velo {
   background:
-    linear-gradient(to bottom, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.12) 26%, transparent 42%),
-    linear-gradient(to top, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.35) 22%, transparent 42%);
+    linear-gradient(to bottom, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.1) 22%, transparent 34%),
+    linear-gradient(to top, #1a120d 0%, rgb(26 18 13 / 0.6) 6%, transparent 16%);
+}
+/* Debajo del escenario: mismo tono de su casa, para que se lea como una sola tarjeta */
+.portada-acciones {
+  background: #1a120d;
+}
+.portada-acciones .chip-escenario {
+  background: rgb(255 255 255 / 0.1);
 }
 .globo-escenario {
   background: rgb(255 255 255 / 0.94);

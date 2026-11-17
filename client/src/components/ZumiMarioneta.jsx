@@ -91,7 +91,7 @@ function dibujarPelota(g, { x, y, r, giro }) {
   g.restore()
 }
 
-export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true }) {
+export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null }) {
   const caja = useRef(null)
   const lienzo = useRef(null)
   const peli = useRef(null)
@@ -246,9 +246,28 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
     const dibujarEscena = (g, e, alfa, cw, ch, t, dt) => {
       const p = e.pieza
       const { img } = e
-      const k = Math.max(cw / p.ancho, ch / p.alto)
-      const ox = (cw - p.ancho * k) * posicion[0]
-      const oy = (ch - p.alto * k) * posicion[1]
+      let k = Math.max(cw / p.ancho, ch / p.alto)
+      let ox = (cw - p.ancho * k) * posicion[0]
+      let oy = (ch - p.alto * k) * posicion[1]
+      // Encuadre: franja vertical de la escena [desde, hasta] (0..1) que SIEMPRE debe verse entera
+      // (ZUMI de las orejas a los pies). Si llenando el ancho no cabe, se encuadra por altura y los
+      // costados se rellenan con la misma habitación, oscurecida.
+      if (encuadre) {
+        const y0 = encuadre[0] * p.alto
+        const y1 = encuadre[1] * p.alto
+        if ((y1 - y0) * k > ch) {
+          const kc = k
+          k = ch / (y1 - y0)
+          ox = (cw - p.ancho * k) / 2
+          oy = -y0 * k
+          g.save()
+          g.globalAlpha = alfa
+          g.drawImage(img.fondo, (cw - p.ancho * kc) / 2, (ch - p.alto * kc) * posicion[1], p.ancho * kc, p.alto * kc)
+          g.globalAlpha = alfa * 0.55
+          g.rellenar(0, 0, cw, ch, [0.07, 0.05, 0.04])
+          g.restore()
+        } else oy = Math.min(0, Math.max(ch - p.alto * k, -y0 * k + (ch - (y1 - y0) * k) / 2))
+      }
       g.save()
       g.globalAlpha = alfa
       g.translate(ox, oy)
@@ -550,7 +569,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
     raf = requestAnimationFrame(cuadro)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posicion[0], posicion[1]])
+  }, [posicion[0], posicion[1], encuadre?.[0], encuadre?.[1]])
 
   return (
     <div

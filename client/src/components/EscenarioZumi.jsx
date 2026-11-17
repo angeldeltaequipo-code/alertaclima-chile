@@ -13,6 +13,9 @@ const grados = (v) => `${Math.round(v)}°`
 // Preguntas que se pueden hacer con un toque (ZUMI las responde hablando).
 const PREGUNTAS = ['¿Va a llover mañana?', '¿Qué me pongo hoy?', '¿Hay alguna alerta?', '¿Cómo estará el fin de semana?']
 
+// Franja de la escena que siempre se ve: de sus orejas a sus pies (con un poco de aire)
+const ENCUADRE = [0.2, 0.87]
+
 // Lo que dice cuando lo tocas (sin gastar voz: solo el globo y el gesto).
 const REACCIONES = [
   ['¡Jaja, cosquillas no!', 'celebrar'],
@@ -105,37 +108,41 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   const globo = reaccion ?? (principal ? `${NIVELES[principal.nivel].etiqueta}: ${principal.amenaza}. Tócame y te explico qué hacer.` : frases[k % frases.length])
 
   return (
-    <section ref={raiz} aria-label="ZUMI, tu amigo del clima" className={`portada-zumi relative -mx-4 -mt-3 h-[min(68dvh,580px)] min-h-[440px] overflow-hidden ${principal ? 'con-alerta' : ''}`}>
-      <ZumiMarioneta escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.2]} peliculas={false} className="escenario-zumi-lienzo" />
-      <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
+    <section ref={raiz} aria-label="ZUMI, tu amigo del clima" className={`portada-zumi relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}>
+      {/* Escenario: siempre muestra a ZUMI entero (de las orejas a los pies) y cerca; nada lo tapa */}
+      <div className="relative w-full" style={{ aspectRatio: '0.86', maxHeight: '47dvh', minHeight: 300 }}>
+        <ZumiMarioneta escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} peliculas={false} className="escenario-zumi-lienzo" />
+        <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
 
-      {/* Tocar a ZUMI: zona central (no tapa los botones) */}
-      <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[18%] top-[30%] bottom-[34%] rounded-[40%] focus-visible:outline-4" />
+        {/* Tocar a ZUMI */}
+        <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[22%] top-[18%] bottom-[4%] rounded-[40%] focus-visible:outline-4" />
 
-      {/* Clima de ahora */}
-      <div className="pointer-events-none absolute top-3 left-4 text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.55)]">
-        {ahora?.temperatura != null && <p className="text-[64px] leading-none font-black tracking-tight">{grados(ahora.temperatura)}</p>}
-        <p className="mt-1 text-[18px] font-bold">{ahora?.texto}</p>
-        {hoy && (
-          <p className="text-[15px] font-semibold opacity-90">
-            Máx. {grados(hoy.max)} · Mín. {grados(hoy.min)}
-            {ahora?.sensacion != null && Math.abs(ahora.sensacion - ahora.temperatura) >= 2 ? ` · Se siente ${grados(ahora.sensacion)}` : ''}
-          </p>
-        )}
+        {/* Lo que dice ZUMI */}
+        <button
+          type="button"
+          onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
+          className="globo-escenario absolute top-3 right-3 left-[30%] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug font-bold"
+          aria-live="polite"
+        >
+          <span key={globo} className="globo-texto block">{globo}</span>
+        </button>
       </div>
 
-      {/* Lo que dice ZUMI */}
-      <button
-        type="button"
-        onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
-        className="globo-escenario absolute top-[7.6rem] right-3 left-[47%] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug font-bold"
-        aria-live="polite"
-      >
-        <span key={globo} className="globo-texto block">{globo}</span>
-      </button>
-
-      {/* Acciones */}
-      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+      {/* Acciones: debajo de ZUMI, sin taparlo */}
+      <div className="portada-acciones px-4 pt-2 pb-4">
+        {/* El clima de ahora, de un vistazo */}
+        <div className="mb-3 flex items-center gap-3 text-white">
+          {ahora?.temperatura != null && <p className="text-[46px] leading-none font-black tracking-tight">{grados(ahora.temperatura)}</p>}
+          <div className="min-w-0">
+            <p className="truncate text-[17px] font-bold">{ahora?.texto}</p>
+            {hoy && (
+              <p className="text-[14px] font-semibold text-white/75">
+                Máx. {grados(hoy.max)} · Mín. {grados(hoy.min)}
+                {ahora?.sensacion != null && Math.abs(ahora.sensacion - ahora.temperatura) >= 2 ? ` · Se siente ${grados(ahora.sensacion)}` : ''}
+              </p>
+            )}
+          </div>
+        </div>
         <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
