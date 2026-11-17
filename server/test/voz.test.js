@@ -46,3 +46,51 @@ test('si Gemini no tiene el modelo, prueba el siguiente', async () => {
   assert.equal(vistos.length, 2)
   delete process.env.GEMINI_API_KEY
 })
+
+test('la voz se guarda en la base y no se vuelve a generar', async () => {
+  const { sintetizar, usarBaseDeVoz } = await import('../services/voz/index.js')
+  process.env.GEMINI_API_KEY = 'prueba'
+  const filas = new Map()
+  const db = {
+    query: async (sql, args) => {
+      if (sql.startsWith('UPDATE voz_cache')) return { rows: filas.has(args[0]) ? [{ wav: filas.get(args[0]) }] : [] }
+      if (sql.startsWith('INSERT INTO voz_cache')) filas.set(args[0], args[1])
+      return { rows: [] }
+    },
+  }
+  usarBaseDeVoz(db)
+  let llamadas = 0
+  const fetchOriginal = globalThis.fetch
+  globalThis.fetch = async () => (llamadas++, { ok: true, json: async () => ({ steps: [{ type: 'model_output', content: [{ type: 'audio', data: Buffer.alloc(48).toString('base64') }] }] }) })
+  try {
+    const texto = `Frase guardada ${Math.random()}`
+    await sintetizar(texto)
+    await new Promise((r) => setTimeout(r, 10))
+    assert.equal(filas.size, 1)
+    assert.equal(llamadas, 1)
+  } finally {
+    globalThis.fetch = fetchOriginal
+    usarBaseDeVoz(null)
+    delete process.env.GEMINI_API_KEY
+  }
+})
+
+test('sin cupo de Gemini, la voz responde «descansa» al instante sin reintentar', async () => {
+  const { sintetizar, vozSinCupo } = await import('../services/voz/index.js')
+  process.env.GEMINI_API_KEY = 'prueba'
+  let llamadas = 0
+  const fetchOriginal = globalThis.fetch
+  globalThis.fetch = async () => (llamadas++, { ok: false, status: 429, text: async () => 'Rate limit exceeded (limit: 10 requests per day on Free Tier). Please retry in 3h2m1s' })
+  try {
+    await assert.rejects(sintetizar(`Sin cupo ${Math.random()}`), (e) => e.status === 503)
+    assert.ok(vozSinCupo())
+    const antes = llamadas
+    const t0 = Date.now()
+    await assert.rejects(sintetizar(`Otra ${Math.random()}`), (e) => e.status === 503)
+    assert.equal(llamadas, antes) // no vuelve a llamar a Gemini
+    assert.ok(Date.now() - t0 < 200)
+  } finally {
+    globalThis.fetch = fetchOriginal
+    delete process.env.GEMINI_API_KEY
+  }
+})

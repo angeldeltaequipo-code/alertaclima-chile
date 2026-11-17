@@ -12,12 +12,18 @@ export const usarVozPropia = () => true
 export const guardarUsarVozPropia = (v) => guardar('zumi:voz-propia', Boolean(v))
 
 let disponible = null
+// ¿La voz con IA se quedó sin cupo por hoy? Entonces no se precargan frases (no se gasta nada).
+let descansa = false
+
 export async function vozPropiaDisponible() {
   if (!API_URL || !usarVozPropia()) return false
   if (disponible !== null) return disponible
   try {
     const r = await fetch(`${API_URL}/api/voz/estado`, { signal: AbortSignal.timeout(12000) })
-    disponible = r.ok && (await r.json()).activa === true
+    const d = r.ok ? await r.json() : {}
+    disponible = d.activa === true
+    descansa = d.descansa === true
+    if (descansa) setTimeout(() => (disponible = null), 10 * 60_000) // se vuelve a consultar en 10 minutos
   } catch {
     disponible = false
     setTimeout(() => (disponible = null), 60_000) // se reintenta en un minuto
@@ -103,7 +109,7 @@ export async function pedirFrase(texto, { signal } = {}) {
 let precargado = ''
 export async function precargarFrases(textos, max = 3) {
   const clave = textos.slice(0, max).join('|')
-  if (!textos.length || clave === precargado || !(await vozPropiaDisponible())) return
+  if (!textos.length || clave === precargado || !(await vozPropiaDisponible()) || descansa) return
   precargado = clave
   for (const t of textos.slice(0, max)) {
     try {

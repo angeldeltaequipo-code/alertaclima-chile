@@ -108,6 +108,48 @@ export function paraVoz(texto) {
 // Caché en memoria (frases recientes: saludos, reportes repetidos)
 const CACHE_MAX = 120
 const cache = new Map()
+
+// Caché permanente en la base de datos: cada frase se genera una sola vez (ahorra cupo y dinero de la voz
+// con IA, y sobrevive a los reinicios del servidor). Se guardan como máximo VOZ_CACHE_MAX frases (las más usadas).
+let base = null
+export const usarBaseDeVoz = (db) => (base = db)
+const CACHE_DB_MAX = () => Number(process.env.VOZ_CACHE_MAX ?? 800)
+async function deBase(k) {
+  if (!base) return null
+  try {
+    const { rows } = await base.query('UPDATE voz_cache SET usos = usos + 1, usado_en = now() WHERE clave = $1 RETURNING wav', [k])
+    return rows[0]?.wav ?? null
+  } catch {
+    return null // sin tabla o sin base: se sigue sin caché permanente
+  }
+}
+function aBase(k, wav) {
+  if (!base) return
+  base
+    .query('INSERT INTO voz_cache (clave, wav) VALUES ($1, $2) ON CONFLICT (clave) DO NOTHING', [k, wav])
+    .then(() =>
+      // poda de vez en cuando: quedan las frases usadas más recientemente
+      Math.random() < 0.05
+        ? base.query('DELETE FROM voz_cache WHERE clave IN (SELECT clave FROM voz_cache ORDER BY usado_en DESC OFFSET $1)', [CACHE_DB_MAX()])
+        : null,
+    )
+    .catch((e) => console.error('No se pudo guardar la voz en la base:', e.message))
+}
+const recordar = (k, b) => {
+  cache.set(k, b)
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+}
+
+// Cuando Gemini responde «sin cupo», no se le vuelve a preguntar hasta que se renueve (respuesta inmediata).
+let sinCupoHasta = 0
+export const vozSinCupo = () => Date.now() < sinCupoHasta
+function anotarCupo(error) {
+  const m = String(error?.message ?? '')
+  if (!/\b429\b|rate limit|quota|RESOURCE_EXHAUSTED/i.test(m)) return
+  const r = /retry in (?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i.exec(m)
+  const ms = r ? ((+r[1] || 0) * 3600 + (+r[2] || 0) * 60 + (+r[3] || 0)) * 1000 : 0
+  sinCupoHasta = Date.now() + Math.min(Math.max(ms, 60_000), 12 * 3600_000)
+}
 const clave = (t) => createHash('sha1').update(`${proveedorVoz()}|${VOZ_ZUMI()}|${JSON.stringify(ajustesVoz())}|${t}`).digest('hex')
 
 let hilo = null
@@ -155,22 +197,30 @@ export async function sintetizar(texto, { matiz, voz } = {}) {
     cache.set(k, b)
     return b
   }
+  const guardada = await deBase(k)
+  if (guardada) {
+    const b = Buffer.from(guardada)
+    recordar(k, b)
+    return b
+  }
   if (proveedorVoz() === 'gemini') {
     // Una sola voz: si Gemini falla se reintenta, pero no se cambia a otra voz (salvo VOZ_RESPALDO=true).
     let error = null
-    for (let intento = 0; intento < 2; intento++) {
+    for (let intento = 0; intento < 2 && !vozSinCupo(); intento++) {
       try {
         const b = await vozGemini(t, { estilo: ESTILO_ZUMI + extra, ...(voz ? { voz } : {}) })
-        cache.set(k, b)
-        if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+        recordar(k, b)
+        aBase(k, b)
         return b
       } catch (e) {
         error = e
+        anotarCupo(e)
         console.error('Voz Gemini falló:', e.message)
-        await new Promise((ok) => setTimeout(ok, 900))
+        if (!vozSinCupo()) await new Promise((ok) => setTimeout(ok, 900))
       }
     }
-    if (process.env.VOZ_RESPALDO !== 'true' || !piperListo()) throw error
+    error ??= Object.assign(new Error('La voz de ZUMI descansa: se acabó el cupo de hoy'), { status: 503 })
+    if (process.env.VOZ_RESPALDO !== 'true' || !piperListo()) throw Object.assign(error, { status: 503 })
   }
   await iniciar()
   const trabajo = cola.then(
@@ -183,8 +233,7 @@ export async function sintetizar(texto, { matiz, voz } = {}) {
   )
   cola = trabajo.catch(() => {})
   const b = await trabajo
-  cache.set(k, b)
-  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value)
+  recordar(k, b)
   return b
 }
 

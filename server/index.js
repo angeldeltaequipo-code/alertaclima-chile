@@ -4,7 +4,7 @@ import { crearApp, origenesPermitidos } from './app.js'
 import { pool } from './db/pool.js'
 import { limpiarVencidos } from './services/reportes.js'
 import { leerSesion, usuarioPorId } from './services/cuentas.js'
-import { precalentar } from './services/voz/index.js'
+import { precalentar, usarBaseDeVoz } from './services/voz/index.js'
 
 const PUERTO = Number(process.env.PORT ?? 3000)
 
@@ -62,6 +62,7 @@ const limpieza = setInterval(
 
 http.listen(PUERTO, () => {
   console.log(`AlertaClima API escuchando en el puerto ${PUERTO}`)
+  usarBaseDeVoz(pool) // los audios de ZUMI se guardan en la base (se generan una sola vez)
   precalentar() // voz de ZUMI lista para la primera frase
 })
 

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { MAX_TEXTO, proveedorVoz, sintetizar, vozActiva } from '../services/voz/index.js'
+import { MAX_TEXTO, proveedorVoz, sintetizar, vozActiva, vozSinCupo } from '../services/voz/index.js'
 
 // Límite por IP: frases por minuto (un reporte completo son ~8 frases).
 const VENTANA = 60_000
@@ -21,7 +21,7 @@ function permitido(ip) {
  */
 export function vozRouter() {
   const r = Router()
-  r.get('/estado', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ activa: vozActiva(), proveedor: proveedorVoz() }))
+  r.get('/estado', (req, res) => res.set('Cache-Control', 'public, max-age=300').json({ activa: vozActiva(), proveedor: proveedorVoz(), descansa: vozSinCupo() }))
   r.get('/', async (req, res, next) => {
     try {
       if (!vozActiva()) return res.status(503).json({ error: 'La voz de ZUMI no está disponible' })
@@ -31,6 +31,7 @@ export function vozRouter() {
       const wav = await sintetizar(t, { matiz: req.query.matiz === 'escena' ? 'escena' : undefined, voz: typeof req.query.voz === 'string' ? req.query.voz : undefined })
       res.set({ 'Content-Type': 'audio/wav', 'Cache-Control': 'public, max-age=86400', 'Content-Length': wav.length }).send(wav)
     } catch (e) {
+      if (e?.status === 503) return res.status(503).set('Retry-After', '600').json({ error: 'La voz de ZUMI descansa un rato; vuelve pronto' })
       next(e)
     }
   })
