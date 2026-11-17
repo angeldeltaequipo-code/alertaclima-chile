@@ -4,12 +4,13 @@
 // de un reporte, pero no para trabajos cartográficos de precisión.
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { pool } from '../db/pool.js'
+import { conectarOAvisar, pool } from '../db/pool.js'
 
 const CLIENTE = join(import.meta.dirname, '..', '..', 'client')
 const regiones = JSON.parse(await readFile(join(CLIENTE, 'src', 'data', 'comunas.json'), 'utf8'))
 
-const cliente = await pool.connect()
+const cliente = await conectarOAvisar('Carga de comunas')
+if (!cliente) process.exit(0)
 try {
   // Con --si-vacia solo carga si la tabla no tiene datos (útil en cada arranque del servidor).
   if (process.argv.includes('--si-vacia')) {

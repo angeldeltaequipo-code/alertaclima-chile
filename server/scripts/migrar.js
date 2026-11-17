@@ -2,11 +2,12 @@
 // Cada archivo corre dentro de una transacción.
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { pool } from '../db/pool.js'
+import { conectarOAvisar, pool } from '../db/pool.js'
 
 const DIR = join(import.meta.dirname, '..', 'db', 'migrations')
 
-const cliente = await pool.connect()
+const cliente = await conectarOAvisar('Migraciones')
+if (!cliente) process.exit(0)
 try {
   await cliente.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
     nombre TEXT PRIMARY KEY, aplicada_en TIMESTAMPTZ NOT NULL DEFAULT now())`)
