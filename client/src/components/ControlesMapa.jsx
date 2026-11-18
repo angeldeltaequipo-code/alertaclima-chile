@@ -21,6 +21,7 @@ const ICONOS = {
       <path d="M8 10.5Q12 8.5 16 10.5L15.5 15H14l-.6 6h-2.8l-.6-6H8.5z" />
     </>
   ),
+  relieve: <path d="M2 20l6-10 4 6 3-4 7 8zM8 10l2-3" />,
   satelite: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -88,6 +89,9 @@ export default function ControlesMapa({
   onVolcanes,
   nubesActivo,
   onNubes,
+  relieve3d = false,
+  onRelieve3d = () => {},
+  onViajar = null,
 }) {
   const fila = useRef(null)
   const pausa = useRef(0)
@@ -153,6 +157,7 @@ export default function ControlesMapa({
           onTouchStart={detener}
           className="fila-capas flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1 pr-1 [scrollbar-width:none]"
         >
+          <Chip activo={relieve3d} onClick={() => onRelieve3d(!relieve3d)} color="#7c3aed" etiqueta={relieve3d ? 'Ver el mapa plano' : 'Ver montañas en 3D'} texto="3D" icono="relieve" />
           {capas.map((c) => (
             <Chip key={c.id} activo={c.activo} onClick={c.accion} color={c.color} etiqueta={c.etiqueta ?? c.texto} texto={c.texto} icono={c.id} />
           ))}
@@ -160,6 +165,17 @@ export default function ControlesMapa({
           <Chip activo={modoCalle} onClick={() => onModoCalle(!modoCalle)} color="#ca8a04" etiqueta={modoCalle ? 'Cancelar ver la calle' : 'Ver la calle'} texto={modoCalle ? 'Cancelar' : 'Calle'} icono="calle" />
         </div>
       </div>
+
+      {onViajar && (
+        <button
+          type="button"
+          onClick={onViajar}
+          className="boton-viajar absolute top-[4.25rem] left-3 z-[500] flex min-h-14 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-[16px] font-black text-slate-950 shadow-[0_10px_30px_rgba(0,0,0,.4)] active:scale-[0.97]"
+        >
+          <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className="size-11 rounded-full ring-2 ring-white" />
+          Viaja con ZUMI
+        </button>
+      )}
 
       {modoCalle && (
         <p role="status" className="absolute top-16 right-3 left-3 z-[500] mx-auto max-w-sm rounded-xl bg-senal px-3 py-2 text-center text-[15px] font-bold text-sobre-senal shadow-lg">

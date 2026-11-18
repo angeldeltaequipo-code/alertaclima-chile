@@ -45,6 +45,8 @@ import PanelEvacuacion from './components/PanelEvacuacion'
 import { obtenerEvacuacion } from './services/evacuacion'
 import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
+import ViajeZumi from './components/ViajeZumi'
+import { LUGARES, NARRADOR, leerPasaporte, lugarPorId } from './services/viajes'
 import TirarParaActualizar from './components/TirarParaActualizar'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
@@ -120,6 +122,16 @@ export default function App() {
   const [enfocarMapa, setEnfocarMapa] = useState(null)
   const [capaNubes, setCapaNubes] = useState(() => leer('mapa:nubes', false))
   const [capaCamaras, setCapaCamaras] = useState(() => leer('mapa:camaras', true))
+  const [relieve3d, setRelieve3d] = useState(() => leer('mapa:3d', false))
+  // Viaja con ZUMI: lugar histórico al que vuela el mapa (null = sin viaje)
+  const [viaje, setViaje] = useState(null)
+  const [sellos, setSellos] = useState(leerPasaporte)
+  useEffect(() => {
+    const f = () => setSellos(leerPasaporte())
+    window.addEventListener('ac:pasaporte', f)
+    return () => window.removeEventListener('ac:pasaporte', f)
+  }, [])
+  const lugaresMapa = useMemo(() => LUGARES.map((l) => ({ ...l, avatar: NARRADOR.avatar, sellado: Boolean(sellos[l.id]) })), [sellos])
   // Vías de evacuación: { estado: 'cargando' | 'listo' | 'error', datos, error }
   const [evac, setEvac] = useState(null)
   const notifBase = useNotificaciones({ enLinea })
@@ -219,6 +231,19 @@ export default function App() {
     if (v === 'radar') setMapaMontado(true)
     window.scrollTo(0, 0)
   }
+  // «Viaja con ZUMI» desde cualquier pantalla: abre el mapa y despega
+  useEffect(() => {
+    const f = (e) => {
+      setVista('radar')
+      setViaje(lugarPorId(e.detail) ?? LUGARES.find((l) => !leerPasaporte()[l.id]) ?? LUGARES[0])
+    }
+    window.addEventListener('ac:viajar', f)
+    return () => window.removeEventListener('ac:viajar', f)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    if (vista !== 'radar') setViaje(null)
+  }, [vista])
 
   // La ficha abierta se actualiza si llegan votos nuevos, y se cierra si el reporte se retira.
   const fichaActual = seleccionado ? rep.reportes.find((r) => r.id === seleccionado.id) ?? null : null
@@ -416,11 +441,22 @@ export default function App() {
                 }}
                 enfocar={enfocarMapa}
                 nubes={capaNubes}
+                relieve3d={relieve3d}
+                lugares={lugaresMapa}
+                onLugar={(l) => setViaje(lugarPorId(l.id))}
+                viaje={viaje}
               />
             </Suspense>
             </Resguardo>
           )}
+          {viaje && <ViajeZumi lugar={viaje} onCambiar={setViaje} onCerrar={() => setViaje(null)} />}
           <ControlesMapa
+            relieve3d={relieve3d}
+            onRelieve3d={(v) => {
+              guardar('mapa:3d', v)
+              setRelieve3d(v)
+            }}
+            onViajar={viaje ? null : () => setViaje(LUGARES.find((l) => !sellos[l.id]) ?? LUGARES[0])}
             base={baseMapa}
             onBase={setBaseMapa}
             modoCalle={modoCalle}
@@ -603,7 +639,7 @@ export default function App() {
         </Suspense>
       )}
       {sos && <Suspense fallback={null}><PantallaSOS nombre={cuenta.usuario?.nombre} onCerrar={() => setSos(false)} /></Suspense>}
-      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (evac || rios || fichaActual || camaraSel || sismoSel || volcanSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
+      {comuna && vista !== 'chat' && !zumi && !avisoPendiente && !(vista === 'radar' && (viaje || evac || rios || fichaActual || camaraSel || sismoSel || volcanSel)) && <BotonZumi traje={traje} onAbrir={() => setZumi(true)} />}
       {zumi && comuna && (
         <Suspense fallback={<div className="fixed inset-0 z-[1150] grid place-items-center bg-[#050a18] text-white/80">Llamando a ZUMI…</div>}>
           <EstudioZumi

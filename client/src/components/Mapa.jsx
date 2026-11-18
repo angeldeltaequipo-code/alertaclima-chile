@@ -152,6 +152,8 @@ const iconoVolcan = (color) =>
 // Base «Satélite»: Esri World Imagery con las calles y nombres del mapa vectorial encima.
 //   Libre con atribución en etapa no comercial; para vender, usar una clave de ArcGIS Location Platform.
 const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
+const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
+const calma = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const SATELITE = 'esri://{z}/{y}/{x}'
 const ATRIB_ESRI = 'Imágenes © Esri, Vantor, Earthstar Geographics'
 const CHILE = [
@@ -230,11 +232,15 @@ export default function Mapa({
   onSismo = () => {},
   enfocar = null,
   nubes = false,
+  relieve3d = false,
+  lugares = [],
+  onLugar = () => {},
+  viaje = null,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
   const props = useRef({})
-  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos }
+  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos, onLugar, base, relieve3d, viaje }
 
   // Ejecuta cuando el estilo esté cargado.
   const cuandoListo = (fn) => {
@@ -286,6 +292,20 @@ export default function Mapa({
         attribution: ATRIB_ESRI,
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
+
+      // Relieve real de la Tierra (Mapzen/AWS, libre): sombras de montañas siempre, y 3D al inclinar.
+      mapa.addSource('dem', { type: 'raster-dem', tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: 'terrarium', attribution: 'Relieve: Mapzen, AWS Terrain Tiles' })
+      mapa.addLayer(
+        { id: 'relieve', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.38, 'hillshade-shadow-color': '#3a2f28', 'hillshade-highlight-color': '#fffaf0', 'hillshade-accent-color': '#5b4636' } },
+        primeraLinea,
+      )
+      // Globo terráqueo al alejarse y cielo con atmósfera (como Google Earth).
+      try {
+        mapa.setProjection({ type: 'globe' })
+        mapa.setSky({ 'sky-color': '#0d2a55', 'horizon-color': '#9cc3ea', 'fog-color': '#cfe0f2', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.5, 'fog-ground-blend': 0.6, 'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 6, 0.6, 10, 0] })
+      } catch {
+        /* versión sin globo: mapa plano */
+      }
 
       mapa.addSource('nubes', { type: 'raster', tiles: ['nubes://{z}/{y}/{x}'], tileSize: 256, maxzoom: 6, attribution: 'Nubes: GOES-Este, NASA GIBS' })
       // Bajo los nombres de ciudades, para que se sigan leyendo.
@@ -716,6 +736,112 @@ export default function Mapa({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rioEnfocado])
+
+  // ---- Entrada de cine: la primera vez que se abre el mapa, baja desde el espacio hasta tu comuna ----
+  const entro = useRef(false)
+  useEffect(() => {
+    if (!visible || entro.current || viaje) return
+    entro.current = true
+    cuandoListo((mapa) => {
+      if (calma()) return
+      const fin = mapa.cameraForBounds(comuna?.bbox ? aBounds(comuna.bbox) : CHILE, { padding: 40 })
+      if (!fin) return
+      mapa.jumpTo({ center: [-72, -36], zoom: 1.4, pitch: 0, bearing: 0 })
+      mapa.flyTo({ ...fin, zoom: Math.min(fin.zoom ?? 10, 13), pitch: 42, bearing: -12, duration: 5200, curve: 1.7, essential: true })
+      mapa.once('moveend', () => !props.current.relieve3d && !props.current.viaje && mapa.easeTo({ pitch: 0, bearing: 0, duration: 1600 }))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
+
+  // ---- Relieve 3D: montañas de verdad (la cordillera se levanta) ----
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      const en3d = relieve3d || Boolean(viaje)
+      try {
+        mapa.setTerrain(en3d ? { source: 'dem', exaggeration: viaje ? 1.25 : 1.6 } : null)
+      } catch {
+        /* sin soporte */
+      }
+      if (!viaje) mapa.easeTo({ pitch: relieve3d ? 62 : 0, bearing: relieve3d ? mapa.getBearing() || -18 : 0, duration: 1200 })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relieve3d, Boolean(viaje)])
+
+  // ---- Lugares de los viajes de ZUMI: su carita flotando sobre cada lugar ----
+  const pinesLugar = useRef(new Map())
+  useEffect(() => {
+    cuandoListo((mapa) =>
+      sincronizar(
+        mapa,
+        pinesLugar.current,
+        lugares.map((l) => ({ ...l, clave: l.id, firma: `${l.id}${l.sellado ? 1 : 0}` })),
+        (l) => {
+          const el = document.createElement('button')
+          el.type = 'button'
+          el.className = `pin-zumi ${l.sellado ? 'sellado' : ''}`
+          el.setAttribute('aria-label', `Viajar con ZUMI a ${l.nombre}`)
+          el.innerHTML = `<img src="${l.avatar}" alt=""><span>${l.nombre.split(',')[0]}</span>`
+          el.addEventListener('click', (e) => {
+            e.stopPropagation()
+            props.current.onLugar(l)
+          })
+          return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([l.lng, l.lat])
+        },
+      ),
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lugares])
+
+  // ---- Viaje: vuela al lugar en 3D, con satélite, y gira lento alrededor (como un dron) ----
+  useEffect(() => {
+    if (!viaje) return
+    let vivo = true
+    let girando = null
+    cuandoListo((mapa) => {
+      mapa.setLayoutProperty('satelite', 'visibility', 'visible')
+      mapa.flyTo({ center: [viaje.lng, viaje.lat], zoom: viaje.zoom ?? 15, pitch: 68, bearing: viaje.rumbo ?? 0, duration: calma() ? 0 : 5600, curve: 1.9, essential: true })
+      const girar = () => {
+        if (!vivo || calma()) return
+        mapa.easeTo({ bearing: mapa.getBearing() + 40, duration: 16000, easing: (x) => x })
+      }
+      const alTerminar = () => vivo && girar()
+      mapa.once('moveend', () => {
+        if (!vivo) return
+        girar()
+        girando = alTerminar
+        mapa.on('moveend', girando)
+      })
+      // si la persona toca o arrastra el mapa, el dron se detiene
+      const parar = () => {
+        if (girando) mapa.off('moveend', girando)
+        girando = null
+      }
+      mapa.once('dragstart', parar)
+      mapa.once('touchstart', parar)
+      ref.current.pararViaje = () => {
+        parar()
+        mapa.stop()
+      }
+    })
+    return () => {
+      vivo = false
+      ref.current.pararViaje?.()
+      cuandoListo((mapa) => {
+        const sat = props.current.base === 'satelite'
+        mapa.setLayoutProperty('satelite', 'visibility', sat ? 'visible' : 'none')
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viaje?.id])
+
+  // Al terminar el viaje vuelve a tu comuna.
+  const viajeAntes = useRef(null)
+  useEffect(() => {
+    if (viajeAntes.current && !viaje && comuna?.bbox)
+      cuandoListo((mapa) => mapa.fitBounds(aBounds(comuna.bbox), { padding: 40, pitch: relieve3d ? 55 : 0, bearing: 0, duration: calma() ? 0 : 3500 }))
+    viajeAntes.current = viaje
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viaje])
 
   return <div ref={caja} className={`h-full w-full ${modoCalle ? 'modo-calle' : ''}`} role="region" aria-label="Mapa" />
 }

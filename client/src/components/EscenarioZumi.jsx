@@ -8,6 +8,7 @@ import { precargarFrases } from '../services/vozZumi'
 import { PELICULAS, consejoDelDia } from '../services/cine'
 import { alertaPrincipal, NIVELES } from '../services/alertas'
 import { fraseDeReencuentro, registrarVisita } from '../services/zumiMemoria'
+import { viajar } from '../services/viajes'
 
 // La visita de hoy se anota una sola vez por sesión (para saber si vuelves después de días).
 let visitaDeHoy = null
@@ -151,6 +152,9 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
           </div>
         </div>
         <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+          <button type="button" onClick={() => viajar()} className="chip-escenario chip-viaje shrink-0">
+            ✈ Viaja con ZUMI
+          </button>
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
               ▶ {PELICULAS[consejo].titulo}
