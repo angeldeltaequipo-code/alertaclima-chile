@@ -25,7 +25,8 @@ import { useComunidad } from './hooks/useComunidad'
 import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
 import FichaSismo from './components/FichaSismo'
-import EscenarioZumi from './components/EscenarioZumi'
+import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
+import { fijarAmbiente } from './services/musica'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
 const Planes = lazySeguro(() => import('./components/Planes'))
@@ -324,6 +325,13 @@ export default function App() {
     comunidad: comunidad.datos ? resumenParaZumi(comunidadItems, comunidad.datos.tendencias) : null,
   }
   const traje = elegirTraje({ ...datosZumi, hoy: clima.datos?.dias?.[0], vista })
+  // Música de fondo: sigue el clima (y calla si hay alerta oficial)
+  const escenaMusica = clima.datos ? escenaDeZumi(datosZumi) : null
+  const vientoFuerte = Math.max(datosZumi.ahora?.viento ?? 0, (datosZumi.ahora?.rafagas ?? 0) * 0.7) >= 40
+  const ambienteMusica = !escenaMusica ? null : escenaMusica === 'alerta' ? 'alerta' : escenaMusica === 'lluvia' ? 'lluvia' : vientoFuerte ? 'viento' : escenaMusica === 'noche' ? 'noche' : /nubl|cubierto|niebla|neblina/i.test(datosZumi.ahora?.texto ?? '') ? 'nublado' : 'despejado'
+  useEffect(() => {
+    if (ambienteMusica) fijarAmbiente(ambienteMusica)
+  }, [ambienteMusica])
   const ultimoDato = [clima.datos?.obtenido, radar.ultimaCarga].filter(Boolean).sort((a, b) => b - a)[0]
 
   return (

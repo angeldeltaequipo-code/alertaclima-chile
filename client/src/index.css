@@ -1178,3 +1178,6 @@ body {
   animation: viaje-sube 600ms 900ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
 }
 .chip-escenario.chip-viaje { background: linear-gradient(135deg, #ffd85a, #ff9f43); color: #1c1208; border-color: transparent; font-weight: 900; }
+.nota-viva { animation: nota-viva 1.6s ease-in-out infinite; }
+@keyframes nota-viva { 50% { transform: scale(1.5); opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .nota-viva { animation: none; } }

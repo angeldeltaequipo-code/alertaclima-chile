@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { leerMemoria, olvidar, olvidarTodo } from '../services/zumiMemoria'
+import { activarMusica, alCambiarMusica } from '../services/musica'
 import { useInstalar } from '../hooks/useInstalar'
 import { AjustesNotificaciones } from './Notificaciones'
 import BotonGoogle from './BotonGoogle'
@@ -63,6 +64,21 @@ function VozDeZumi() {
       >
         Escuchar una prueba
       </button>
+    </Seccion>
+  )
+}
+
+function MusicaDeFondo() {
+  const [on, setOn] = useState(true)
+  useEffect(() => alCambiarMusica(setOn), [])
+  return (
+    <Seccion titulo="Música de fondo">
+      <label className="flex min-h-12 items-center justify-between gap-3">
+        <span className="text-[16px]">
+          Música suave que cambia con el clima (lluvia, viento, noche). Baja sola cuando ZUMI habla y se calla si hay una alerta.
+        </span>
+        <input type="checkbox" role="switch" checked={on} onChange={(e) => activarMusica(e.target.checked)} className="size-6 shrink-0 accent-emerald-500" />
+      </label>
     </Seccion>
   )
 }
@@ -249,6 +265,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
       </Seccion>
 
       <VozDeZumi />
+      <MusicaDeFondo />
       <MemoriaDeZumi />
 
       <Seccion titulo="Pantalla">

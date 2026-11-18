@@ -9,6 +9,7 @@ import { PELICULAS, consejoDelDia } from '../services/cine'
 import { alertaPrincipal, NIVELES } from '../services/alertas'
 import { fraseDeReencuentro, registrarVisita } from '../services/zumiMemoria'
 import { viajar } from '../services/viajes'
+import { activarMusica, alCambiarMusica } from '../services/musica'
 
 // La visita de hoy se anota una sola vez por sesión (para saber si vuelves después de días).
 let visitaDeHoy = null
@@ -58,6 +59,8 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos.ahora?.temperatura, datos.ahora?.texto, datos.horas, datos.alertas, quien])
 
+  const [musica, setMusica] = useState(true)
+  useEffect(() => alCambiarMusica(setMusica), [])
   const [k, setK] = useState(0)
   const [reaccion, setReaccion] = useState(null) // texto del globo cuando lo tocas
   const [gesto, setGesto] = useState('saludo:inicio')
@@ -121,6 +124,23 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       <div className="relative w-full" style={{ aspectRatio: '0.86', maxHeight: '47dvh', minHeight: 300 }}>
         <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} className="escenario-zumi-lienzo" />
         <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
+
+        {/* Música de fondo: encender / apagar */}
+        <button
+          type="button"
+          onClick={() => activarMusica(!musica)}
+          aria-pressed={musica}
+          aria-label={musica ? 'Apagar la música de fondo' : 'Encender la música de fondo'}
+          className="absolute top-3 left-3 z-10 grid size-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur active:scale-95"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 18V5l11-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="17" cy="16" r="3" />
+            {!musica && <path d="M3 3l18 18" />}
+          </svg>
+          {musica && <span className="nota-viva absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400" aria-hidden="true" />}
+        </button>
 
         {/* Tocar a ZUMI */}
         <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[22%] top-[18%] bottom-[4%] rounded-[40%] focus-visible:outline-4" />
