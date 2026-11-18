@@ -7,7 +7,7 @@ import { leerGrupo } from '../services/familiaGPS'
 const FUNCIONES = [
   { id: 'familia', icono: '📍', titulo: 'Mi familia', rotulo: 'GPS · cifrado', sub: '¿Dónde están los tuyos?', acento: 'familia' },
   { id: 'vecinos', icono: '📣', titulo: 'Vecinos', rotulo: 'Red local', sub: 'Lo que ven cerca de ti', acento: 'vecinos' },
-  { id: 'camaras', icono: '🎥', titulo: 'Cámaras', rotulo: 'En vivo', sub: 'Calles, cerros y cielo', acento: 'camaras' },
+  { id: 'aire', icono: '🌫️', titulo: 'Aire', rotulo: 'MP2,5 · en vivo', sub: '¿Se puede respirar hoy?', acento: 'camaras' },
   { id: 'cielo', icono: '🚀', titulo: 'Espacio', rotulo: 'SpaceX · X', sub: 'Starship, Starlink y la Luna', acento: 'espacio' },
 ]
 
@@ -25,11 +25,11 @@ const ICONO = {
       <path d="M17 9.5a3.5 3.5 0 0 1 0 5M19.5 7a7 7 0 0 1 0 10" />
     </>
   ),
-  camaras: (
+  aire: (
     <>
-      <rect x="3" y="6.5" width="13" height="11" rx="2.5" />
-      <path d="M16 10.5l5-3v9l-5-3" />
-      <circle cx="7" cy="10" r="0.9" fill="currentColor" />
+      <path d="M3 8h11a3 3 0 1 0-3-3" />
+      <path d="M3 12h16a3 3 0 1 1-3 3" />
+      <path d="M3 16h7" />
     </>
   ),
   cielo: (
@@ -41,7 +41,7 @@ const ICONO = {
   ),
 }
 
-export default function Funciones({ familia, reportes, nReportes = 0, camaras, cielo }) {
+export default function Funciones({ familia, reportes, nReportes = 0, aire, cielo }) {
   const [abierta, setAbierta] = useState(() => {
     const p = pendiente
     pendiente = null
@@ -58,7 +58,7 @@ export default function Funciones({ familia, reportes, nReportes = 0, camaras, c
     window.addEventListener('ac:abrir-funcion', f)
     return () => window.removeEventListener('ac:abrir-funcion', f)
   }, [])
-  const contenido = { familia, vecinos: reportes, camaras, cielo }
+  const contenido = { familia, vecinos: reportes, aire, cielo }
   const actual = FUNCIONES.find((f) => f.id === abierta)
   const sub = (f) => (f.id === 'vecinos' && nReportes ? `${nReportes} avisos cerca de ti` : f.id === 'familia' && grupo ? 'Toca para ver dónde está cada uno' : f.sub)
 

@@ -2,7 +2,7 @@
 // de punta a punta (ni AlertaClima puede verla). Para cada uno se ve dónde está, hace cuánto, a qué
 // distancia, su batería, el clima y si hay alerta oficial justo ahí, con «Cómo llegar» y «Ver en el mapa».
 import { useEffect, useState } from 'react'
-import { cambiarCompartir, crearFamilia, distanciaKm, enlaceInvitacion, haceCuanto, leerFamilia, leerGrupo, salirDeFamilia, unirseAFamilia, vigilarUbicacion } from '../services/familiaGPS'
+import { cambiarCompartir, crearFamilia, marcarEstado, miEstado, distanciaKm, enlaceInvitacion, haceCuanto, leerFamilia, leerGrupo, salirDeFamilia, unirseAFamilia, vigilarUbicacion } from '../services/familiaGPS'
 import { comunaEnPunto } from '../services/comunas'
 import { NIVELES, alertaPrincipal, estadoComuna } from '../services/alertas'
 import { describir } from '../services/clima'
@@ -126,6 +126,12 @@ function Integrante({ m, yo, onVerMapa }) {
           </span>
         )}
       </div>
+      {m.estado && Date.now() - m.estado.t < 24 * 3600e3 && (
+        <p className={`mt-2 flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-semibold ${m.estado.v === 'ayuda' ? 'bg-peligro text-white' : 'bg-[#3ddc84]/15 text-[#3ddc84]'}`}>
+          <span className="mono text-[11px] tracking-[0.08em]">{m.estado.v === 'ayuda' ? 'SOS' : 'OK'}</span>
+          {m.estado.v === 'ayuda' ? `${m.yo ? 'Pediste' : 'Pidió'} ayuda ${haceCuanto(m.estado.t)}` : `${m.yo ? 'Avisaste que estás' : 'Está'} bien · ${haceCuanto(m.estado.t)}`}
+        </p>
+      )}
       {alerta && <p className="mt-2 rounded-xl bg-peligro px-3 py-1.5 text-[14px] font-bold text-white">⚠ {NIVELES[alerta.nivel].etiqueta} donde está: {alerta.amenaza}</p>}
       {!m.yo && (
         <div className="mt-2.5 grid grid-cols-2 gap-2">
@@ -138,6 +144,38 @@ function Integrante({ m, yo, onVerMapa }) {
         </div>
       )}
     </li>
+  )
+}
+
+/** «Estoy bien» / «Necesito ayuda»: un toque y toda la familia lo sabe (cifrado). */
+export function EstoyBien({ compacto = false }) {
+  const [estado, setEstado] = useState(miEstado)
+  const [enviando, setEnviando] = useState(null)
+  const marcar = async (v) => {
+    if (v === 'ayuda' && !window.confirm('¿Enviar a tu familia que necesitas ayuda, con tu ubicación?')) return
+    setEnviando(v)
+    navigator.vibrate?.(30)
+    await marcarEstado(v)
+    setEstado(miEstado())
+    setEnviando(null)
+  }
+  return (
+    <div className={`rounded-[22px] border border-linea ${compacto ? 'px-3.5 py-3' : 'px-4 py-3.5'}`}>
+      <p className="rotulo">Avisa a tu familia · cifrado</p>
+      {estado && (
+        <p className="mt-1 text-[14px] text-texto-2">
+          Último aviso: <strong className={estado.v === 'ayuda' ? 'text-peligro' : 'text-[#3ddc84]'}>{estado.v === 'ayuda' ? 'necesito ayuda' : 'estoy bien'}</strong> · {haceCuanto(estado.t)}
+        </p>
+      )}
+      <div className="mt-2.5 grid grid-cols-[1.4fr_1fr] gap-2">
+        <button type="button" disabled={Boolean(enviando)} onClick={() => marcar('bien')} className="boton-primario min-h-13 text-[16px] disabled:opacity-60">
+          {enviando === 'bien' ? 'Avisando…' : '✓ Estoy bien'}
+        </button>
+        <button type="button" disabled={Boolean(enviando)} onClick={() => marcar('ayuda')} className="min-h-13 rounded-full border border-peligro text-[15px] font-semibold text-peligro disabled:opacity-60">
+          {enviando === 'ayuda' ? 'Enviando…' : 'Necesito ayuda'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -219,6 +257,8 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
         <span className="text-[16px] font-bold">{g.compartir ? '📍 Compartiendo mi ubicación' : 'Mi ubicación está oculta'}</span>
         <input type="checkbox" role="switch" checked={g.compartir} onChange={(e) => cambiarCompartir(e.target.checked)} className="size-6 accent-white" aria-label="Compartir mi ubicación con mi familia" />
       </label>
+
+      <EstoyBien />
 
       {error && (
         <p className="rounded-2xl bg-amber-100 px-3 py-2 text-[15px] text-amber-900" role="alert">

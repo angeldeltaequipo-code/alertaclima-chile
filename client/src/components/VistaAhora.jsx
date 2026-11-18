@@ -11,6 +11,10 @@ import Resguardo from './Resguardo'
 import EspacioEnVivo from './EspacioEnVivo'
 import PulsoEnVivo from './PulsoEnVivo'
 import Funciones from './Funciones'
+import HoyEnDiez from './HoyEnDiez'
+import AireZumi from './AireZumi'
+import { EstoyBien } from './GPSFamiliar'
+import { leerGrupo } from '../services/familiaGPS'
 import EspacioSpaceX from './EspacioSpaceX'
 import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
@@ -103,7 +107,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null }) {
+export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null, emergencia = false }) {
   const { datos, error, recargar } = clima
   const entrada = useEntrada()
 
@@ -148,6 +152,15 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
     <div className={`${entrada} space-y-3 px-4 pt-3 pb-24`}>
       {/* ZUMI es la portada: él te cuenta el clima y conversa contigo */}
       {zumi ? zumi({ hoy: dias[0] }) : <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />}
+      {/* Después de un sismo fuerte o con alerta grave: un toque para que tu familia sepa que estás bien */}
+      {emergencia && leerGrupo() && (
+        <Resguardo>
+          <EstoyBien compacto />
+        </Resguardo>
+      )}
+      <Resguardo>
+        <HoyEnDiez punto={datos.punto} horas={horas} dias={dias} ahora={ahora} />
+      </Resguardo>
       {invitacion}
 
       {(ahora.lloviendoEnEstacion || lluviaAhora) && (
@@ -162,7 +175,11 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
         familia={familia}
         reportes={reportes}
         nReportes={reportesLista?.length ?? 0}
-        camaras={camaras}
+        aire={
+          <Resguardo>
+            <AireZumi punto={datos.punto} comuna={comuna?.nombre} />
+          </Resguardo>
+        }
         cielo={
           <>
             <Resguardo>

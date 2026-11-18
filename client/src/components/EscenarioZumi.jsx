@@ -84,6 +84,21 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     return () => clearTimeout(t)
   }, [reaccion])
 
+  // Lluvia en minutos: ZUMI lo dice en su globo y señala la ventana (una vez por aviso).
+  useEffect(() => {
+    let avisado = null
+    const f = (e) => {
+      const r = e.detail
+      const clave = `${r.estado}:${r.minutos}`
+      if (avisado === clave) return
+      avisado = clave
+      setReaccion(r.estado === 'empieza' ? `¡Ojo! Empieza a llover en ${r.minutos} minutos. Lluvia ${r.intensidad}: lleva paraguas.` : `Está lloviendo${r.minutos ? ` y para en unos ${r.minutos} minutos` : ''}. ¡Abrígate!`)
+      setGesto(`senalar:${Date.now()}`)
+    }
+    window.addEventListener('ac:lluvia-pronto', f)
+    return () => window.removeEventListener('ac:lluvia-pronto', f)
+  }, [])
+
   // Al llegar, ZUMI saluda; cada tanto hace algo con el cuerpo para sentirse vivo.
   useEffect(() => {
     const id = setInterval(() => setGesto(`${['curioso', 'senalar', 'saludo', 'pensar', 'curioso'][Math.floor(Math.random() * 5)]}:${Date.now()}`), 22000)
@@ -125,7 +140,13 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   useEffect(() => {
     const cont = raiz.current?.closest('#vista-ahora')
     if (!cont) return
-    const medir = () => cont.clientHeight && setAlto(cont.clientHeight)
+    // el tamaño de letra «Grande» usa zoom: el alto se divide por ese zoom para calzar exacto
+    const zoom = () => {
+      let z = 1
+      for (let x = raiz.current?.parentElement; x && x !== cont; x = x.parentElement) z *= parseFloat(getComputedStyle(x).zoom) || 1
+      return z
+    }
+    const medir = () => cont.clientHeight && setAlto(Math.floor(cont.clientHeight / zoom()))
     medir()
     const ro = new ResizeObserver(medir)
     ro.observe(cont)

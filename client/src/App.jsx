@@ -34,7 +34,7 @@ const Planes = lazySeguro(() => import('./components/Planes'))
 import { BotonZumi } from './components/Zumi'
 import { elegirTraje, modoNarrador } from './services/narrador'
 import { InvitacionNotificaciones } from './components/Notificaciones'
-import { alertaPrincipal } from './services/alertas'
+import { NIVELES, alertaPrincipal } from './services/alertas'
 import { marcarVista, vibrar, yaVista } from './services/aviso'
 import { condicionesActuales } from './services/clima'
 import { comunaPorCut } from './services/comunas'
@@ -424,6 +424,10 @@ export default function App() {
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
+                emergencia={
+                  (NIVELES[(alertas.estado?.alertas && alertaPrincipal(alertas.estado.alertas))?.nivel]?.gravedad ?? 0) >= 2 ||
+                  (riesgos.datos?.sismos ?? []).some((q) => q.magnitud >= 6 && Date.now() - new Date(q.hora).getTime() < 6 * 3600e3)
+                }
                 zumi={
                   clima.datos &&
                   (({ hoy }) => (

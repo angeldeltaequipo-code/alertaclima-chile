@@ -126,7 +126,7 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
             {estado ? 'Sin alertas' : '…'}
           </button>
         )}
-        {ahora && (
+        {ahora && !(comuna && !lineaCompleta) && (
           <div className="flex shrink-0 items-center gap-0.5" aria-label={`${Math.round(ahora.temperatura)} grados, ${cond.texto}`}>
             <IconoClima icono={cond.icono} esDeDia={ahora.esDeDia} size={24} />
             <span className="text-[20px] font-light tracking-tight tabular-nums">{Math.round(ahora.temperatura)}°</span>

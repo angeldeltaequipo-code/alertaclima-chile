@@ -87,7 +87,9 @@ export async function enviarUbicacion(pos, extra = {}) {
   } catch {
     /* sin batería */
   }
-  const datos = { nombre: g.yo.nombre, rol: g.yo.rol, lat: pos.coords.latitude, lng: pos.coords.longitude, precision: Math.round(pos.coords.accuracy ?? 0), bateria, t: Date.now(), ...extra }
+  // «Estoy bien» / «Necesito ayuda»: viaja cifrado junto a la ubicación y dura 24 horas
+  const estado = g.estado && Date.now() - g.estado.t < 24 * 3600e3 ? g.estado : undefined
+  const datos = { nombre: g.yo.nombre, rol: g.yo.rol, lat: pos.coords.latitude, lng: pos.coords.longitude, precision: Math.round(pos.coords.accuracy ?? 0), bateria, t: Date.now(), estado, ...extra }
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await llave(g), new TextEncoder().encode(JSON.stringify(datos)))
   const r = await fetch(`${API_URL}/api/familia/${g.grupo}/${g.yo.id}`, {
@@ -96,6 +98,29 @@ export async function enviarUbicacion(pos, extra = {}) {
     body: JSON.stringify({ iv: b64(iv), datos: b64(cifrado) }),
   })
   return r.ok
+}
+
+/**
+ * Avisa a toda la familia cómo estás («bien» o «ayuda»), cifrado como la ubicación.
+ * Si el GPS no responde a tiempo, usa tu última ubicación conocida.
+ */
+export async function marcarEstado(v) {
+  const g = leerGrupo()
+  if (!g) return false
+  g.estado = { v, t: Date.now() }
+  if (v === 'ayuda') g.compartir = true // pedir ayuda sin ubicación no sirve
+  guardarGrupo(g)
+  const pos = await new Promise((ok) =>
+    'geolocation' in navigator ? navigator.geolocation.getCurrentPosition(ok, () => ok(null), { enableHighAccuracy: true, timeout: 12e3, maximumAge: 60e3 }) : ok(null),
+  )
+  const yo = ultima.find((m) => m.yo)
+  const p = pos ?? (yo ? { coords: { latitude: yo.lat, longitude: yo.lng, accuracy: yo.precision } } : null)
+  if (!p) return false
+  return enviarUbicacion(p).catch(() => false)
+}
+export const miEstado = () => {
+  const e = leerGrupo()?.estado
+  return e && Date.now() - e.t < 24 * 3600e3 ? e : null
 }
 
 /** Lee y descifra la ubicación de cada integrante. */

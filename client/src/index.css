@@ -1475,3 +1475,5 @@ body {
 .ruta-buscador { animation: ruta-baja 320ms var(--curva) both; }
 @keyframes ruta-baja { from { opacity: 0; transform: translateY(-24px); } }
 .vidrio-solido { background: rgb(8 8 10 / 0.95); border: 1px solid rgb(255 255 255 / 0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #fff; }
+.aire-hero { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--aire) 30%, transparent), transparent 60%), #0a0a0c; border: 1px solid rgb(255 255 255 / 0.1); }
+.momento { min-width: 7.5rem; }

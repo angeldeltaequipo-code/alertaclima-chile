@@ -31,6 +31,14 @@ export async function revisarFamilia() {
   const lista = await leerFamilia()
   const v = vistos()
   const avisos = []
+  // Alguien pidió ayuda o avisó que está bien: se avisa una vez por cada aviso.
+  for (const m of lista.filter((x) => !x.yo && x.estado && Date.now() - x.estado.t < 24 * 3600e3)) {
+    const clave = `estado:${m.id}:${m.estado.t}`
+    if (v[clave]) continue
+    v[clave] = Date.now()
+    if (m.estado.v === 'ayuda') await avisar(`🆘 ${m.nombre} necesita ayuda`, `${m.nombre} pidió ayuda desde AlertaClima. Abre «Mi familia» para ver dónde está y cómo llegar.`)
+    else await avisar(`✓ ${m.nombre} está bien`, `${m.nombre} avisó que está bien.`)
+  }
   for (const m of lista.filter((x) => !x.yo && Date.now() - x.t < 6 * 3600e3)) {
     const c = await comunaEnPunto(m.lat, m.lng).catch(() => null)
     if (!c) continue
