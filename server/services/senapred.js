@@ -75,6 +75,14 @@ const sinHtml = (h) =>
     .replace(/\n\s*\n+/g, '\n')
     .trim()
 
+const MESES = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 }
+/** «… hasta el 31 de marzo del 2027» → fecha de término (fin de ese día, hora de Chile aprox.). */
+export function vigenteHasta(texto) {
+  const m = norm(texto).match(/hasta el (\d{1,2}) de ([a-z]+)(?: de| del)? (\d{4})/)
+  if (!m || MESES[m[2]] == null) return null
+  return new Date(Date.UTC(Number(m[3]), MESES[m[2]], Number(m[1]), 23 + 4, 59))
+}
+
 const CANCELADA = /^\s*(se\s+)?(cancela|finaliza|levanta|deja sin efecto|termina)/i
 
 /** De la lista cruda de SENAPRED a las alertas vigentes, ya con sus comunas. */
@@ -98,7 +106,10 @@ export function vigentes(filas, ahora = Date.now()) {
     }
     const nivel = NIVEL[meta.codigoAlertaEvento] ?? (/roja/i.test(f.titulo) ? 'roja' : /amarilla/i.test(f.titulo) ? 'amarilla' : 'preventiva')
     const fecha = new Date(f.fechaHora ?? f.updatedAt)
-    if (Number.isNaN(fecha.getTime()) || ahora - fecha.getTime() > VENCE_DIAS[nivel] * 86400e3) continue
+    const hasta = vigenteHasta(sinHtml(f.contenido))
+    if (Number.isNaN(fecha.getTime())) continue
+    // si SENAPRED dice hasta cuándo rige, manda eso; si no, se descarta tras días sin novedades
+    if (hasta ? ahora > hasta.getTime() : ahora - fecha.getTime() > VENCE_DIAS[nivel] * 86400e3) continue
     const amenaza = (f.titulo.match(/ por (.+)$/i)?.[1] ?? meta.nombreVariable ?? 'Evento').trim().replace(/\.$/, '')
     const texto = sinHtml(f.contenido)
     out.push({
@@ -113,7 +124,7 @@ export function vigentes(filas, ahora = Date.now()) {
       origen: 'senapred',
       estado: 'vigente',
       vigente_desde: fecha.toISOString(),
-      vigente_hasta: null,
+      vigente_hasta: hasta ? hasta.toISOString() : null,
       confirmada_en: new Date(f.updatedAt ?? f.fechaHora).toISOString(),
       actualizada_en: new Date(f.updatedAt ?? f.fechaHora).toISOString(),
       sin_confirmar: false,

@@ -32,3 +32,9 @@ test('SENAPRED: solo vigentes (la última de cada aviso, sin las canceladas ni l
   const claves = v.map((a) => a.titulo)
   assert.equal(new Set(v.map((a) => a.id)).size, v.length, claves.join('\n'))
 })
+
+test('SENAPRED: lee «hasta el …» del texto para saber hasta cuándo rige', async () => {
+  const { vigenteHasta } = await import('../services/senapred.js')
+  assert.equal(vigenteHasta('… por calor, a contar de hoy y hasta el 31 de marzo del 2027.').toISOString().slice(0, 10), '2027-04-01')
+  assert.equal(vigenteHasta('sin fecha'), null)
+})
