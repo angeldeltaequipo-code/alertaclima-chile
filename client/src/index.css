@@ -756,8 +756,8 @@ body {
 /* ---------- Estudio de ZUMI a pantalla completa ---------- */
 .estudio-velo {
   background:
-    linear-gradient(180deg, rgb(2 6 23 / 0.75) 0%, rgb(2 6 23 / 0) 22%),
-    linear-gradient(0deg, rgb(2 6 23 / 0.92) 0%, rgb(2 6 23 / 0.55) 26%, rgb(2 6 23 / 0) 48%);
+    linear-gradient(180deg, rgb(0 0 0 / 0.6) 0%, rgb(0 0 0 / 0) 20%),
+    linear-gradient(0deg, #000 0%, rgb(0 0 0 / 0.85) 24%, rgb(0 0 0 / 0.4) 42%, rgb(0 0 0 / 0) 58%);
   pointer-events: none;
 }
 .estudio-zumi.en-alerta .estudio-velo {
@@ -765,9 +765,8 @@ body {
   animation: velo-alerta 1.6s ease-in-out infinite alternate;
 }
 @keyframes velo-alerta { from { box-shadow: inset 0 0 50px 4px rgb(220 38 38 / 0.35); } to { box-shadow: inset 0 0 100px 18px rgb(220 38 38 / 0.65); } }
-.en-vivo { background: rgb(2 6 23 / 0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); }
-.en-vivo > span:first-child { animation: zumi-led 0.9s ease-in-out infinite alternate; }
-.boton-vidrio { background: rgb(15 23 42 / 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22); color: #fff; }
+.en-vivo { background: rgb(0 0 0 / 0.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); }
+.boton-vidrio { background: rgb(255 255 255 / 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22); color: #fff; }
 .boton-vidrio:active { transform: scale(0.96); }
 
 .holograma {
@@ -813,15 +812,13 @@ body {
 @keyframes holo-sube { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 
 .subtitulo-zumi {
-  padding: 12px 14px;
-  border-radius: 20px;
-  background: rgb(2 6 23 / 0.62);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
-  font-size: 19px;
-  line-height: 1.4;
-  font-weight: 700;
+  /* Subtítulos como en una videollamada: grandes, directo sobre el video */
+  padding: 2px 2px;
+  font-size: 22px;
+  line-height: 1.32;
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.6);
   max-height: 34vh;
   overflow-y: auto;
 }
@@ -829,7 +826,7 @@ body {
 @keyframes subtitulo-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .progreso-activo { width: 100%; animation: progreso 5s linear both; }
 @keyframes progreso { from { width: 0; } to { width: 100%; } }
-.microfono-activo { animation: latido 0.9s ease-in-out infinite; box-shadow: 0 0 0 6px rgb(239 68 68 / 0.35); }
+.microfono-activo { animation: latido 0.9s ease-in-out infinite; box-shadow: 0 0 0 6px rgb(255 255 255 / 0.2); }
 @media (prefers-reduced-motion: reduce) {
   .holograma, .holograma::after, .holo-barra, .subtitulo-texto, .estudio-zumi.en-alerta .estudio-velo { animation: none; }
 }
@@ -1072,13 +1069,17 @@ body {
 }
 .escenario-velo {
   background:
-    linear-gradient(to bottom, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.12) 20%, transparent 32%),
-    linear-gradient(to top, #000 0%, rgb(0 0 0 / 0.75) 10%, transparent 30%);
+    linear-gradient(to bottom, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.1) 16%, transparent 26%),
+    linear-gradient(to top, #000 0%, rgb(0 0 0 / 0.92) 18%, rgb(0 0 0 / 0.55) 34%, transparent 52%);
 }
-/* Debajo del escenario: negro, el video se funde en él */
+/* Los controles van sobre el video, que se funde en negro */
 .portada-acciones {
-  background: #000;
+  background: transparent;
 }
+.portada-zumi.inmersiva { border-radius: 0; box-shadow: none; }
+.portada-zumi.inmersiva.con-alerta { box-shadow: inset 0 0 0 3px var(--peligro); }
+.flecha-baja { animation: flecha-baja 1.8s ease-in-out infinite; }
+@keyframes flecha-baja { 50% { transform: translateY(3px); } }
 .portada-acciones .chip-escenario {
   background: rgb(255 255 255 / 0.1);
 }
@@ -1425,3 +1426,38 @@ body {
 /* Fondo: casi negro; el ambiente del clima es solo un susurro de color arriba */
 .cosmos { --neb-op: 0.1 !important; background: radial-gradient(120% 60% at 50% -12%, color-mix(in srgb, var(--neb-a) 12%, #000), #000 58%); }
 :root[data-tema='claro'] .cosmos { background: #fff; }
+
+/* ---- Llamada con ZUMI, al estilo Muse ---- */
+.oido-vivo { animation: subtitulo-entra 0.25s ease both; }
+.ondas-estado { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
+.ondas-estado i { display: block; width: 2.5px; height: 4px; border-radius: 2px; background: currentColor; opacity: 0.6; transition: height 0.2s; }
+.ondas-estado.hablando i, .ondas-estado.escuchando i { animation: onda-zumi 0.9s ease-in-out infinite; opacity: 1; }
+.ondas-estado.hablando i:nth-child(odd), .ondas-estado.escuchando i:nth-child(odd) { height: 12px; }
+.ondas-estado.hablando i:nth-child(even), .ondas-estado.escuchando i:nth-child(even) { height: 8px; animation-delay: -0.45s; }
+.ondas-estado.escuchando i { color: var(--vivo); background: var(--vivo); }
+.ondas-estado.pensando i { animation: pensar-punto 1.2s ease-in-out infinite; }
+.ondas-estado.pensando i:nth-child(2) { animation-delay: 0.15s; } .ondas-estado.pensando i:nth-child(3) { animation-delay: 0.3s; }
+.ondas-estado.pensando i:nth-child(4) { animation-delay: 0.45s; } .ondas-estado.pensando i:nth-child(5) { animation-delay: 0.6s; }
+@keyframes pensar-punto { 50% { height: 10px; opacity: 1; } }
+
+/* Orbe del modo «solo voz» */
+.orbe-zumi { --orbe: 124 196 255; background: radial-gradient(60% 45% at 50% 42%, rgb(var(--orbe) / 0.14), transparent 70%), #000; transition: background 0.6s; }
+.orbe-escuchando { --orbe: 61 220 132; }
+.orbe-pensando { --orbe: 185 164 255; }
+.orbe-halo, .orbe-anillo, .orbe-nucleo { position: absolute; left: 50%; top: 42%; translate: -50% -50%; border-radius: 9999px; }
+.orbe-halo { width: 300px; height: 300px; background: radial-gradient(closest-side, rgb(var(--orbe) / 0.35), transparent); filter: blur(10px); animation: orbe-respira 4s ease-in-out infinite; }
+.orbe-anillo { width: 196px; height: 196px; border: 1px solid rgb(var(--orbe) / 0.5); animation: orbe-onda 3.2s ease-out infinite; }
+.orbe-anillo-2 { animation-delay: 1.6s; }
+.orbe-nucleo { width: 150px; height: 150px; padding: 3px; background: conic-gradient(from 0deg, rgb(var(--orbe)), #fff, rgb(var(--orbe) / 0.2), rgb(var(--orbe))); box-shadow: 0 0 60px rgb(var(--orbe) / 0.45); animation: orbe-gira 8s linear infinite; }
+.orbe-nucleo img { animation: orbe-gira 8s linear infinite reverse; }
+.orbe-hablando .orbe-nucleo { animation: orbe-gira 8s linear infinite, orbe-habla 0.5s ease-in-out infinite alternate; }
+.orbe-hablando .orbe-anillo { animation-duration: 1.4s; }
+.orbe-escuchando .orbe-halo { animation-duration: 1.6s; }
+.orbe-pensando .orbe-nucleo { animation-duration: 2s; }
+@keyframes orbe-respira { 50% { transform: scale(1.12); opacity: 0.75; } }
+@keyframes orbe-onda { from { transform: scale(0.8); opacity: 0.9; } to { transform: scale(1.7); opacity: 0; } }
+@keyframes orbe-gira { to { rotate: 360deg; } }
+@keyframes orbe-habla { from { scale: 1; } to { scale: 1.06; } }
+@media (prefers-reduced-motion: reduce) {
+  .orbe-halo, .orbe-anillo, .orbe-nucleo, .orbe-nucleo img, .ondas-estado i, .oido-vivo, .flecha-baja { animation: none !important; }
+}

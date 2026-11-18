@@ -22,7 +22,7 @@ const grados = (v) => `${Math.round(v)}°`
 const PREGUNTAS = ['¿Va a llover mañana?', '¿Qué me pongo hoy?', '¿Hay alguna alerta?', '¿Cómo estará el fin de semana?']
 
 // Franja de la escena que siempre se ve: de sus orejas a sus pies (con un poco de aire)
-const ENCUADRE = [0.2, 0.87]
+const ENCUADRE = [0.17, 0.72]
 
 // Lo que dice cuando lo tocas (sin gastar voz: solo el globo y el gesto).
 const REACCIONES = [
@@ -119,52 +119,67 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     }
   }, [])
 
+  // Alto exacto de la pantalla disponible: ZUMI ocupa todo lo que se ve, y al deslizar aparecen las funciones.
+  const [alto, setAlto] = useState(0)
+  useEffect(() => {
+    const cont = raiz.current?.closest('#vista-ahora')
+    if (!cont) return
+    const medir = () => cont.clientHeight && setAlto(cont.clientHeight)
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(cont)
+    return () => ro.disconnect()
+  }, [])
+  const bajar = () => raiz.current?.closest('#vista-ahora')?.scrollTo({ top: (alto || 600) - 8, behavior: 'smooth' })
+
   const consejo = consejoDelDia(datos)
   const ahora = datos.ahora
   const globo = reaccion ?? (principal ? `${NIVELES[principal.nivel].etiqueta}: ${principal.amenaza}. Tócame y te explico qué hacer.` : frases[k % frases.length])
 
   return (
-    <section ref={raiz} aria-label="ZUMI, tu amigo del clima" className={`portada-zumi relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}>
-      {/* Escenario: siempre muestra a ZUMI entero (de las orejas a los pies) y cerca; nada lo tapa */}
-      <div className="relative w-full" style={{ aspectRatio: '0.8', maxHeight: '54dvh', minHeight: 320 }}>
-        <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} className="escenario-zumi-lienzo" />
-        <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
+    <section
+      ref={raiz}
+      aria-label="ZUMI, tu amigo del clima"
+      className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}
+      style={{ height: alto ? `${alto}px` : 'calc(100svh - 9rem)' }}
+    >
+      {/* ZUMI a pantalla completa, cara a cara: la cámara se acerca y los controles van sobre el video */}
+      <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.45]} encuadre={ENCUADRE} zoom={1.1} zona={0.66} className="escenario-zumi-lienzo" />
+      <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
 
-        {/* Música de fondo: encender / apagar */}
-        <button
-          type="button"
-          onClick={() => activarMusica(!musica)}
-          aria-pressed={musica}
-          aria-label={musica ? 'Apagar la música de fondo' : 'Encender la música de fondo'}
-          className="vidrio absolute top-3 left-3 z-10 grid size-11 place-items-center rounded-full active:scale-95"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 18V5l11-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="17" cy="16" r="3" />
-            {!musica && <path d="M3 3l18 18" />}
-          </svg>
-          {musica && <span className="nota-viva absolute -top-0.5 -right-0.5 size-2 rounded-full bg-vivo" aria-hidden="true" />}
-        </button>
+      {/* Música de fondo: encender / apagar */}
+      <button
+        type="button"
+        onClick={() => activarMusica(!musica)}
+        aria-pressed={musica}
+        aria-label={musica ? 'Apagar la música de fondo' : 'Encender la música de fondo'}
+        className="vidrio absolute top-3 left-3 z-10 grid size-11 place-items-center rounded-full active:scale-95"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 18V5l11-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="17" cy="16" r="3" />
+          {!musica && <path d="M3 3l18 18" />}
+        </svg>
+        {musica && <span className="nota-viva absolute -top-0.5 -right-0.5 size-2 rounded-full bg-vivo" aria-hidden="true" />}
+      </button>
 
-        {/* Tocar a ZUMI */}
-        <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[22%] top-[18%] bottom-[4%] rounded-[40%] focus-visible:outline-4" />
+      {/* Tocar a ZUMI */}
+      <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[20%] top-[14%] bottom-[44%] z-[1] rounded-[40%] focus-visible:outline-4" />
 
-        {/* Lo que dice ZUMI */}
-        <button
-          type="button"
-          onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
-          className="globo-escenario absolute top-3 right-3 left-[30%] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug font-bold"
-          aria-live="polite"
-        >
-          <span key={globo} className="globo-texto block">{globo}</span>
-        </button>
-      </div>
+      {/* Lo que dice ZUMI */}
+      <button
+        type="button"
+        onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
+        className="globo-escenario absolute top-3 right-3 left-[30%] z-[2] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug"
+        aria-live="polite"
+      >
+        <span key={globo} className="globo-texto block">{globo}</span>
+      </button>
 
-      {/* Acciones: debajo de ZUMI, sin taparlo */}
-      <div className="portada-acciones hud-zumi px-4 pt-1 pb-5 text-white">
-        {/* Telemetría del momento: clima de ahora, de un vistazo */}
-        <div className="mb-4 flex items-end justify-between gap-3">
+      {/* Telemetría y acciones, sobre el video */}
+      <div className="portada-acciones hud-zumi absolute inset-x-0 bottom-0 z-[2] px-4 pb-1 text-white">
+        <div className="mb-3 flex items-end justify-between gap-3">
           {ahora?.temperatura != null && (
             <p className="cifra text-[84px]" aria-label={`${Math.round(ahora.temperatura)} grados`}>
               {Math.round(ahora.temperatura)}
@@ -172,13 +187,13 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             </p>
           )}
           <div className="min-w-0 pb-1.5 text-right">
-            <p className="rotulo mb-1.5 flex items-center justify-end gap-2 !text-white/55">
+            <p className="rotulo mb-1.5 flex items-center justify-end gap-2 !text-white/60">
               <span className="punto-vivo" aria-hidden="true" />
               {new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })} · Ahora
             </p>
             <p className="truncate text-[17px] font-semibold tracking-tight">{ahora?.texto}</p>
             {hoy && (
-              <p className="mono mt-0.5 text-[12.5px] text-white/60">
+              <p className="mono mt-0.5 text-[12.5px] text-white/65">
                 ↑{grados(hoy.max)} ↓{grados(hoy.min)}
                 {ahora?.sensacion != null && Math.abs(ahora.sensacion - ahora.temperatura) >= 2 ? ` · ST ${grados(ahora.sensacion)}` : ''}
               </p>
@@ -228,6 +243,12 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             {puedeLlamar ? 'Reporte' : 'Escuchar a ZUMI'}
           </button>
         </div>
+        <button type="button" onClick={bajar} className="rotulo mx-auto mt-1 flex min-h-7 items-center gap-1.5 !text-white/45" aria-label="Ver las funciones">
+          Funciones
+          <svg width="12" height="12" viewBox="0 0 12 12" className="flecha-baja" aria-hidden="true">
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
     </section>
   )

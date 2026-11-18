@@ -25,6 +25,7 @@ import {
 import { SUGERENCIAS, preguntarZumi } from '../services/zumiCerebro'
 import { PELICULAS, consejoDelDia, frasePelicula, peliculaPara, vistaHoy, yaVista } from '../services/cine'
 import { NIVELES, alertaPrincipal } from '../services/alertas'
+import { NARRADOR } from '../services/viajes'
 
 
 /** Alto de ZUMI según la pantalla: grande, pero dejando sitio a los datos y a los subtítulos. */
@@ -212,6 +213,28 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const [llamada, setLlamada] = useState(false)
   const [inicioLlamada, setInicioLlamada] = useState(0)
   const silenciosLlamada = useRef(0)
+  // Como en Muse: eliges cuánto se ve ZUMI (cara a cara o solo voz), lo puedes interrumpir hablando
+  // y reacciona mientras le hablas.
+  const [presencia, setPresencia] = useState(() => {
+    try {
+      return localStorage.getItem('ac:zumi:presencia') === 'voz' ? 'voz' : 'cara'
+    } catch {
+      return 'cara'
+    }
+  })
+  const cambiarPresencia = () => {
+    const v = presencia === 'cara' ? 'voz' : 'cara'
+    setPresencia(v)
+    try {
+      localStorage.setItem('ac:zumi:presencia', v)
+    } catch {
+      /* sin almacenamiento */
+    }
+  }
+  const [oido, setOido] = useState('') // lo que vas diciendo, en vivo
+  const [gestoOido, setGestoOido] = useState(null)
+  const ultimoAsentir = useRef(0)
+  const vigia = useRef(false) // escucha mientras ZUMI habla, para poder interrumpirlo
   const historial = useRef([])
   const reconocedor = useRef(null)
 
@@ -277,32 +300,54 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   }
 
   const SR = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
-  const escuchar = () => {
+  // En iPhone, abrir el micrófono mientras suena la voz la baja de volumen: ahí se interrumpe tocando a ZUMI.
+  const IOS = typeof navigator !== 'undefined' && /iP(hone|ad|od)/.test(navigator.userAgent)
+  const escuchar = ({ interrumpir = false } = {}) => {
     if (!SR) return
     if (escuchando) {
       reconocedor.current?.stop()
       return
     }
-    callar()
+    if (!interrumpir) callar()
+    vigia.current = interrumpir
     const r = new SR()
     r.lang = 'es-CL'
     r.interimResults = true
     r.maxAlternatives = 1
     let oyo = false
+    let corto = !interrumpir
     r.onresult = (ev) => {
       const t = Array.from(ev.results)
         .map((x) => x[0].transcript)
         .join(' ')
+        .trim()
+      if (!t) return
+      // Mientras ZUMI habla, el micrófono también lo oye a él: solo cuenta si son palabras tuyas.
+      if (!corto) {
+        if (t.split(/\s+/).length < 2 || esEco(t, e.frases)) return
+        corto = true
+        vigia.current = false
+        callar()
+      }
+      setOido(t)
       setPregunta(t)
-      if (ev.results[ev.results.length - 1].isFinal && t.trim()) {
+      // ZUMI asiente mientras te escucha
+      if (Date.now() - ultimoAsentir.current > 2600) {
+        ultimoAsentir.current = Date.now()
+        setGestoOido(`curioso:${Date.now()}`)
+      }
+      if (ev.results[ev.results.length - 1].isFinal) {
         oyo = true
         silenciosLlamada.current = 0
+        setOido('')
         preguntar(t)
       }
     }
     const fin = (ev) => {
       setEscuchando(false)
-      if (oyo) return
+      vigia.current = false
+      setOido('')
+      if (oyo || !corto) return
       if (ev?.error === 'not-allowed' || ev?.error === 'service-not-allowed') return colgar('Necesito permiso para usar el micrófono. Puedes escribirme cuando quieras.')
       silenciosLlamada.current += 1
     }
@@ -310,7 +355,18 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
     r.onerror = fin
     reconocedor.current = r
     setEscuchando(true)
-    r.start()
+    try {
+      r.start()
+    } catch {
+      setEscuchando(false)
+    }
+  }
+  // Tocar a ZUMI mientras habla: se calla y te escucha (como interrumpir a alguien en una llamada).
+  const interrumpir = () => {
+    if (!llamada) return
+    reconocedor.current?.abort?.()
+    callar()
+    setTimeout(() => escuchar(), 120)
   }
 
   const llamar = () => {
@@ -331,13 +387,18 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   }
   // Turnos de la llamada: cuando ZUMI termina de hablar, vuelve a escuchar solo.
   useEffect(() => {
+    // Mientras ZUMI habla, el oído queda abierto para que lo puedas interrumpir hablando.
+    if (llamada && SR && !IOS && e.hablando && !pensando && !escuchando) {
+      const t = setTimeout(() => escuchar({ interrumpir: true }), 700)
+      return () => clearTimeout(t)
+    }
     if (!llamada || !SR || e.hablando || pensando || escuchando) return
     if (silenciosLlamada.current >= 3) {
       silenciosLlamada.current = 0
       colgar('¿Hola? Parece que te fuiste. ¡Te dejo tranquilo! Llámame cuando quieras.')
       return
     }
-    const t = setTimeout(escuchar, silenciosLlamada.current ? 300 : 650)
+    const t = setTimeout(() => escuchar(), silenciosLlamada.current ? 300 : 650)
     return () => clearTimeout(t)
   })
 
@@ -359,7 +420,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const enPantalla = escenario === 'estudio' || escenario === 'alerta'
   // Lo que hace con el cuerpo según lo que cuenta (la clave cambia en cada frase para repetir el gesto)
   const GESTO_DE = { saludo: 'saludo', ok: 'celebrar', lluvia: 'senalar', temp: 'senalar', minmax: 'caminar', viento: 'senalar', alerta: 'calma', sismo: 'calma', aluvion: 'calma', vecinos: 'caminar', luna: 'senalar' }
-  const gestoEscena = respondiendo ? `explicar:${ultima?.pregunta}` : escena?.tarjeta?.tipo && GESTO_DE[escena.tarjeta.tipo] ? `${GESTO_DE[escena.tarjeta.tipo]}:${i}` : i === -1 && conversa && !e.hablando ? 'reposo' : null
+  const gestoEscena = escuchando && !vigia.current && gestoOido ? gestoOido : respondiendo ? `explicar:${ultima?.pregunta}` : escena?.tarjeta?.tipo && GESTO_DE[escena.tarjeta.tipo] ? `${GESTO_DE[escena.tarjeta.tipo]}:${i}` : i === -1 && conversa && !e.hablando ? 'reposo' : null
 
   const subtitulo = pensando
     ? 'Déjame pensar…'
@@ -378,27 +439,49 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       className={`estudio-zumi fixed inset-0 z-[1150] flex justify-center overflow-hidden bg-black text-white ${alerta ? 'en-alerta' : ''}`}
     >
       {/* Fondo desenfocado para pantallas anchas */}
-      <div className="absolute inset-0 bg-[#050a18]" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black" aria-hidden="true" />
 
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
         {/* ZUMI en su estudio: video con calidad de película animada, que cambia según lo que pasa */}
         {/* ZUMI presentador: el escenario cambia según el clima, la hora, las alertas y lo que cuenta */}
-        <ZumiCine
-          peliculas
-          escena={escenario}
-          estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
-          gesto={gestoEscena}
-          posicion={[0.5, 0.3]}
-          pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
-        />
+        {presencia === 'cara' ? (
+          <ZumiCine
+            peliculas
+            escena={escenario}
+            estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando && !vigia.current ? 'escuchando' : 'reposo'}
+            gesto={gestoEscena}
+            posicion={[0.5, 0.3]}
+            pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
+          />
+        ) : (
+          <Orbe estado={pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando && !vigia.current ? 'escuchando' : 'reposo'} />
+        )}
+        {/* En llamada, tocar a ZUMI mientras habla lo interrumpe */}
+        {llamada && e.hablando && (
+          <button type="button" onClick={interrumpir} aria-label="Interrumpir a ZUMI y hablar" className="absolute inset-x-0 top-[18%] bottom-[38%] z-[1]" />
+        )}
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />
 
         {/* Barra superior */}
         <div className="safe-top absolute inset-x-0 top-0 flex items-center gap-2 px-4 pt-3">
-          <span className="en-vivo flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-bold tracking-wider uppercase">
-            <span className="size-2 rounded-full bg-red-500" aria-hidden="true" /> {NOMBRE} · en vivo
+          <span className="en-vivo rotulo flex min-h-9 items-center gap-2 rounded-full px-3 whitespace-nowrap !text-white">
+            <span className="punto-vivo" aria-hidden="true" /> {NOMBRE} · en vivo
+            {llamada && <Cronometro desde={inicioLlamada} />}
           </span>
           <span className="flex-1" />
+          <button type="button" onClick={cambiarPresencia} aria-label={presencia === 'cara' ? 'Pasar a solo voz' : 'Ver a ZUMI cara a cara'} className="boton-vidrio grid size-11 place-items-center rounded-full">
+            {presencia === 'cara' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="12" cy="12" r="8.5" opacity=".5" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="13" height="12" rx="2.5" />
+                <path d="M16 10.5l5-3v9l-5-3" />
+              </svg>
+            )}
+          </button>
           <button type="button" onClick={cambiarSilencio} aria-pressed={silencio} aria-label={silencio ? 'Activar la voz' : 'Silenciar la voz'} className="boton-vidrio grid size-11 place-items-center rounded-full">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 9v6h4l5 4V5L8 9z" />
@@ -436,7 +519,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
         {/* Subtítulos y conversación */}
         <div className="safe-bottom absolute inset-x-0 bottom-0 px-4 pb-4">
           {conversa && ultima?.pregunta && (
-            <p className="mb-2 ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-white/90 px-3 py-2 text-[15px] font-bold text-slate-900">{ultima.pregunta}</p>
+            <p className="mb-2 ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-white/90 px-3 py-2 text-[15px] font-medium text-black">{ultima.pregunta}</p>
           )}
           {subtitulo && (
             <div className="subtitulo-zumi" aria-live="polite">
@@ -450,34 +533,47 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
             </div>
           )}
 
+          {llamada && oido && (
+            <p className="oido-vivo mt-2 text-right text-[17px] leading-snug font-medium text-white/80" aria-live="polite">
+              <span className="rotulo mr-2 !text-white/45">Tú</span>
+              {oido}
+            </p>
+          )}
           {llamada && (
-            <div className="llamada-zumi mt-3 flex items-center gap-3 rounded-full bg-black/55 p-2 pl-4 backdrop-blur-md">
-              <span className={`grid size-10 place-items-center rounded-full ${escuchando ? 'microfono-activo bg-red-500' : 'bg-white/15'}`} aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <rect x="9" y="3" width="6" height="11" rx="3" />
-                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-                </svg>
-              </span>
-              <span className="flex-1 text-[15px] font-bold" aria-live="polite">
-                {pensando ? 'ZUMI está pensando…' : e.hablando ? 'ZUMI está hablando' : escuchando ? 'Te escucho, habla nomás' : 'En llamada con ZUMI'}
-                <Cronometro desde={inicioLlamada} />
-              </span>
-              {e.hablando && (
-                <button type="button" onClick={() => (callar(), escuchar())} className="boton-vidrio min-h-11 rounded-full px-3 text-[14px] font-bold">
-                  Hablar
+            <div className="llamada-zumi mt-4">
+              <p className="rotulo mb-3 flex items-center justify-center gap-2 !text-white/70" aria-live="polite">
+                <span className={`ondas-estado ${pensando ? 'pensando' : e.hablando ? 'hablando' : escuchando && !vigia.current ? 'escuchando' : ''}`} aria-hidden="true">
+                  <i /><i /><i /><i /><i />
+                </span>
+                {pensando ? 'Pensando' : e.hablando ? (IOS ? 'Hablando · toca para interrumpir' : 'Hablando · interrúmpelo cuando quieras') : escuchando ? 'Te escucho' : 'En llamada'}
+              </p>
+              <div className="flex items-center justify-center gap-5">
+                <button
+                  type="button"
+                  onClick={() => (e.hablando ? interrumpir() : escuchar())}
+                  aria-label={escuchando && !vigia.current ? 'Dejar de escuchar' : 'Hablar ahora'}
+                  className={`grid size-15 place-items-center rounded-full ${escuchando && !vigia.current ? 'bg-white text-black' : 'boton-vidrio'}`}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                  </svg>
                 </button>
-              )}
-              <button type="button" onClick={() => colgar()} aria-label="Colgar la llamada" className="grid size-12 place-items-center rounded-full bg-red-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 9c-2.5 0-4.9.5-7.1 1.4-.7.3-1 1-1 1.7v2.4c0 .7.6 1.2 1.3 1.1l3-.6c.6-.1 1-.6 1-1.2v-1.7a12 12 0 0 1 5.6 0v1.7c0 .6.4 1.1 1 1.2l3 .6c.7.1 1.3-.4 1.3-1.1v-2.4c0-.7-.3-1.4-1-1.7C16.9 9.5 14.5 9 12 9z" />
-                </svg>
-              </button>
+                <button type="button" onClick={() => colgar()} aria-label="Colgar la llamada" className="grid size-17 place-items-center rounded-full bg-[#ff3b30] shadow-[0_8px_30px_rgb(255_59_48/0.45)] active:scale-95">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 9c-2.5 0-4.9.5-7.1 1.4-.7.3-1 1-1 1.7v2.4c0 .7.6 1.2 1.3 1.1l3-.6c.6-.1 1-.6 1-1.2v-1.7a12 12 0 0 1 5.6 0v1.7c0 .6.4 1.1 1 1.2l3 .6c.7.1 1.3-.4 1.3-1.1v-2.4c0-.7-.3-1.4-1-1.7C16.9 9.5 14.5 9 12 9z" />
+                  </svg>
+                </button>
+                <button type="button" onClick={cambiarPresencia} aria-label={presencia === 'cara' ? 'Pasar a solo voz' : 'Ver a ZUMI cara a cara'} className="boton-vidrio grid size-15 place-items-center rounded-full">
+                  <span className="mono text-[10px] tracking-[0.08em]">{presencia === 'cara' ? 'VOZ' : 'CARA'}</span>
+                </button>
+              </div>
             </div>
           )}
           {conversa && !llamada && (
             <div className="mt-3">
               {SR && !pensando && !e.hablando && (
-                <button type="button" onClick={llamar} className="mb-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-500 text-[16px] font-extrabold text-slate-950">
+                <button type="button" onClick={llamar} className="boton-primario mb-2 w-full text-[16px]">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" />
                   </svg>
@@ -519,10 +615,10 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
                 {SR && (
                   <button
                     type="button"
-                    onClick={escuchar}
+                    onClick={() => escuchar()}
                     aria-pressed={escuchando}
                     aria-label={escuchando ? 'Dejar de escuchar' : `Hablarle a ${NOMBRE}`}
-                    className={`grid size-13 shrink-0 place-items-center rounded-full ${escuchando ? 'microfono-activo bg-red-500' : 'boton-vidrio'}`}
+                    className={`grid size-13 shrink-0 place-items-center rounded-full ${escuchando ? 'microfono-activo bg-white text-black' : 'boton-vidrio'}`}
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                       <rect x="9" y="3" width="6" height="11" rx="3" />
@@ -530,7 +626,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
                     </svg>
                   </button>
                 )}
-                <button type="submit" disabled={!pregunta.trim() || pensando} aria-label="Preguntar" className="grid size-13 shrink-0 place-items-center rounded-full bg-amber-300 text-slate-900 disabled:opacity-50">
+                <button type="submit" disabled={!pregunta.trim() || pensando} aria-label="Preguntar" className="grid size-13 shrink-0 place-items-center rounded-full bg-white text-black disabled:opacity-40">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M3 20l18-8L3 4l2 7 9 1-9 1z" />
                   </svg>
@@ -544,7 +640,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
                 Saltar y preguntarle algo
               </button>
               {SR && (
-                <button type="button" onClick={llamar} className="min-h-12 flex-1 rounded-full bg-emerald-500 text-[15px] font-extrabold text-slate-950">
+                <button type="button" onClick={llamar} className="boton-primario min-h-12 flex-1 text-[15px]">
                   Llamar a ZUMI
                 </button>
               )}
@@ -553,7 +649,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
         </div>
 
         {ajustes && (
-          <div className="absolute inset-x-4 top-[calc(env(safe-area-inset-top)+4rem)] z-10 space-y-3 rounded-3xl bg-slate-950/90 p-4 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl">
+          <div className="vidrio absolute inset-x-4 top-[calc(env(safe-area-inset-top)+4rem)] z-10 space-y-3 rounded-3xl p-4">
             <div className="flex items-center gap-3">
               <PortalZumi tam={64} traje={traje} />
               <p className="text-[14px] text-white/80">
@@ -629,5 +725,33 @@ function Cronometro({ desde }) {
     return () => clearInterval(id)
   }, [])
   const s = Math.max(0, Math.floor((Date.now() - desde) / 1000))
-  return <span className="ml-2 font-mono text-[13px] text-white/60">{`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`}</span>
+  return <span className="ml-1 text-white/60 tabular-nums">{`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`}</span>
+}
+
+/** ¿Lo que oyó el micrófono es la propia voz de ZUMI? (la mayoría de las palabras están en lo que dice) */
+function esEco(oido, frases) {
+  const norma = (x) =>
+    String(x ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9ñ\s]/g, ' ')
+  const dice = new Set(norma((frases ?? []).map((f) => (typeof f === 'string' ? f : f?.texto)).join(' ')).split(/\s+/).filter(Boolean))
+  const palabras = norma(oido).split(/\s+/).filter((w) => w.length > 2)
+  if (!palabras.length) return true
+  return palabras.filter((w) => dice.has(w)).length / palabras.length > 0.5
+}
+
+/** Modo «solo voz»: un orbe que respira con la conversación (ZUMI al centro). */
+function Orbe({ estado }) {
+  return (
+    <div className={`orbe-zumi orbe-${estado} absolute inset-0 grid place-items-center`} aria-hidden="true">
+      <div className="orbe-halo" />
+      <div className="orbe-anillo" />
+      <div className="orbe-anillo orbe-anillo-2" />
+      <div className="orbe-nucleo">
+        <img src={NARRADOR.avatar} alt="" width="120" height="120" className="size-full rounded-full object-cover" />
+      </div>
+    </div>
+  )
 }

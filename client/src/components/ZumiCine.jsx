@@ -12,26 +12,30 @@ import { RUTA_CINE, marcarVista } from '../services/cine'
 // Pantalla del estudio (donde aparecen los datos), en fracciones de la escena.
 const PANTALLA = { estudio: [0.46, 0.235, 0.52, 0.26], alerta: [0.46, 0.235, 0.52, 0.26] }
 
-function caja(cw, ch, posicion, encuadre) {
+// «zoom» acerca la cámara (cara a cara) y «zona» es la fracción superior del cuadro donde debe caber
+// la franja del encuadre (lo de abajo queda para los controles que van encima del video).
+function caja(cw, ch, posicion, encuadre, zoom = 1, zona = 1) {
   const { ancho, alto } = ESCENA
-  let k = Math.max(cw / ancho, ch / alto)
+  let k = Math.max(cw / ancho, ch / alto) * zoom
   let ox = (cw - ancho * k) * posicion[0]
   let oy = (ch - alto * k) * posicion[1]
   let relleno = false
   if (encuadre) {
     const y0 = encuadre[0] * alto
     const y1 = encuadre[1] * alto
-    if ((y1 - y0) * k > ch) {
-      k = ch / (y1 - y0)
+    const hueco = ch * zona
+    if ((y1 - y0) * k > hueco) {
+      k = hueco / (y1 - y0)
       ox = (cw - ancho * k) / 2
       oy = -y0 * k
-      relleno = true
-    } else oy = Math.min(0, Math.max(ch - alto * k, -y0 * k + (ch - (y1 - y0) * k) / 2))
+      relleno = ancho * k < cw
+      if (!relleno) oy = Math.min(0, oy)
+    } else oy = Math.min(0, Math.max(ch - alto * k, -y0 * k + (hueco - (y1 - y0) * k) / 2))
   }
   return { left: ox, top: oy, width: ancho * k, height: alto * k, relleno }
 }
 
-export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], encuadre = null, className = '', peliculas = false, pantalla = null }) {
+export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], encuadre = null, zoom = 1, zona = 1, className = '', peliculas = false, pantalla = null }) {
   const peli = useRef(null)
   const [enPelicula, setEnPelicula] = useState(false)
   const actual = useRef(null)
@@ -206,7 +210,7 @@ export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = n
     for (const [n, v] of Object.entries(capas.current)) if (v && n !== 'reposo' && n !== activo && !v.paused) setTimeout(() => n !== activo && v.pause(), 250)
   }, [activo])
 
-  const c = medida ? caja(medida.w, medida.h, posicion, encuadre) : null
+  const c = medida ? caja(medida.w, medida.h, posicion, encuadre, zoom, zona) : null
   const pr = c && PANTALLA[escena]
   const rect = pr ? [Math.max(8, c.left + pr[0] * c.width), c.top + pr[1] * c.height, Math.min(medida.w - 8, c.left + (pr[0] + pr[2]) * c.width) - Math.max(8, c.left + pr[0] * c.width), pr[3] * c.height] : null
   const estilo = c ? { left: c.left, top: c.top, width: c.width, height: c.height } : { inset: 0, width: '100%', height: '100%' }
