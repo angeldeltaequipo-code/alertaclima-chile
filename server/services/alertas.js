@@ -10,6 +10,7 @@
 // (cargada desde el panel). Una integración futura con SENAPRED u otra fuente oficial
 // se agrega como otra AlertSource, sin tocar la API ni la app.
 import { ErrorValidacion } from './reportes.js'
+import { fuenteSenapred } from './senapred.js'
 
 export const NIVELES = ['preventiva', 'amarilla', 'roja', 'evacuacion']
 const GRAVEDAD = Object.fromEntries(NIVELES.map((n, i) => [n, i]))
@@ -54,15 +55,19 @@ const fuenteManual = {
   },
 }
 
-export const FUENTES = [fuenteManual]
+// SENAPRED en tiempo real + las cargadas a mano desde el panel (si la base de datos responde)
+export const FUENTES = [fuenteSenapred, fuenteManual]
 
 /** Alertas vigentes de una comuna, de la más grave a la menos grave. */
 export async function alertasDeComuna(db, cut) {
   if (!/^\d{5}$/.test(cut ?? '')) throw new ErrorValidacion('Comuna inválida')
-  const listas = await Promise.all(FUENTES.map((f) => f.alertasDeComuna(db, cut)))
-  return listas
-    .flat()
-    .sort((a, b) => a.sin_confirmar - b.sin_confirmar || GRAVEDAD[b.nivel] - GRAVEDAD[a.nivel] || b.confirmada_en - a.confirmada_en)
+  // Cada fuente por su lado: si una falla (p. ej. la base de datos), las otras igual responden
+  const r = await Promise.allSettled(FUENTES.map((f) => f.alertasDeComuna(db, cut)))
+  if (r.every((x) => x.status === 'rejected')) throw r[0].reason
+  return r
+    .filter((x) => x.status === 'fulfilled')
+    .flatMap((x) => x.value)
+    .sort((a, b) => Number(a.sin_confirmar) - Number(b.sin_confirmar) || GRAVEDAD[b.nivel] - GRAVEDAD[a.nivel] || new Date(b.confirmada_en) - new Date(a.confirmada_en))
 }
 
 // ---- Administración ----

@@ -5,6 +5,7 @@ import { pool } from './db/pool.js'
 import { limpiarVencidos } from './services/reportes.js'
 import { leerSesion, usuarioPorId } from './services/cuentas.js'
 import { precalentar, usarBaseDeVoz } from './services/voz/index.js'
+import { iniciarSenapred } from './services/senapred.js'
 
 const PUERTO = Number(process.env.PORT ?? 3000)
 
@@ -63,6 +64,7 @@ const limpieza = setInterval(
 http.listen(PUERTO, () => {
   console.log(`AlertaClima API escuchando en el puerto ${PUERTO}`)
   usarBaseDeVoz(pool) // los audios de ZUMI se guardan en la base (se generan una sola vez)
+  if (process.env.NODE_ENV !== 'test') iniciarSenapred() // alertas oficiales de SENAPRED cada 3 minutos
   precalentar() // voz de ZUMI lista para la primera frase
 })
 

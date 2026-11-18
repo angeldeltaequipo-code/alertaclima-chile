@@ -10,6 +10,7 @@ import {
   horasSinConfirmar,
   listarAlertasAdmin,
 } from '../services/alertas.js'
+import { estadoSenapred } from '../services/senapred.js'
 import { fotosPorRevisar, leerFotoAdmin, revisarFoto } from '../services/fotos.js'
 import { reportePorId } from '../services/reportes.js'
 import { contarSuscritos, notificarAlerta, tipoDeAviso } from '../services/notificaciones.js'
@@ -20,7 +21,7 @@ export function alertasRouter() {
   r.get('/', async (req, res, next) => {
     try {
       const alertas = await alertasDeComuna(pool, req.query.comuna)
-      res.set('Cache-Control', 'no-store').json({ alertas, horasSinConfirmar: horasSinConfirmar(), hora: new Date().toISOString() })
+      res.set('Cache-Control', 'no-store').json({ alertas, horasSinConfirmar: horasSinConfirmar(), hora: new Date().toISOString(), senapred: estadoSenapred() })
     } catch (e) {
       next(e)
     }

@@ -352,7 +352,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const hora = new Date().getHours()
   const llueve = (datos.horas ?? []).slice(0, 3).some((h) => (h.lluvia ?? 0) >= 0.5) || /lluv|chubas|tormenta|llovizna/i.test(datos.ahora?.texto ?? '')
   const base = hora >= 20 || hora < 7 ? 'noche' : llueve ? 'lluvia' : 'sala'
-  const hayAlerta = escena?.clip === 'alerta' || Boolean(datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas))
+  const hayAlerta = escena?.clip === 'alerta' || (NIVELES[(datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas))?.nivel]?.gravedad ?? 0) >= 2
   // Un solo lugar durante todo el reporte (cambiar de set a mitad de frase rompía la continuidad):
   // su casa según la hora y el clima, o el estudio en rojo si hay una alerta oficial.
   const escenario = hayAlerta ? 'alerta' : base

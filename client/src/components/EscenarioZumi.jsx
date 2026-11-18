@@ -33,7 +33,9 @@ const REACCIONES = [
 ]
 
 export function escenaDeZumi({ alertas, horas, ahora }, hora = new Date().getHours()) {
-  if (alertas?.alertas && alertaPrincipal(alertas.alertas)) return 'alerta'
+  // Escenario de emergencia solo con alerta Amarilla o mayor (la Temprana Preventiva es monitoreo)
+  const p = alertas?.alertas && alertaPrincipal(alertas.alertas)
+  if (p && NIVELES[p.nivel].gravedad >= 2) return 'alerta'
   const llueve = (horas ?? []).slice(0, 3).some((h) => (h.lluvia ?? 0) >= 0.5) || /lluv|chubas|tormenta|llovizna/i.test(ahora?.texto ?? '')
   if (llueve) return 'lluvia'
   return hora >= 20 || hora < 7 ? 'noche' : 'sala'
