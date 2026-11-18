@@ -47,6 +47,7 @@ import { obtenerEvacuacion } from './services/evacuacion'
 import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
 import ViajeZumi from './components/ViajeZumi'
+import { irASeccion } from './components/Desplegable'
 import { LUGARES, NARRADOR, leerPasaporte, lugarPorId } from './services/viajes'
 import TirarParaActualizar from './components/TirarParaActualizar'
 
@@ -382,7 +383,7 @@ export default function App() {
                     nombre={cuenta.usuario?.nombre}
                     onVerAlertas={() => setVerAlertas(true)}
                     onVerMapa={() => setVista('radar')}
-                    onIr={(id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onIr={(id) => irASeccion(id === 't-horas' ? 'a-horas' : id)}
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}

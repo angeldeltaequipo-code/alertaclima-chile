@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Plegable, { Flecha } from './Plegable'
+import Desplegable from './Desplegable'
 import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
 import GraficoHoras from './GraficoHoras'
@@ -51,6 +52,11 @@ function Grupo({ children }) {
 /** Cielo y espacio: contenido para curiosear, plegado para que la página principal sea corta. */
 function Explorar({ horas, dias, punto, comuna }) {
   const [abierto, setAbierto] = useState(false)
+  useEffect(() => {
+    const f = (e) => e.detail === 't-cielo-ancla' && setAbierto(true)
+    window.addEventListener('ac:abrir-seccion', f)
+    return () => window.removeEventListener('ac:abrir-seccion', f)
+  }, [])
   return (
     <section aria-labelledby="t-cielo-ancla" className="scroll-mt-16">
       <button
@@ -138,7 +144,9 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
       {zumi ? zumi({ hoy: dias[0] }) : <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />}
       <Atajos />
       {resumen}
-      <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
+      <Desplegable id="a-pulso" icono="📡" titulo="Pulso en vivo" adelanto="Lo último: sismos, avisos de vecinos y datos al minuto" tono="pulso">
+        <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
+      </Desplegable>
 
       {invitacion}
 
@@ -151,32 +159,54 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
       {urgenteAluvion && aluvion}
 
       <Grupo>Pronóstico</Grupo>
-      <Bloque titulo="Próximas 24 horas" id="t-horas">
-        {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
-        <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
-      </Bloque>
+      <Desplegable id="a-horas" icono="🕐" titulo="Próximas 24 horas" adelanto={`Ahora ${grados(ahora.temperatura)} · ${ahora.texto}`} tono="sol">
+        <div className="tarjeta">
+          {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
+          <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
+        </div>
+      </Desplegable>
 
-      <Bloque titulo="Próximos 7 días" id="t-dias">
-        <Semana dias={dias} actual={ahora.temperatura} />
-      </Bloque>
+      <Desplegable id="a-dias" icono="📅" titulo="Próximos 7 días" adelanto={`Hoy máx. ${grados(dias[0].max)}, mín. ${grados(dias[0].min)} · mañana ${grados(dias[1]?.max ?? dias[0].max)}`} tono="cielo">
+        <div className="tarjeta">
+          <Semana dias={dias} actual={ahora.temperatura} />
+        </div>
+      </Desplegable>
 
       {hayLluvia && (
-        <Bloque titulo="Lluvia en las próximas 12 horas" id="t-lluvia">
-          <p className="mb-2 text-[16px]">{resumenLluvia(prox12)}</p>
-          <GraficoLluvia horas={prox12} />
-        </Bloque>
+        <Desplegable id="a-lluvia" icono="🌧️" titulo="Lluvia en las próximas 12 horas" adelanto={resumenLluvia(prox12)} tono="lluvia">
+          <div className="tarjeta">
+            <p className="mb-2 text-[16px]">{resumenLluvia(prox12)}</p>
+            <GraficoLluvia horas={prox12} />
+          </div>
+        </Desplegable>
       )}
 
-      {!urgenteAluvion && aluvion}
+      {!urgenteAluvion && (
+        <Desplegable id="a-aluvion" icono="⛰️" titulo="Aluviones y desbordes" adelanto="Riesgo bajo por ahora · ríos y quebradas cerca de ti" tono="vecinos">
+          {aluvion}
+        </Desplegable>
+      )}
 
       <Grupo>Tu zona</Grupo>
-      {familia}
-      {reportes}
+      {familia && (
+        <Desplegable id="a-familia" icono="👨‍👩‍👧" titulo="Mi familia" adelanto="El clima y las alertas de donde vive cada uno" tono="hogar">
+          {familia}
+        </Desplegable>
+      )}
+      {reportes && (
+        <Desplegable id="a-reportes" icono="📣" titulo="Avisos de vecinos" adelanto={reportesLista?.length ? `${reportesLista.length} avisos cerca de ti` : 'Lo que ven tus vecinos ahora'} tono="vecinos">
+          {reportes}
+        </Desplegable>
+      )}
+      {camaras && (
+        <Desplegable id="a-camaras" icono="🎥" titulo="Cámaras en vivo" adelanto="Mira cómo está el cielo y las calles cerca de ti" tono="camara">
+          {camaras}
+        </Desplegable>
+      )}
 
-      {camaras}
-
-      <h2 id="t-detalle" className="scroll-mt-16 px-1 pt-2 text-[19px] font-bold">Detalle de ahora</h2>
-      <Fichas ahora={ahora} dias={dias} />
+      <Desplegable id="a-detalle" icono="🌡️" titulo="Detalle de ahora" adelanto={`Viento ${Math.round(ahora.viento ?? 0)} km/h · humedad ${Math.round(ahora.humedad ?? 0)} % · UV ${Math.round(dias[0].uv ?? 0)}`} tono="detalle">
+        <Fichas ahora={ahora} dias={dias} />
+      </Desplegable>
 
       <Grupo>Explorar</Grupo>
       <Explorar horas={horas} dias={dias} punto={datos.punto} comuna={comuna?.nombre} />

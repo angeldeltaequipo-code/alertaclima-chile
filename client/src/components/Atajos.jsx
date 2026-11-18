@@ -1,15 +1,16 @@
 // Atajos de la pestaña Ahora: chips fijos arriba para saltar a cada sección de una página larga,
 // marcando en cuál estás.
 import { useEffect, useState } from 'react'
+import { irASeccion } from './Desplegable'
 
 const SECCIONES = [
-  ['t-horas', '24 horas'],
-  ['t-dias', '7 días'],
-  ['t-lluvia', 'Lluvia'],
-  ['t-familia', 'Familia'],
-  ['t-reportes', 'Vecinos'],
-  ['t-camaras', 'Cámaras'],
-  ['t-detalle', 'Detalle'],
+  ['a-horas', '24 horas'],
+  ['a-dias', '7 días'],
+  ['a-lluvia', 'Lluvia'],
+  ['a-familia', 'Familia'],
+  ['a-reportes', 'Vecinos'],
+  ['a-camaras', 'Cámaras'],
+  ['a-detalle', 'Detalle'],
   ['t-cielo-ancla', 'Cielo y espacio'],
 ]
 
@@ -48,8 +49,7 @@ export default function Atajos() {
               type="button"
               aria-current={activa === id ? 'true' : undefined}
               onClick={() => {
-                const el = document.getElementById(id)
-                ;(el?.closest('section') ?? el)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                irASeccion(id)
               }}
               className={`min-h-9 shrink-0 rounded-full px-3.5 text-[14px] font-bold whitespace-nowrap transition-colors ${activa === id ? 'bg-senal text-sobre-senal' : 'bg-superficie/90 text-texto ring-1 ring-linea'}`}
             >
