@@ -50,6 +50,7 @@ import ViajeZumi from './components/ViajeZumi'
 import GPSFamiliar from './components/GPSFamiliar'
 import { abrirFuncion } from './components/Funciones'
 import { invitacionEnDireccion, leerGrupo, vigilarUbicacion } from './services/familiaGPS'
+import { vigiaFamiliar } from './services/familiaAlertas'
 import { irASeccion } from './components/Desplegable'
 import { LUGARES, NARRADOR, leerPasaporte, lugarPorId } from './services/viajes'
 import TirarParaActualizar from './components/TirarParaActualizar'
@@ -146,14 +147,22 @@ export default function App() {
   const [invitacionFamilia, setInvitacionFamilia] = useState(() => invitacionEnDireccion())
   const [familiaMapa, setFamiliaMapa] = useState([])
   useEffect(() => {
-    if (leerGrupo()) vigilarUbicacion()
+    if (leerGrupo()) {
+      vigilarUbicacion()
+      vigiaFamiliar()
+    }
+    const alCrear = () => leerGrupo() && (vigilarUbicacion(), vigiaFamiliar())
+    window.addEventListener('ac:familia-gps', alCrear)
     if (invitacionFamilia) {
       setVista('ahora')
       abrirFuncion('familia')
     }
     const f = (e) => setFamiliaMapa(e.detail ?? [])
     window.addEventListener('ac:familia-ubicaciones', f)
-    return () => window.removeEventListener('ac:familia-ubicaciones', f)
+    return () => {
+      window.removeEventListener('ac:familia-ubicaciones', f)
+      window.removeEventListener('ac:familia-gps', alCrear)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [sellos, setSellos] = useState(leerPasaporte)

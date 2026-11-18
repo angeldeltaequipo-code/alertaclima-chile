@@ -134,6 +134,20 @@ function Integrante({ m, yo, onVerMapa }) {
   )
 }
 
+function AvisosFamilia() {
+  const [permiso, setPermiso] = useState(() => ('Notification' in window ? Notification.permission : 'no'))
+  if (permiso === 'no') return null
+  return permiso === 'granted' ? (
+    <p className="rounded-2xl bg-emerald-500/12 px-4 py-3 text-[15px] font-bold text-emerald-800 dark:text-emerald-300">
+      🔔 Te avisamos si alguien de tu familia está en una zona con Alerta Amarilla o Roja.
+    </p>
+  ) : (
+    <button type="button" onClick={() => Notification.requestPermission().then(setPermiso)} className="min-h-14 w-full rounded-2xl bg-amber-400 px-4 text-left text-[16px] font-black text-slate-950">
+      🔔 Avísame si alguien de mi familia entra a una zona con alerta
+    </button>
+  )
+}
+
 export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () => {}, onVerMapa = () => {} }) {
   const g = useGrupo()
   const [miembros, setMiembros] = useState([])
@@ -216,6 +230,8 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
           Todavía no hay nadie más. <strong>Invita a tu familia</strong>: cuando abran el enlace en su teléfono y acepten, aparecerán aquí.
         </p>
       )}
+
+      <AvisosFamilia />
 
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={invitar} className="min-h-14 rounded-full bg-emerald-400 text-[17px] font-black text-slate-950">

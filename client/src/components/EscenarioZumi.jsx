@@ -9,6 +9,7 @@ import { PELICULAS, consejoDelDia } from '../services/cine'
 import { alertaPrincipal, NIVELES } from '../services/alertas'
 import { fraseDeReencuentro, registrarVisita } from '../services/zumiMemoria'
 import { viajar } from '../services/viajes'
+import { compartirClima } from '../services/compartir'
 import { activarMusica, alCambiarMusica } from '../services/musica'
 
 // La visita de hoy se anota una sola vez por sesión (para saber si vuelves después de días).
@@ -178,6 +179,13 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
         <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           <button type="button" onClick={() => viajar()} className="chip-escenario chip-viaje shrink-0">
             ✈ Viaja con ZUMI
+          </button>
+          <button
+            type="button"
+            onClick={() => compartirClima({ escena, comuna: datos.comuna?.nombre ?? datos.nombreComuna, temperatura: ahora?.temperatura, texto: ahora?.texto, max: hoy?.max, min: hoy?.min, frase: frases[1] ?? frases[0] }).catch(() => {})}
+            className="chip-escenario shrink-0"
+          >
+            📤 Compartir
           </button>
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
