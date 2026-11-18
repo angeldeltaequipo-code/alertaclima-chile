@@ -75,9 +75,38 @@ export function esPreguntaRapida(pregunta) {
   return ['lluvia', 'temperatura', 'ropa', 'alerta', 'sismo', 'viento', 'sol', 'luna'].some((k) => QUIERE[k].test(t)) && !/por que|como funciona|explica|historia|que es (el|la|un|una)/.test(t)
 }
 
+// La memoria de ZUMI (miles de preguntas): se carga aparte, en segundo plano, y queda lista.
+let saber = null
+export const cargarSaber = () => (saber ??= import('./saber/index.js').catch(() => (saber = null)))
+let memoria = null
+// se precarga cuando la app ya está tranquila
+if (typeof window !== 'undefined') setTimeout(() => cargarSaber()?.then?.((m) => (memoria = m)), 5000)
+
+/** ¿Pregunta por el clima de ahora o de los próximos días en su comuna? (eso se responde con datos en vivo) */
+function esClimaEnVivo(pregunta) {
+  const t = sinTildes(String(pregunta ?? ''))
+  if (t.length > 90) return false
+  return ['lluvia', 'temperatura', 'ropa', 'alerta', 'sismo', 'viento', 'sol', 'luna'].some((k) => QUIERE[k].test(t)) && !/por que|como funciona|explica|historia|que es (el|la|un|una)|que significa|que hago|como (me )?protej|consejo/.test(t)
+}
+
 export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
   anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
-  // Lo del clima de ahora lo responde ZUMI con sus datos, al instante (sin esperar internet).
+  const S = (memoria ??= await cargarSaber())
+  // 1. El clima de cualquier otra comuna de Chile, al momento.
+  const otra = S?.comunaPedida(pregunta)
+  if (otra && otra.cut !== datos.comuna?.cut) {
+    try {
+      return { texto: await S.climaDeComuna(otra, pregunta), fuente: 'zumi', rapida: true }
+    } catch {
+      /* sin red: sigue */
+    }
+  }
+  // 2. Lo de su memoria, si lo sabe con seguridad (emergencias, salud, Chile, la app…).
+  const m = S?.deMemoria(pregunta, { ...datos, nombre: datos.nombre })
+  const segura = m && m.puntaje >= 0.75 && m.tema !== 'clima'
+  // 3. El clima de ahora en su comuna, con datos en vivo.
+  if (esClimaEnVivo(pregunta) && !segura) return { texto: responderSinIA(pregunta, datos), fuente: 'zumi', rapida: true }
+  if (m && m.puntaje >= 0.7) return { texto: m.texto, fuente: 'zumi', rapida: true }
   if (esPreguntaRapida(pregunta)) return { texto: responderSinIA(pregunta, datos), fuente: 'zumi', rapida: true }
   if (conCuenta && navigator.onLine && (await hayIA())) {
     try {
@@ -102,6 +131,8 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
       /* sin red o lento: responde ZUMI solo */
     }
   }
+  // 4. Algo parecido en su memoria, o sus propias reglas; nunca «no sé».
+  if (m && m.puntaje >= 0.55) return { texto: m.texto, fuente: 'zumi' }
   return { texto: responderSinIA(pregunta, datos), fuente: 'zumi' }
 }
 
@@ -261,7 +292,8 @@ export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, a
 
   if (QUIERE.saludo.test(t)) return `¡Hola${nombre ? `, ${nombre}` : ''}! ¿Qué quieres saber? Puedes preguntarme si va a llover, qué ropa ponerte o si hubo sismos.`
 
-  return `${tu}esa todavía no me la sé. Pregúntame por la lluvia, la temperatura, qué ropa ponerte, las alertas o los sismos, ¡y te cuento!`
+  if (memoria) return memoria.respaldo(pregunta, { nombre })
+  return `${tu}buena pregunta. Te puedo contar el clima de cualquier comuna, qué hacer en una emergencia, cómo usar la app o datos de Chile. Por ejemplo: ¿qué hago si tiembla? o ¿va a llover mañana?`
 }
 
 /** Sugerencias para empezar a conversar. */
