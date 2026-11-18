@@ -495,7 +495,7 @@ export default function Mapa({
     let vigente = true
     if (!comuna) return
     cuandoListo((mapa) => {
-      if (comuna.bbox) mapa.fitBounds(aBounds(comuna.bbox), { padding: 24, maxZoom: 13, duration: 0 })
+      if (comuna.bbox && !props.current.viaje) mapa.fitBounds(aBounds(comuna.bbox), { padding: 24, maxZoom: 13, duration: 0 })
       mapa.getSource('comuna').setData({ type: 'FeatureCollection', features: [] })
       mapa.getSource('rios').setData({ type: 'FeatureCollection', features: [] })
       ref.current.rios = null
@@ -581,7 +581,7 @@ export default function Mapa({
           geometry: { type: 'Point', coordinates: [v.lng, v.lat] },
         })),
       })
-      if (recien) mapa.flyTo({ center: [-70.5, -33], zoom: 3.7 })
+      if (recien && !props.current.viaje) mapa.flyTo({ center: [-70.5, -33], zoom: 3.7 })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volcanes])
@@ -672,7 +672,7 @@ export default function Mapa({
         })),
       })
       // Al activar la capa se muestra todo Chile; en las actualizaciones no se mueve el mapa.
-      if (recienActivada) mapa.flyTo({ center: [-71, -32], zoom: 3.6 })
+      if (recienActivada && !props.current.viaje) mapa.flyTo({ center: [-71, -32], zoom: 3.6 })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sismos])
@@ -797,7 +797,8 @@ export default function Mapa({
     if (!viaje) return
     let vivo = true
     let girando = null
-    cuandoListo((mapa) => despegar(mapa))
+    // un instante después de cargar, para que ningún otro ajuste de cámara le gane al vuelo
+    cuandoListo((mapa) => setTimeout(() => despegar(mapa), 350))
     // el mapa puede estar recién mostrándose (venía de otra pestaña): esperar a que tenga tamaño
     function despegar(mapa, intento = 0) {
       if (!vivo) return
