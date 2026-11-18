@@ -29,6 +29,7 @@ const REACCIONES = [
   ['¡Jaja, cosquillas no!', 'celebrar'],
   ['¡Aquí estoy! ¿Conversamos?', 'saludo'],
   ['¡Mira mi pelota!', 'pelota'],
+  ['¡Pa\' la plaza! ¡A bailar cueca!', 'cueca'],
   ['Mmm… ¿qué quieres saber?', 'pensar'],
   ['¡Toca «Hablar con ZUMI» y pregúntame lo que quieras!', 'senalar'],
 ]
@@ -68,7 +69,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   const [reaccion, setReaccion] = useState(null) // texto del globo cuando lo tocas
   // Al llegar saluda; si hace mucho calor o frío, se cambia de ropa delante tuyo
   const tempAhora = datos.ahora?.temperatura
-  const [gesto, setGesto] = useState(() => (escena === 'sala' && tempAhora >= 27 ? 'verano:inicio' : escena === 'sala' && tempAhora <= 8 ? 'invierno:inicio' : 'saludo:inicio'))
+  const [gesto, setGesto] = useState(() => (escena === 'sala' && new Date().getMonth() === 8 && new Date().getDate() <= 20 ? 'cueca:inicio' : escena === 'sala' && tempAhora >= 27 ? 'verano:inicio' : escena === 'sala' && tempAhora <= 8 ? 'invierno:inicio' : 'saludo:inicio'))
   const toques = useRef(0)
 
   // El globo avanza solo; con alerta se queda en lo importante.
@@ -211,6 +212,11 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
           >
             Compartir
           </button>
+          {escena === 'sala' && (
+            <button type="button" onClick={() => (setReaccion('¡Pa\' la plaza! ¡A bailar cueca!'), setGesto(`cueca:${Date.now()}`))} className="chip-escenario shrink-0">
+              Baila cueca
+            </button>
+          )}
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
               ▶ {PELICULAS[consejo].titulo}
