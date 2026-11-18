@@ -1,7 +1,7 @@
 // Música de fondo de ZUMI, compuesta en vivo por la app (Web Audio): sin archivos, sin derechos de autor
 // y sin gastar datos. Cambia con el clima de tu comuna:
-//   despejado → acordes cálidos y notas de marimba suaves
-//   nublado   → lo mismo, más tranquilo
+//   despejado → alegre y con ritmo: bajo, arpegios de marimba y percusión suave
+//   nublado   → con ritmo pero más relajado, sin batería
 //   lluvia    → acordes menores, lluvia suave y gotas
 //   viento    → acordes abiertos y viento que sube y baja
 //   noche     → acordes lentos, notas espaciadas y grillos
@@ -42,8 +42,10 @@ export function alCambiarMusica(fn) {
 const nota = (midi) => 440 * 2 ** ((midi - 69) / 12)
 // Progresiones (grados en semitonos desde la tónica) y escalas para la melodía, por ambiente
 const ESTILOS = {
-  despejado: { tonica: 60, acordes: [[0, 4, 7, 11], [5, 9, 12, 16], [9, 12, 16, 19], [7, 11, 14, 17]], escala: [0, 2, 4, 7, 9, 12, 14, 16], paso: [1.4, 3.2], brillo: 2200 },
-  nublado: { tonica: 57, acordes: [[0, 7, 12, 16], [5, 12, 17, 21], [3, 10, 15, 19], [7, 14, 19, 22]], escala: [0, 2, 4, 7, 9, 12], paso: [2.2, 4.5], brillo: 1500 },
+  // Con sol: alegre y con ritmo (I–V–vi–IV en Re mayor, 112 pulsos por minuto, bajo, arpegios y percusión suave)
+  despejado: { tonica: 62, acordes: [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]], escala: [0, 2, 4, 7, 9, 12, 14, 16], paso: [1.4, 3.2], brillo: 2600, ritmo: { bpm: 112, bateria: true } },
+  // Nublado: con ritmo, pero más tranquilo (sin batería)
+  nublado: { tonica: 60, acordes: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]], escala: [0, 2, 4, 7, 9, 12], paso: [2.2, 4.5], brillo: 1900, ritmo: { bpm: 96, bateria: false } },
   lluvia: { tonica: 57, acordes: [[0, 3, 7, 10], [5, 8, 12, 15], [-2, 2, 5, 9], [3, 7, 10, 14]], escala: [0, 3, 5, 7, 10, 12, 15], paso: [2.4, 5], brillo: 1300 },
   viento: { tonica: 55, acordes: [[0, 7, 14, 19], [5, 12, 17, 24], [-2, 5, 12, 17], [3, 10, 15, 22]], escala: [0, 2, 7, 9, 12, 14], paso: [2.8, 5.5], brillo: 1200 },
   noche: { tonica: 53, acordes: [[0, 4, 7, 14], [-3, 4, 9, 12], [5, 9, 12, 16], [2, 5, 9, 14]], escala: [0, 4, 7, 11, 12, 16, 19], paso: [3, 6.5], brillo: 1000 },
@@ -86,8 +88,7 @@ function crear() {
 }
 
 // ---------- instrumentos ----------
-function acorde(semis, tonica, dur, brillo) {
-  const t = ctx.currentTime
+function acorde(semis, tonica, dur, brillo, t = ctx.currentTime) {
   const f = ctx.createBiquadFilter()
   f.type = 'lowpass'
   f.frequency.setValueAtTime(brillo * 0.5, t)
@@ -113,8 +114,7 @@ function acorde(semis, tonica, dur, brillo) {
   }
 }
 
-function pluck(midi, fuerza = 1) {
-  const t = ctx.currentTime
+function pluck(midi, fuerza = 1, t = ctx.currentTime) {
   const o = ctx.createOscillator()
   const o2 = ctx.createOscillator()
   o.type = 'sine'
@@ -138,6 +138,54 @@ function pluck(midi, fuerza = 1) {
   o2.start(t)
   o.stop(t + 2)
   o2.stop(t + 0.3)
+}
+
+// ---------- percusión y bajo (días de sol) ----------
+let bufRuido = null
+function golpeRuido(t, { dur = 0.05, vol = 0.03, tipo = 'highpass', f = 7000 } = {}) {
+  bufRuido ??= (() => {
+    const b = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate)
+    const d = b.getChannelData(0)
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+    return b
+  })()
+  const s = ctx.createBufferSource()
+  s.buffer = bufRuido
+  const fl = ctx.createBiquadFilter()
+  fl.type = tipo
+  fl.frequency.value = f
+  const g = ctx.createGain()
+  g.gain.setValueAtTime(vol, t)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  s.connect(fl).connect(g).connect(duck)
+  s.start(t, Math.random() * 0.4)
+  s.stop(t + dur + 0.02)
+}
+function bombo(t) {
+  const o = ctx.createOscillator()
+  const g = ctx.createGain()
+  o.frequency.setValueAtTime(130, t)
+  o.frequency.exponentialRampToValueAtTime(48, t + 0.14)
+  g.gain.setValueAtTime(0.16, t)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28)
+  o.connect(g).connect(duck)
+  o.start(t)
+  o.stop(t + 0.3)
+}
+function bajo(midi, t, dur) {
+  const o = ctx.createOscillator()
+  const f = ctx.createBiquadFilter()
+  const g = ctx.createGain()
+  o.type = 'triangle'
+  o.frequency.value = nota(midi)
+  f.type = 'lowpass'
+  f.frequency.value = 700
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.exponentialRampToValueAtTime(0.09, t + 0.02)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+  o.connect(f).connect(g).connect(duck)
+  o.start(t)
+  o.stop(t + dur + 0.05)
 }
 
 function ruido(segundos = 2, marron = false) {
@@ -235,12 +283,14 @@ function componer() {
   clearTimeout(reloj)
   if (!ctx || !activa || ambiente === 'alerta') return
   const e = ESTILOS[ambiente] ?? ESTILOS.despejado
+  if (e.ritmo) return componerConRitmo()
   let i = 0
   let siguienteAcorde = 0
   let siguienteNota = 0
   const tic = () => {
     if (!ctx || !activa || ambiente === 'alerta') return
     const t = ctx.currentTime
+    if (ESTILOS[ambiente]?.ritmo) return componerConRitmo()
     if (ctx.state === 'running') {
       const est = ESTILOS[ambiente] ?? e
       if (t >= siguienteAcorde) {
@@ -258,6 +308,42 @@ function componer() {
       }
     }
     reloj = setTimeout(tic, 250)
+  }
+  tic()
+}
+
+// Días de sol y nublados: compases de 4 tiempos, un acorde por compás, arpegio en corcheas.
+function componerConRitmo() {
+  let paso = 0 // corchea número
+  let proximo = ctx.currentTime + 0.1
+  const tic = () => {
+    if (!ctx || !activa || ambiente === 'alerta') return
+    const est = ESTILOS[ambiente]
+    if (!est?.ritmo) return componer() // cambió a un ambiente tranquilo
+    const corchea = 60 / est.ritmo.bpm / 2
+    if (ctx.state === 'running') {
+      while (proximo < ctx.currentTime + 0.35) {
+        const compas = Math.floor(paso / 8)
+        const enCompas = paso % 8
+        const ac = est.acordes[compas % est.acordes.length]
+        const raiz = est.tonica + ac[0]
+        if (enCompas === 0) acorde(ac, est.tonica + 12, corchea * 8, est.brillo * 0.8, proximo)
+        // bajo: tiempos 1 y 3, con una nota de paso
+        if (enCompas === 0 || enCompas === 4) bajo(raiz - 24, proximo, corchea * 3.6)
+        if (enCompas === 7 && Math.random() < 0.5) bajo(raiz - 24 + 7, proximo, corchea * 0.9)
+        // arpegio: notas del acorde subiendo y bajando, a veces se salta una
+        const patron = [0, 1, 2, 1, 0, 2, 1, 2]
+        if (Math.random() < 0.85) pluck(raiz + 12 + ac[patron[enCompas]] - ac[0] + (enCompas >= 4 ? 12 : 0), 0.45 + Math.random() * 0.2, proximo)
+        if (est.ritmo.bateria) {
+          if (enCompas === 0 || enCompas === 4) bombo(proximo)
+          if (enCompas === 2 || enCompas === 6) golpeRuido(proximo, { dur: 0.12, vol: 0.05, tipo: 'bandpass', f: 1800 })
+          golpeRuido(proximo, { dur: enCompas % 2 ? 0.05 : 0.03, vol: enCompas % 2 ? 0.025 : 0.012 })
+        }
+        proximo += corchea
+        paso += 1
+      }
+    } else proximo = ctx.currentTime + 0.1
+    reloj = setTimeout(tic, 90)
   }
   tic()
 }
