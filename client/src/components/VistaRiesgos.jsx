@@ -47,21 +47,23 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }
     <section aria-labelledby="t-resumen-riesgos" className="riesgos-tierra relative overflow-hidden rounded-[28px] px-4 pt-5 pb-4 text-white">
       <div className="cielo-estrellas" aria-hidden="true" />
       <img src={poseZumi(filas.every((f) => f.ok) ? 'ok' : 'alerta')} alt="" width="64" height="76" className="zumi-pose absolute top-3 right-3 h-[76px] w-auto" />
-      <div className="relative pr-16">
-        <p className="text-[12px] font-bold tracking-[0.2em] text-sky-200/90 uppercase">Planeta en vivo</p>
-        <h2 id="t-resumen-riesgos" className="mt-0.5 text-[24px] leading-tight font-bold">
+      <div className="relative">
+        <p className="rotulo flex items-center gap-2 !text-white/60">
+          <span className="punto-vivo" aria-hidden="true" /> Monitoreo en vivo
+        </p>
+        <h2 id="t-resumen-riesgos" className="titulo-x mt-1.5 pr-20 text-[26px]">
           Riesgos {comuna ? `para ${comuna.nombre}` : 'en Chile'}
         </h2>
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
           {filas.map((f) => (
             <li key={f.id}>
-              <button type="button" onClick={() => (f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-white/10 px-3 py-2 text-left backdrop-blur active:bg-white/20">
-                <span className={`grid size-7 shrink-0 place-items-center rounded-full text-[15px] font-black ${f.ok ? 'bg-emerald-400 text-emerald-950' : 'bg-amber-400 text-amber-950'}`} aria-hidden="true">
-                  {f.ok ? '✓' : '!'}
+              <button type="button" onClick={() => (f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-14 w-full items-center gap-3 py-2.5 text-left active:bg-white/5">
+                <span className={`mono w-12 shrink-0 text-[10.5px] font-medium tracking-[0.08em] ${f.ok ? 'text-vivo' : 'text-amber-300'}`} aria-hidden="true">
+                  {f.ok ? '● OK' : '▲ OJO'}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-bold">{f.titulo}</span>
-                  <span className="line-clamp-2 block text-[13px] leading-snug text-white/80">{f.texto}</span>
+                  <span className="block text-[15.5px] font-semibold tracking-tight">{f.titulo}</span>
+                  <span className="line-clamp-2 block text-[13px] leading-snug text-white/60">{f.texto}</span>
                 </span>
                 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" className="shrink-0 opacity-70">
                   <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

@@ -136,7 +136,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
           onClick={() => activarMusica(!musica)}
           aria-pressed={musica}
           aria-label={musica ? 'Apagar la música de fondo' : 'Encender la música de fondo'}
-          className="absolute top-3 left-3 z-10 grid size-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur active:scale-95"
+          className="vidrio absolute top-3 left-3 z-10 grid size-11 place-items-center rounded-full active:scale-95"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M9 18V5l11-2v13" />
@@ -144,7 +144,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             <circle cx="17" cy="16" r="3" />
             {!musica && <path d="M3 3l18 18" />}
           </svg>
-          {musica && <span className="nota-viva absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400" aria-hidden="true" />}
+          {musica && <span className="nota-viva absolute -top-0.5 -right-0.5 size-2 rounded-full bg-vivo" aria-hidden="true" />}
         </button>
 
         {/* Tocar a ZUMI */}
@@ -162,30 +162,39 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       </div>
 
       {/* Acciones: debajo de ZUMI, sin taparlo */}
-      <div className="portada-acciones px-4 pt-2 pb-4">
-        {/* El clima de ahora, de un vistazo */}
-        <div className="mb-3 flex items-center gap-3 text-white">
-          {ahora?.temperatura != null && <p className="text-[46px] leading-none font-black tracking-tight">{grados(ahora.temperatura)}</p>}
-          <div className="min-w-0">
-            <p className="truncate text-[17px] font-bold">{ahora?.texto}</p>
+      <div className="portada-acciones hud-zumi px-4 pt-1 pb-5 text-white">
+        {/* Telemetría del momento: clima de ahora, de un vistazo */}
+        <div className="mb-4 flex items-end justify-between gap-3">
+          {ahora?.temperatura != null && (
+            <p className="cifra text-[84px]" aria-label={`${Math.round(ahora.temperatura)} grados`}>
+              {Math.round(ahora.temperatura)}
+              <span className="align-top text-[44px] text-white/60">°</span>
+            </p>
+          )}
+          <div className="min-w-0 pb-1.5 text-right">
+            <p className="rotulo mb-1.5 flex items-center justify-end gap-2 !text-white/55">
+              <span className="punto-vivo" aria-hidden="true" />
+              {new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })} · Ahora
+            </p>
+            <p className="truncate text-[17px] font-semibold tracking-tight">{ahora?.texto}</p>
             {hoy && (
-              <p className="text-[14px] font-semibold text-white/75">
-                Máx. {grados(hoy.max)} · Mín. {grados(hoy.min)}
-                {ahora?.sensacion != null && Math.abs(ahora.sensacion - ahora.temperatura) >= 2 ? ` · Se siente ${grados(ahora.sensacion)}` : ''}
+              <p className="mono mt-0.5 text-[12.5px] text-white/60">
+                ↑{grados(hoy.max)} ↓{grados(hoy.min)}
+                {ahora?.sensacion != null && Math.abs(ahora.sensacion - ahora.temperatura) >= 2 ? ` · ST ${grados(ahora.sensacion)}` : ''}
               </p>
             )}
           </div>
         </div>
         <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           <button type="button" onClick={() => viajar()} className="chip-escenario chip-viaje shrink-0">
-            ✈ Viaja con ZUMI
+            Viaja con ZUMI ↗
           </button>
           <button
             type="button"
             onClick={() => compartirClima({ escena, comuna: datos.comuna?.nombre ?? datos.nombreComuna, temperatura: ahora?.temperatura, texto: ahora?.texto, max: hoy?.max, min: hoy?.min, frase: frases[1] ?? frases[0] }).catch(() => {})}
             className="chip-escenario shrink-0"
           >
-            📤 Compartir
+            Compartir
           </button>
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
@@ -200,10 +209,10 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
         </div>
         <div className="flex gap-2">
           {puedeLlamar && (
-            <button type="button" onClick={onLlamar} className="flex min-h-15 flex-1 items-center justify-center gap-2 rounded-full bg-emerald-400 px-3 text-[18px] font-black whitespace-nowrap text-slate-950 shadow-[0_8px_24px_rgba(16,185,129,.45)] active:scale-[0.98]">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z" />
-              </svg>
+            <button type="button" onClick={onLlamar} className="boton-primario flex-1 px-3 text-[17px] whitespace-nowrap">
+              <span className="onda-zumi" aria-hidden="true">
+                <i /><i /><i /><i />
+              </span>
               Hablar con ZUMI
             </button>
           )}
@@ -211,9 +220,9 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             type="button"
             onClick={onEscuchar}
             aria-label="Escuchar el reporte de ZUMI"
-            className={`flex min-h-15 items-center justify-center gap-1.5 rounded-full bg-white/90 px-4 text-[16px] font-bold text-slate-900 shadow-lg active:scale-[0.98] ${puedeLlamar ? '' : 'flex-1'}`}
+            className={`boton-linea px-5 text-[16px] ${puedeLlamar ? '' : 'flex-1'}`}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />
             </svg>
             {puedeLlamar ? 'Reporte' : 'Escuchar a ZUMI'}

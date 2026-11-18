@@ -104,11 +104,11 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   ][paso]
 
   return (
-    <div className="bienvenida fixed inset-0 z-[1000] flex flex-col overflow-hidden bg-[#0b0806] text-white" role="dialog" aria-modal="true" aria-labelledby="t-bienvenida">
+    <div className="bienvenida fixed inset-0 z-[1000] flex flex-col overflow-hidden bg-black text-white" role="dialog" aria-modal="true" aria-labelledby="t-bienvenida">
       {/* ZUMI en su casa */}
       <div className="relative min-h-0 flex-1">
         <ZumiCine escena={escena} estado={hablando ? 'hablando' : 'reposo'} gesto={gesto} posicion={[0.5, 0.22]} />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-[#0b0806]" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black" aria-hidden="true" />
         <div className="safe-top absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3">
           <span className="flex items-center gap-2 text-[17px] font-black tracking-tight">
             <img src={`${import.meta.env.BASE_URL}icono-192.png`} alt="" width="28" height="28" className="rounded-lg" />
@@ -130,10 +130,10 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
       </div>
 
       {/* Tarjeta del paso */}
-      <div className="safe-bottom relative rounded-t-[28px] bg-[#14100d] px-5 pt-4 pb-5 shadow-[0_-12px_40px_rgb(0_0_0/0.5)]">
+      <div className="safe-bottom relative rounded-t-[28px] border-t border-white/10 bg-black px-5 pt-4 pb-5">
         <div className="mb-3 flex justify-center gap-1.5" aria-label={`Paso ${paso + 1} de 3`}>
           {[0, 1, 2].map((i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-all ${i === paso ? 'w-6 bg-amber-300' : 'w-1.5 bg-white/25'}`} />
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i === paso ? 'w-6 bg-white' : 'w-1.5 bg-white/25'}`} />
           ))}
         </div>
 
@@ -143,10 +143,10 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
               <h1 id="t-bienvenida" className="text-[28px] leading-tight font-black tracking-tight">
                 Tu amigo del clima,
                 <br />
-                <span className="text-amber-300">siempre atento por ti</span>
+                <span className="text-white/55">siempre atento por ti</span>
               </h1>
               <p className="mt-2 text-[16px] leading-snug text-white/75">Alertas oficiales, lluvia, sismos y un SOS, contados por ZUMI en simple. Gratis y sin crear cuenta.</p>
-              <button type="button" onClick={() => setPaso(1)} className="mt-5 min-h-14 w-full rounded-2xl bg-amber-300 text-[19px] font-black text-slate-950 shadow-[0_8px_24px_rgb(252_211_77/0.35)] active:scale-[0.98]">
+              <button type="button" onClick={() => setPaso(1)} className="mt-5 min-h-14 w-full rounded-full bg-white text-[18px] font-semibold text-black active:scale-[0.98]">
                 Empezar
               </button>
               <div className="mt-3 flex items-center justify-between text-[14px] font-bold text-white/65">
@@ -175,7 +175,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
                 type="button"
                 onClick={ubicarme}
                 disabled={buscando}
-                className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-300 text-[18px] font-black text-slate-950 disabled:opacity-70"
+                className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-white text-[18px] font-semibold text-black disabled:opacity-70"
               >
                 <span aria-hidden="true">📍</span>
                 {buscando ? 'Buscando tu comuna…' : 'Usar mi ubicación'}
@@ -190,7 +190,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
                   autoComplete="off"
                   enterKeyHint="search"
                   onKeyDown={(e) => e.key === 'Enter' && resultados[0] && elegir(resultados[0].cut)}
-                  className="min-h-14 w-full rounded-2xl bg-white/10 px-4 text-[18px] font-bold text-white ring-1 ring-white/15 outline-none placeholder:text-white/45 focus:ring-2 focus:ring-amber-300"
+                  className="min-h-14 w-full rounded-2xl bg-white/10 px-4 text-[18px] font-bold text-white ring-1 ring-white/15 outline-none placeholder:text-white/45 focus:ring-2 focus:ring-white"
                 />
               </div>
               {texto ? (
@@ -218,7 +218,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
                 </div>
               )}
               {mensaje && (
-                <p role="alert" className="mt-3 text-[15px] font-bold text-amber-300">
+                <p role="alert" className="mt-3 text-[15px] font-bold text-amber-200">
                   {mensaje}
                 </p>
               )}
@@ -239,9 +239,9 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
                 autoComplete="given-name"
                 enterKeyHint="done"
                 onKeyDown={(e) => e.key === 'Enter' && terminar()}
-                className="mt-3 min-h-14 w-full rounded-2xl bg-white/10 px-4 text-[18px] font-bold text-white ring-1 ring-white/15 outline-none placeholder:text-white/45 focus:ring-2 focus:ring-amber-300"
+                className="mt-3 min-h-14 w-full rounded-2xl bg-white/10 px-4 text-[18px] font-bold text-white ring-1 ring-white/15 outline-none placeholder:text-white/45 focus:ring-2 focus:ring-white"
               />
-              <button type="button" onClick={terminar} className="mt-4 min-h-14 w-full rounded-2xl bg-amber-300 text-[19px] font-black text-slate-950 shadow-[0_8px_24px_rgb(252_211_77/0.35)] active:scale-[0.98]">
+              <button type="button" onClick={terminar} className="mt-4 min-h-14 w-full rounded-full bg-white text-[18px] font-semibold text-black active:scale-[0.98]">
                 {nombre.trim() ? `¡Listo, soy ${nombre.trim().split(' ')[0]}!` : 'Entrar'}
               </button>
               {googleDisponible && (

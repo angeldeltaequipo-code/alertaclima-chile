@@ -10,10 +10,11 @@ const oscuroDelSistema = () => window.matchMedia?.('(prefers-color-scheme: dark)
 export function useTema() {
   const [tema, setTema] = useState(() => {
     try {
-      const t = localStorage.getItem('ac:tema')
-      return t === 'claro' || t === 'oscuro' ? t : 'auto'
+      // Desde el rediseño, la app nace oscura; el tema que alguien eligió a mano se respeta.
+      const t = localStorage.getItem('ac:tema2')
+      return t === 'claro' || t === 'oscuro' || t === 'auto' ? t : 'oscuro'
     } catch {
-      return 'auto'
+      return 'oscuro'
     }
   })
   const [sistemaOscuro, setSistemaOscuro] = useState(oscuroDelSistema)
@@ -26,8 +27,8 @@ export function useTema() {
   const resuelto = tema === 'auto' ? (sistemaOscuro ? 'oscuro' : 'claro') : tema
   useEffect(() => {
     document.documentElement.dataset.tema = resuelto
-    guardarTexto('tema', tema)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resuelto === 'claro' ? '#f3f6f9' : '#0f1b26')
+    guardarTexto('tema2', tema)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resuelto === 'claro' ? '#ffffff' : '#000000')
   }, [tema, resuelto])
   return [tema, setTema, resuelto]
 }

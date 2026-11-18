@@ -41,14 +41,14 @@ function Cuenta({ fecha }) {
   s -= m * 60
   const dos = (n) => String(n).padStart(2, '0')
   return (
-    <p className="mt-2 font-mono text-[30px] leading-none font-black tabular-nums" aria-label={`Faltan ${d} días, ${h} horas y ${m} minutos`}>
+    <p className="mono mt-4 text-[38px] leading-none font-extralight tracking-[-0.03em] tabular-nums" aria-label={`Faltan ${d} días, ${h} horas y ${m} minutos`}>
       T−{d > 0 ? `${d}d ` : ''}
       {dos(h)}:{dos(m)}:{dos(s)}
     </p>
   )
 }
 
-const fechaChile = (iso) => new Date(iso).toLocaleString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+const fechaChile = (iso) => new Date(iso).toLocaleString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const X = [
   ['SpaceX', 'https://x.com/SpaceX'],
   ['Elon Musk', 'https://x.com/elonmusk'],
@@ -74,25 +74,27 @@ export default function EspacioSpaceX() {
   return (
     <section aria-labelledby="t-spacex" className="space-y-3">
       <div className="spacex-hero overflow-hidden rounded-[26px] p-4 text-white">
-        <p className="text-[12px] font-black tracking-[0.22em] text-sky-300 uppercase">SpaceX · próximo lanzamiento</p>
+        <p className="rotulo flex items-center gap-2 !text-white/55">
+          <span className="punto-vivo" aria-hidden="true" /> SpaceX · próximo lanzamiento
+        </p>
         {proximo ? (
           <>
-            <h3 id="t-spacex" className="mt-1 text-[22px] leading-tight font-black">
+            <h3 id="t-spacex" className="titulo-x mt-2 text-[23px]">
               {proximo.rocket?.configuration?.name ?? 'Cohete'} · {proximo.mission?.name ?? proximo.name.split('|')[1]?.trim() ?? proximo.name}
             </h3>
-            <p className="text-[14px] text-white/80">
+            <p className="mono mt-1 text-[12px] text-white/55">
               {fechaChile(proximo.net)} (hora de Chile) · {proximo.pad?.location?.name ?? proximo.pad?.name}
             </p>
             <Cuenta fecha={proximo.net} />
-            <p className="mt-1 text-[13px] text-white/70">Estado: {proximo.status?.name ?? 'por confirmar'}</p>
-            {proximo.mission?.description && <p className="mt-2 line-clamp-3 text-[14px] text-white/85">{proximo.mission.description}</p>}
+            <p className="rotulo mt-2 !text-white/50">Estado · <span className="text-white">{proximo.status?.name ?? 'por confirmar'}</span></p>
+            {proximo.mission?.description && <p className="mt-3 line-clamp-3 text-[14px] text-white/65">{proximo.mission.description}</p>}
           </>
         ) : (
           <h3 id="t-spacex" className="mt-1 text-[20px] font-black">{error ? 'No pudimos cargar los lanzamientos ahora.' : 'Buscando el próximo lanzamiento…'}</h3>
         )}
         {starship && starship !== proximo && (
-          <p className="mt-3 rounded-2xl bg-white/10 px-3 py-2 text-[14px]">
-            🚀 <strong>Starship</strong>: próximo vuelo {fechaChile(starship.net)}
+          <p className="mt-4 border-t border-white/10 pt-3 text-[14px] text-white/80">
+            <span className="rotulo mr-2 !text-white/50">Starship</span>{fechaChile(starship.net)}
           </p>
         )}
       </div>
@@ -117,10 +119,10 @@ export default function EspacioSpaceX() {
       )}
 
       <div>
-        <p className="mb-1.5 text-[15px] font-bold">En vivo en X</p>
+        <p className="rotulo mb-2">En vivo en 𝕏</p>
         <div className="grid grid-cols-2 gap-2">
           {X.map(([n, u]) => (
-            <a key={n} href={u} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-black text-[15px] font-bold text-white">
+            <a key={n} href={u} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-linea bg-black text-[15px] font-semibold text-white active:bg-white/10">
               <span aria-hidden="true">𝕏</span> {n}
             </a>
           ))}
@@ -136,7 +138,7 @@ export default function EspacioSpaceX() {
 
       {noticias?.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[15px] font-bold">Lo último de SpaceX y Starship</p>
+          <p className="rotulo mb-2">Lo último · SpaceX y Starship</p>
           <ul className="space-y-2">
             {noticias.slice(0, 5).map((n) => (
               <li key={n.id}>

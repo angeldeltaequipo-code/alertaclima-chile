@@ -166,10 +166,10 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
         cielo={
           <>
             <Resguardo>
-              <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
+              <EspacioSpaceX />
             </Resguardo>
             <Resguardo>
-              <EspacioSpaceX />
+              <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
             </Resguardo>
             <Resguardo>
               <EspacioEnVivo punto={datos.punto} />

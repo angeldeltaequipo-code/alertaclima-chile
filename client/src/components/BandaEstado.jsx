@@ -93,10 +93,10 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
 
   return (
     <header
-      className="safe-top border-b border-linea"
+      className="cabecera safe-top relative z-[2] border-b border-linea"
       style={{ background: `var(--nivel-${clave}-fondo)`, color: `var(--nivel-${clave}-texto)` }}
     >
-      <div className="mx-auto flex max-w-xl items-center gap-2 px-4 pt-2 pb-2">
+      <div className="mx-auto flex max-w-xl items-center gap-2 px-4 pt-2.5 pb-2.5">
         <button
           type="button"
           onClick={onCambiar}
@@ -104,14 +104,14 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
           aria-label={comuna ? `Comuna: ${comuna.nombre}. Cambiar comuna` : 'Elegir comuna'}
         >
           <span className="flex items-center gap-2">
-            <span className="truncate text-[24px] leading-tight font-bold tracking-tight">
+            <span className="titulo-x truncate text-[23px]">
               {comuna ? comuna.nombre : 'Elige tu comuna'}
             </span>
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" className="shrink-0 opacity-80">
-              <path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true" className="shrink-0 opacity-60">
+              <path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          <span className="block truncate text-[13px] opacity-90">
+          <span className="rotulo mt-0.5 block truncate !text-[10.5px]" style={{ color: 'inherit', opacity: 0.62 }}>
             {comuna ? comuna.region.etiqueta : 'Para ver el clima y el radar de tu zona'}
           </span>
         </button>
@@ -119,17 +119,17 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
           <button
             type="button"
             onClick={onVerAlertas}
-            className="flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-current/10 px-2.5 text-[13px] font-bold"
+            className="mono flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-current/20 px-3 text-[11px] font-medium tracking-[0.1em] uppercase"
             aria-label={estado ? 'Sin alertas oficiales vigentes. Ver detalle' : 'Consultando alertas oficiales'}
           >
-            <span className={`size-2 rounded-full ${estado ? 'bg-ok' : 'animate-pulse bg-current/50'}`} aria-hidden="true" />
+            {estado ? <span className="punto-vivo" aria-hidden="true" /> : <span className="size-1.5 animate-pulse rounded-full bg-current/50" aria-hidden="true" />}
             {estado ? 'Sin alertas' : '…'}
           </button>
         )}
         {ahora && (
           <div className="flex shrink-0 items-center gap-0.5" aria-label={`${Math.round(ahora.temperatura)} grados, ${cond.texto}`}>
-            <IconoClima icono={cond.icono} esDeDia={ahora.esDeDia} size={28} />
-            <span className="text-[20px] font-bold tabular-nums">{Math.round(ahora.temperatura)}°</span>
+            <IconoClima icono={cond.icono} esDeDia={ahora.esDeDia} size={24} />
+            <span className="text-[20px] font-light tracking-tight tabular-nums">{Math.round(ahora.temperatura)}°</span>
           </div>
         )}
         {onSOS && (
@@ -141,7 +141,7 @@ export default function BandaEstado({ comuna, estado, ahora, onCambiar, onVerAle
 
       {comuna && lineaCompleta && (
         <div className="border-t border-current/25">
-          <div className="mx-auto max-w-xl px-4 py-2 text-[15px]" aria-live="polite">
+          <div className="mx-auto max-w-xl px-4 py-2 text-[14px] leading-snug" aria-live="polite">
             <LineaOficial estado={estado} onVerAlertas={onVerAlertas} />
           </div>
         </div>

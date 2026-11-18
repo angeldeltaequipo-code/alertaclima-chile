@@ -141,7 +141,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                     onClick={() => setNivel(n)}
                     className={`relative rounded-2xl px-3 pt-3 pb-3 text-left ring-2 transition ${nivel === n ? 'bg-senal/15 ring-senal' : 'ring-linea'}`}
                   >
-                    {n === 'zumi' && <span className="absolute -top-3 right-2 rounded-full bg-ok px-2 py-0.5 text-[12px] font-black text-white">Recomendado</span>}
+                    {n === 'zumi' && <span className="absolute -top-3 right-2 mono rounded-full bg-texto px-2 py-0.5 text-[10.5px] font-medium tracking-[0.08em] text-fondo uppercase">Recomendado</span>}
                     <span className="block text-[19px] font-black">{NIVELES[n].nombre}</span>
                     <span className="block text-[13px] leading-tight text-texto-2">{NIVELES[n].lema}</span>
                     <span className="mt-1.5 block text-[16px] font-bold">{mes}/mes</span>
@@ -177,7 +177,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                   onClick={() => setPeriodo(k)}
                   className={`relative rounded-2xl px-3 pt-3 pb-3 text-left ring-2 ${periodo === k ? 'bg-senal/15 ring-senal' : 'ring-linea'}`}
                 >
-                  {etiqueta && <span className="absolute -top-3 right-2 rounded-full bg-ok px-2 py-0.5 text-[12px] font-black text-white">{etiqueta}</span>}
+                  {etiqueta && <span className="absolute -top-3 right-2 mono rounded-full bg-texto px-2 py-0.5 text-[10.5px] font-medium tracking-[0.08em] text-fondo uppercase">{etiqueta}</span>}
                   <span className="block text-[17px] font-bold">{t}</span>
                   <span className="block text-[16px]">{precio}</span>
                 </button>
@@ -216,7 +216,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
               hidden={!enApp && !plan.pagos?.web && Boolean(cuenta.token)}
               disabled={ocupado || (!disponible && Boolean(cuenta.token))}
               onClick={empezar}
-              className="mt-5 min-h-14 w-full rounded-2xl bg-senal text-[19px] font-bold text-sobre-senal shadow-lg disabled:opacity-60"
+              className="mt-5 min-h-14 w-full rounded-full bg-senal text-[18px] font-semibold text-sobre-senal disabled:opacity-60"
             >
               {ocupado
                 ? 'Un momento…'
@@ -356,7 +356,7 @@ function TuPlan({ plan, onCerrar }) {
           {confirmar ? 'Sí, cancelar la suscripción' : 'Cancelar la suscripción'}
         </button>
       )}
-      <button type="button" onClick={onCerrar} className="mt-2 min-h-12 w-full rounded-2xl bg-senal text-[17px] font-bold text-sobre-senal">
+      <button type="button" onClick={onCerrar} className="mt-2 min-h-12 w-full rounded-full bg-senal text-[17px] font-semibold text-sobre-senal">
         Listo
       </button>
     </>

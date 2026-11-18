@@ -44,7 +44,7 @@ function Formulario({ titulo, boton, onListo, invitacion }) {
       <p className="text-[13px] text-texto-2">
         {invitacion ? 'Al unirte, tu familia podrá ver tu ubicación mientras uses la app. ' : ''}Tu ubicación viaja cifrada: solo tu familia puede verla. Puedes dejar de compartir o salir cuando quieras.
       </p>
-      <button type="submit" disabled={!listo} className="min-h-14 w-full rounded-full bg-emerald-400 text-[18px] font-black text-slate-950 disabled:opacity-40">
+      <button type="submit" disabled={!listo} className="boton-primario w-full text-[17px] disabled:opacity-40">
         {boton}
       </button>
     </form>
@@ -55,15 +55,22 @@ function Bienvenida({ onCrear }) {
   return (
     <div className="space-y-4">
       <div className="gps-hero overflow-hidden rounded-[26px] p-5 text-white">
-        <p className="text-[13px] font-black tracking-[0.2em] text-amber-300 uppercase">GPS familiar</p>
-        <h3 className="mt-1 text-[26px] leading-tight font-black">¿Dónde está mi hijo?</h3>
-        <p className="mt-2 text-[16px] text-white/90">Mira dónde está cada uno de los tuyos, en un toque. Y si hay una emergencia donde están, ZUMI te avisa.</p>
-        <ul className="mt-3 space-y-1.5 text-[15px]">
-          <li>📍 Ubicación de toda tu familia en el mapa</li>
-          <li>🔐 Cifrada de punta a punta: ni nosotros podemos verla</li>
-          <li>🌦️ El clima y las alertas justo donde está cada uno</li>
-          <li>🔋 Su batería y hace cuánto se actualizó</li>
-          <li>🧭 «Cómo llegar» con un toque</li>
+        <p className="rotulo !text-[#ff6fb1]">GPS familiar · cifrado E2E</p>
+        <h3 className="titulo-x mt-2 text-[28px]">¿Dónde está mi hijo?</h3>
+        <p className="mt-2 text-[16px] text-white/70">Mira dónde está cada uno de los tuyos, en un toque. Y si hay una emergencia donde están, ZUMI te avisa.</p>
+        <ul className="mt-4 divide-y divide-white/10 border-y border-white/10 text-[15px]">
+          {[
+            ['MAPA', 'Toda tu familia en el mapa'],
+            ['E2E', 'Cifrada: ni nosotros podemos verla'],
+            ['CLIMA', 'Clima y alertas donde está cada uno'],
+            ['BAT', 'Su batería y hace cuánto se actualizó'],
+            ['RUTA', '«Cómo llegar» con un toque'],
+          ].map(([k, t]) => (
+            <li key={k} className="flex items-baseline gap-3 py-2">
+              <span className="mono w-12 shrink-0 text-[10.5px] tracking-[0.1em] text-white/45">{k}</span>
+              <span className="text-white/90">{t}</span>
+            </li>
+          ))}
         </ul>
       </div>
       <Formulario titulo="Crea tu familia (toma 10 segundos)" boton="Crear mi familia" onListo={onCrear} />
@@ -179,8 +186,8 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
     return (
       <div className="space-y-3">
         <div className="gps-hero rounded-[26px] p-5 text-white">
-          <p className="text-[13px] font-black tracking-[0.2em] text-amber-300 uppercase">Invitación</p>
-          <h3 className="mt-1 text-[24px] leading-tight font-black">Tu familia te invitó a su GPS familiar</h3>
+          <p className="rotulo !text-[#ff6fb1]">Invitación</p>
+          <h3 className="titulo-x mt-2 text-[24px]">Tu familia te invitó a su GPS familiar</h3>
         </div>
         <Formulario
           invitacion
@@ -210,7 +217,7 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
     <div className="space-y-3">
       <label className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-superficie-2 px-4">
         <span className="text-[16px] font-bold">{g.compartir ? '📍 Compartiendo mi ubicación' : 'Mi ubicación está oculta'}</span>
-        <input type="checkbox" role="switch" checked={g.compartir} onChange={(e) => cambiarCompartir(e.target.checked)} className="size-6 accent-emerald-500" aria-label="Compartir mi ubicación con mi familia" />
+        <input type="checkbox" role="switch" checked={g.compartir} onChange={(e) => cambiarCompartir(e.target.checked)} className="size-6 accent-white" aria-label="Compartir mi ubicación con mi familia" />
       </label>
 
       {error && (
@@ -234,7 +241,7 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
       <AvisosFamilia />
 
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={invitar} className="min-h-14 rounded-full bg-emerald-400 text-[17px] font-black text-slate-950">
+        <button type="button" onClick={invitar} className="boton-primario text-[16px]">
           {copiado ? '¡Enlace copiado!' : '➕ Invitar'}
         </button>
         <a href={`https://wa.me/?text=${encodeURIComponent(`Únete a nuestra familia en AlertaClima: ${enlace}`)}`} target="_blank" rel="noopener" className="grid min-h-14 place-items-center rounded-full bg-[#25D366] text-[17px] font-black text-white">
