@@ -53,6 +53,11 @@ import TirarParaActualizar from './components/TirarParaActualizar'
 
 // El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
 const Mapa = lazySeguro(() => import('./components/Mapa'))
+// El mapa (lo más pesado) se descarga en segundo plano apenas la app queda tranquila: al tocar «Mapa» abre al tiro.
+if (typeof window !== 'undefined') {
+  const precargar = () => import('./components/Mapa').catch(() => {})
+  ;(window.requestIdleCallback ?? ((f) => setTimeout(f, 3500)))(precargar, { timeout: 6000 })
+}
 const FormReporte = lazySeguro(() => import('./components/FormReporte'))
 // Lo que no se ve al abrir la app se descarga recién cuando hace falta: la primera carga es más liviana.
 const VistaRiesgos = lazySeguro(() => import('./components/VistaRiesgos'))

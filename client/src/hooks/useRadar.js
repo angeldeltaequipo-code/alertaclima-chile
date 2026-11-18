@@ -20,7 +20,8 @@ function cuadrosGuardados() {
 export function useRadar({ ahorro, enLinea }) {
   const [cuadros, setCuadros] = useState(cuadrosGuardados)
   const [indice, setIndice] = useState(() => Math.max(0, cuadrosGuardados().length - 1))
-  const [reproduciendo, setReproduciendo] = useState(!ahorro)
+  // La animación del radar parte detenida: cargar todos sus cuadros hacía lento el mapa al abrirlo
+  const [reproduciendo, setReproduciendo] = useState(false)
   const [error, setError] = useState(null)
   const [ultimaCarga, setUltimaCarga] = useState(() => {
     const t = leer('radar:ultimaCarga')

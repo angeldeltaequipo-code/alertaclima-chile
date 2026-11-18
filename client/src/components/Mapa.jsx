@@ -265,8 +265,12 @@ export default function Mapa({
       bounds: comuna?.bbox ? aBounds(comuna.bbox) : CHILE,
       fitBoundsOptions: { padding: 24 },
       maxZoom: 21,
-      minZoom: 3,
+      minZoom: 1.2,
       attributionControl: false,
+      // Rapidez: pantallas «retina 3x» dibujan a 2x (la diferencia no se ve y el mapa va el doble de fluido)
+      pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      fadeDuration: 120,
+      refreshExpiredTiles: false,
       dragRotate: true,
       pitchWithRotate: false,
       locale: { 'NavigationControl.ZoomIn': 'Acercar', 'NavigationControl.ZoomOut': 'Alejar', 'NavigationControl.ResetBearing': 'Apuntar al norte' },
@@ -285,13 +289,18 @@ export default function Mapa({
       mapa.addSource('satelite', {
         type: 'raster',
         tiles: [SATELITE],
-        // En pantallas de alta densidad se piden imágenes un nivel más detalladas.
-        tileSize: window.devicePixelRatio >= 1.5 ? 128 : 256,
+        // 256: pedir imágenes «un nivel más detalladas» cuadruplicaba las descargas y hacía lento el mapa
+        tileSize: 256,
         // Nivel 19: la foto más detallada disponible. Más cerca se amplía esa misma foto (algo borrosa, pero se acerca).
         maxzoom: 19,
         attribution: ATRIB_ESRI,
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
+      // De lejos (globo terráqueo) el planeta se ve con su foto satelital real, y se funde con el mapa al acercarse.
+      mapa.addLayer(
+        { id: 'satelite-globo', type: 'raster', source: 'satelite', maxzoom: 7.2, layout: { visibility: props.current.base === 'satelite' ? 'none' : 'visible' }, paint: { 'raster-fade-duration': 150, 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 4.5, 1, 7, 0] } },
+        primeraLinea,
+      )
 
       // Relieve real de la Tierra (Mapzen/AWS, libre): sombras de montañas y 3D, solo en modo 3D o viajes.
       mapa.addSource('dem', { type: 'raster-dem', tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: 'terrarium', attribution: 'Relieve: Mapzen, AWS Terrain Tiles' })
@@ -480,6 +489,7 @@ export default function Mapa({
     cuandoListo((mapa) => {
       const sat = base === 'satelite'
       mapa.setLayoutProperty('satelite', 'visibility', sat ? 'visible' : 'none')
+      if (mapa.getLayer('satelite-globo')) mapa.setLayoutProperty('satelite-globo', 'visibility', sat ? 'none' : 'visible')
       // En satélite se ocultan los rellenos (parques, edificios, agua) para ver la foto.
       for (const l of mapa.getStyle().layers) {
         if ((l.type === 'fill' || l.type === 'fill-extrusion') && l.id !== 'satelite') {
