@@ -240,7 +240,7 @@ export default function Mapa({
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
   const props = useRef({})
-  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos, onLugar, base, relieve3d, viaje }
+  props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos, onLugar, base, relieve3d, viaje, nubes }
 
   // Ejecuta cuando el estilo esté cargado.
   const cuandoListo = (fn) => {
@@ -805,6 +805,7 @@ export default function Mapa({
       if (!mapa.getContainer().clientWidth && intento < 20) return setTimeout(() => despegar(mapa, intento + 1), 100)
       mapa.resize()
       mapa.setLayoutProperty('satelite', 'visibility', 'visible')
+      mapa.setLayoutProperty('nubes', 'visibility', 'none') // las nubes del satélite taparían el lugar
       mapa.flyTo({ center: [viaje.lng, viaje.lat], zoom: viaje.zoom ?? 15, pitch: 68, bearing: viaje.rumbo ?? 0, duration: calma() ? 0 : 5600, curve: 1.9, essential: true })
       const girar = () => {
         if (!vivo || calma()) return
@@ -835,6 +836,7 @@ export default function Mapa({
       cuandoListo((mapa) => {
         const sat = props.current.base === 'satelite'
         mapa.setLayoutProperty('satelite', 'visibility', sat ? 'visible' : 'none')
+        mapa.setLayoutProperty('nubes', 'visibility', props.current.nubes ? 'visible' : 'none')
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
