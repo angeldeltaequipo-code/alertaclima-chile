@@ -65,7 +65,9 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   useEffect(() => alCambiarMusica(setMusica), [])
   const [k, setK] = useState(0)
   const [reaccion, setReaccion] = useState(null) // texto del globo cuando lo tocas
-  const [gesto, setGesto] = useState('saludo:inicio')
+  // Al llegar saluda; si hace mucho calor o frío, se cambia de ropa delante tuyo
+  const tempAhora = datos.ahora?.temperatura
+  const [gesto, setGesto] = useState(() => (escena === 'sala' && tempAhora >= 27 ? 'verano:inicio' : escena === 'sala' && tempAhora <= 8 ? 'invierno:inicio' : 'saludo:inicio'))
   const toques = useRef(0)
 
   // El globo avanza solo; con alerta se queda en lo importante.

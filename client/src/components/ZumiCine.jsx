@@ -5,7 +5,7 @@
 // Mismo encuadre que la marioneta: «posicion» decide qué parte de la escena se ve cuando sobra, y
 // «encuadre» [y0, y1] garantiza que esa franja de la escena (orejas a pies) siempre quede visible.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ESCENA, POSTER, RUTA_VIDEOS, VIDEOS, ahorroDatos } from '../services/zumiVideos'
+import { ESCENA, ESPECIALES, POSTER, RUTA_VIDEOS, VIDEOS, ahorroDatos } from '../services/zumiVideos'
 import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
 import { RUTA_CINE, marcarVista } from '../services/cine'
 
@@ -153,8 +153,11 @@ export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = n
   useEffect(() => {
     if (!gesto || estado === 'hablando') return
     let g = String(gesto).split(':')[0]
-    const gestos = lista.filter((n) => n !== 'reposo' && !n.startsWith('habla'))
-    if (!gestos.includes(g)) g = gestos.includes('saludo') && Math.random() < 0.5 ? 'saludo' : gestos[Math.floor(Math.random() * gestos.length)]
+    const gestos = lista.filter((n) => n !== 'reposo' && !n.startsWith('habla') && !ESPECIALES.includes(n) && !/\d$/.test(n))
+    if (!lista.includes(g)) g = gestos.includes('saludo') && Math.random() < 0.5 ? 'saludo' : gestos[Math.floor(Math.random() * gestos.length)]
+    // variantes filmadas del mismo gesto (saludo, saludo2…): una al azar
+    const variantes = lista.filter((n) => n === g || (n.startsWith(g) && /^\d+$/.test(n.slice(g.length))))
+    if (variantes.length > 1) g = variantes[Math.floor(Math.random() * variantes.length)]
     if (g) reproducir(g)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gesto])
@@ -235,7 +238,7 @@ export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = n
               onPlaying={esReposo ? () => setListo(true) : undefined}
               onEnded={esReposo ? undefined : () => alTerminar(nombre)}
               className="absolute max-w-none"
-              style={{ ...estilo, opacity: ver ? 1 : 0, transition: `opacity ${esReposo ? 300 : 140}ms ease` }}
+              style={{ ...estilo, opacity: ver ? 1 : 0, transition: `opacity ${esReposo ? 300 : ESPECIALES.includes(nombre) ? 700 : 140}ms ease` }}
             >
               <source src={`${RUTA_VIDEOS}${escena}/${nombre}.webm`} type="video/webm" />
               <source src={`${RUTA_VIDEOS}${escena}/${nombre}.mp4`} type="video/mp4" />
