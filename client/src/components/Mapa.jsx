@@ -797,7 +797,12 @@ export default function Mapa({
     if (!viaje) return
     let vivo = true
     let girando = null
-    cuandoListo((mapa) => {
+    cuandoListo((mapa) => despegar(mapa))
+    // el mapa puede estar recién mostrándose (venía de otra pestaña): esperar a que tenga tamaño
+    function despegar(mapa, intento = 0) {
+      if (!vivo) return
+      if (!mapa.getContainer().clientWidth && intento < 20) return setTimeout(() => despegar(mapa, intento + 1), 100)
+      mapa.resize()
       mapa.setLayoutProperty('satelite', 'visibility', 'visible')
       mapa.flyTo({ center: [viaje.lng, viaje.lat], zoom: viaje.zoom ?? 15, pitch: 68, bearing: viaje.rumbo ?? 0, duration: calma() ? 0 : 5600, curve: 1.9, essential: true })
       const girar = () => {
@@ -822,7 +827,7 @@ export default function Mapa({
         parar()
         mapa.stop()
       }
-    })
+    }
     return () => {
       vivo = false
       ref.current.pararViaje?.()
