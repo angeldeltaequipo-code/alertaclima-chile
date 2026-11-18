@@ -95,8 +95,8 @@ function dibujarPelota(g, { x, y, r, giro }) {
 // y terminan en ese mismo cuadro, así el bucle y el regreso a la marioneta no se notan). Cubren la escena
 // completa. «reposo» se repite mientras está quieto; los demás son gestos que se reproducen una vez.
 const VIDEOS = {
-  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar', 'habla', 'habla2', 'habla3'],
-  noche: ['reposo', 'saludo', 'habla'],
+  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar', 'curioso', 'habla', 'habla2', 'habla3'],
+  noche: ['reposo', 'saludo', 'habla', 'habla2'],
   lluvia: ['reposo', 'saludo'],
   alerta: ['reposo', 'calma'],
   estudio: ['reposo'],
@@ -105,6 +105,16 @@ const ahorroDatos = () => typeof navigator !== 'undefined' && !!navigator.connec
 
 export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null, vivo = false }) {
   const capas = useRef({}) // nombre → <video>
+  // Primero carga su reposo (lo que se ve al tiro); los gestos y tomas hablando, un poco después.
+  const [cargarResto, setCargarResto] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setCargarResto(true), 2500)
+    return () => clearTimeout(t)
+  }, [])
+  useEffect(() => {
+    if (!cargarResto) return
+    for (const v of Object.values(capas.current)) if (v && v.readyState === 0 && v.networkState !== 2) v.load()
+  }, [cargarResto, escena])
   const caja = useRef(null)
   const lienzo = useRef(null)
   const peli = useRef(null)
@@ -717,7 +727,7 @@ export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gest
             muted
             loop={nombre === 'reposo'}
             playsInline
-            preload="auto"
+            preload={nombre === 'reposo' || cargarResto ? 'auto' : 'none'}
             disablePictureInPicture
             aria-hidden="true"
             className="absolute max-w-none"
