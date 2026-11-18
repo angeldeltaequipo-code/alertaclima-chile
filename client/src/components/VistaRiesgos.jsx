@@ -123,7 +123,7 @@ function Sismo({ s, punto, onAbrir }) {
 }
 
 /** Pestaña Riesgos: sismos de los últimos 7 días, tsunamis y volcanes cercanos. */
-export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerSismo, onVerVolcanes, comunidad, comunidadItems, volcanesNivel }) {
+export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerSismo, onVerVolcanes, comunidad, comunidadItems, volcanesNivel, informes = null }) {
   const [todos, setTodos] = useState(false)
   const [sismoAbierto, setSismoAbierto] = useState(null)
   const entrada = useEntrada()
@@ -167,6 +167,8 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerS
         volcanesNoticia={(volcanesNivel ?? []).filter((v) => v.noticia || v.origen === 'prensa').map((v) => v.nombre)}
         picos={picosTexto}
       />
+
+      {informes}
 
       {!datos && (
         <p className="tarjeta text-[16px] text-texto-2" role="status">

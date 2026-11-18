@@ -1193,3 +1193,10 @@ body {
 .desplegable-boton.tono-camara { background: radial-gradient(120% 140% at 85% 0%, rgba(125, 211, 252, 0.45), transparent 60%), radial-gradient(90% 120% at 0% 100%, rgba(71, 85, 105, 0.6), transparent 60%), #0d1520; }
 .desplegable-boton.tono-detalle { background: radial-gradient(120% 140% at 85% 0%, rgba(167, 139, 250, 0.5), transparent 60%), radial-gradient(90% 120% at 0% 100%, rgba(99, 102, 241, 0.45), transparent 60%), #120f2a; }
 .desplegable-boton.tono-pulso { background: radial-gradient(120% 140% at 85% 0%, rgba(248, 113, 113, 0.5), transparent 60%), radial-gradient(90% 120% at 0% 100%, rgba(251, 146, 60, 0.45), transparent 60%), #241008; }
+.desplegable-boton.tono-espacio { background: radial-gradient(120% 140% at 85% 0%, rgba(124, 58, 237, 0.6), transparent 60%), radial-gradient(90% 120% at 0% 100%, rgba(14, 165, 233, 0.45), transparent 60%), #070b1f; }
+.gps-hero { background: radial-gradient(120% 140% at 90% 0%, rgba(236, 72, 153, 0.55), transparent 60%), radial-gradient(90% 120% at 0% 100%, rgba(56, 189, 248, 0.45), transparent 60%), #160a24; }
+.pin-familia { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; padding: 0; }
+.pin-familia b { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; background: #d946ef; color: #fff; font: 900 18px/1 system-ui, sans-serif; border: 3px solid #fff; box-shadow: 0 6px 16px rgb(0 0 0 / 0.4); }
+.pin-familia.yo b { background: #0ea5e9; }
+.pin-familia span { font: 800 12px/1.1 system-ui, sans-serif; color: #fff; background: rgb(0 0 0 / 0.6); padding: 2px 7px; border-radius: 9999px; white-space: nowrap; }
+.spacex-hero { background: radial-gradient(120% 140% at 90% 0%, rgba(59, 130, 246, 0.5), transparent 60%), radial-gradient(80% 120% at 0% 100%, rgba(168, 85, 247, 0.4), transparent 60%), #05070f; }

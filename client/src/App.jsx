@@ -3,7 +3,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { lazySeguro } from './services/cargaSegura'
 import BandaEstado from './components/BandaEstado'
 import ControlRadar from './components/ControlRadar'
-import VistaAhora from './components/VistaAhora'
+import VistaAhora, { InformesClima } from './components/VistaAhora'
 import Navegacion from './components/Navegacion'
 import ListaReportes from './components/ListaReportes'
 import DetalleReporte from './components/DetalleReporte'
@@ -47,6 +47,9 @@ import { obtenerEvacuacion } from './services/evacuacion'
 import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
 import ViajeZumi from './components/ViajeZumi'
+import GPSFamiliar from './components/GPSFamiliar'
+import { abrirFuncion } from './components/Funciones'
+import { invitacionEnDireccion, leerGrupo, vigilarUbicacion } from './services/familiaGPS'
 import { irASeccion } from './components/Desplegable'
 import { LUGARES, NARRADOR, leerPasaporte, lugarPorId } from './services/viajes'
 import TirarParaActualizar from './components/TirarParaActualizar'
@@ -139,6 +142,20 @@ export default function App() {
   const [relieve3d, setRelieve3d] = useState(() => leer('mapa:3d', false))
   // Viaja con ZUMI: lugar histórico al que vuela el mapa (null = sin viaje)
   const [viaje, setViaje] = useState(null)
+  // GPS familiar: invitación que llegó en el enlace, y ubicaciones para pintar en el mapa
+  const [invitacionFamilia, setInvitacionFamilia] = useState(() => invitacionEnDireccion())
+  const [familiaMapa, setFamiliaMapa] = useState([])
+  useEffect(() => {
+    if (leerGrupo()) vigilarUbicacion()
+    if (invitacionFamilia) {
+      setVista('ahora')
+      abrirFuncion('familia')
+    }
+    const f = (e) => setFamiliaMapa(e.detail ?? [])
+    window.addEventListener('ac:familia-ubicaciones', f)
+    return () => window.removeEventListener('ac:familia-ubicaciones', f)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [sellos, setSellos] = useState(leerPasaporte)
   useEffect(() => {
     const f = () => setSellos(leerPasaporte())
@@ -388,7 +405,10 @@ export default function App() {
                     nombre={cuenta.usuario?.nombre}
                     onVerAlertas={() => setVerAlertas(true)}
                     onVerMapa={() => setVista('radar')}
-                    onIr={(id) => irASeccion(id === 't-horas' ? 'a-horas' : id)}
+                    onIr={(id) => {
+                      setVista('riesgos')
+                      setTimeout(() => irASeccion(id === 't-horas' ? 'a-horas' : id), 250)
+                    }}
                   />
                 }
                 invitacion={<InvitacionNotificaciones notif={notif} comuna={comuna} />}
@@ -406,7 +426,20 @@ export default function App() {
                     />
                   ))
                 }
-                familia={<MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />}
+                familia={
+                  <>
+                    <GPSFamiliar
+                      invitacion={invitacionFamilia}
+                      onInvitacionUsada={() => setInvitacionFamilia(null)}
+                      onVerMapa={(m) => {
+                        setVista('radar')
+                        setEnfocarMapa({ lat: m.lat, lng: m.lng, zoom: 16, t: Date.now() })
+                      }}
+                    />
+                    <h3 className="pt-3 text-[17px] font-bold">Además, el clima de sus comunas</h3>
+                    <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
+                  </>
+                }
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
                 camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
                 onVerRios={() => buscarRios()}
@@ -466,6 +499,7 @@ export default function App() {
                 lugares={lugaresMapa}
                 onLugar={(l) => setViaje(lugarPorId(l.id))}
                 viaje={viaje}
+                familia={familiaMapa}
               />
             </Suspense>
             </Resguardo>
@@ -585,6 +619,7 @@ export default function App() {
             {visitadas.has('riesgos') && (
             <Suspense fallback={<Cargando />}>
             <VistaRiesgos
+              informes={<InformesClima clima={clima} obs={obs} sismos={riesgos.datos?.sismos} reportesLista={rep.reportes} enLinea={enLinea} comuna={comuna} onVerRios={() => buscarRios()} />}
               riesgos={riesgos}
               comuna={comuna}
               punto={clima.datos?.punto ?? (comuna ? { lat: comuna.centro[0], lng: comuna.centro[1] } : null)}

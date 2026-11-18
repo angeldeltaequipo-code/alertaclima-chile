@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NUMEROS, anotarRastro, contactos, enlaceSMS, enlaceWhatsApp, guardarContactos, mensajeSOS, rastro, ubicacionPrecisa } from '../services/sos'
+import { NUMEROS, RESCATES, anotarRastro, contactos, enlaceSMS, enlaceWhatsApp, guardarContactos, mensajeSOS, rastro, ubicacionPrecisa } from '../services/sos'
 
 /** Botón SOS flotante: abre la pantalla de emergencia (no llama ni envía nada solo). */
 export function BotonSOS({ onAbrir, arriba = false }) {
@@ -177,6 +177,35 @@ export function PantallaSOS({ nombre, onCerrar }) {
             </div>
           )}
           {rastro().length > 1 && <p className="mt-2 text-[12px] text-white/60">El mensaje incluye también tus últimas ubicaciones guardadas en este teléfono.</p>}
+        </section>
+
+        <section className="mt-4 rounded-3xl bg-black/30 p-4 ring-1 ring-white/15">
+          <h3 className="text-[19px] font-bold">Rescates especiales</h3>
+          <ul className="mt-2 space-y-2">
+            {RESCATES.map((r) => (
+              <li key={r.numero}>
+                <a href={`tel:${r.numero}`} className="flex min-h-14 items-center gap-3 rounded-2xl bg-white/10 px-3 py-2 active:bg-white/20">
+                  <span className="w-12 text-[24px] font-black tabular-nums">{r.numero}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[16px] font-bold">{r.nombre}</span>
+                    <span className="block text-[13px] leading-snug text-white/75">{r.para}</span>
+                  </span>
+                  <span aria-hidden="true">📞</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mt-4 rounded-3xl bg-black/30 p-4 ring-1 ring-white/15">
+          <h3 className="text-[19px] font-bold">Cómo te ayuda este botón</h3>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] leading-snug text-white/90">
+            <li><strong>Llamar en un toque</strong> a Carabineros, Bomberos, SAMU o un rescate especial. Las llamadas a emergencias son gratis, aunque no tengas saldo.</li>
+            <li><strong>Avisar a tu familia</strong>: arma un mensaje con tu ubicación exacta (y tus últimas posiciones) para enviar por SMS o WhatsApp. Tú decides cuándo se envía.</li>
+            <li><strong>Sin internet</strong>: el SMS usa la red celular, así que muchas veces sale aunque no tengas datos móviles.</li>
+            <li><strong>Tu GPS familiar</strong> (en «Mi familia») les muestra dónde estás mientras tengas la app abierta.</li>
+          </ol>
+          <p className="mt-2 text-[13px] text-white/70">Al llamar, di primero: qué pasó, dónde estás (calle, número o algo cercano) y cuántas personas necesitan ayuda. No cuelgues hasta que te lo digan.</p>
         </section>
 
         <section className="mt-4 rounded-3xl bg-black/20 p-4">

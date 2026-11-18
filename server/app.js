@@ -1,3 +1,4 @@
+import { familiaRouter } from './routes/familia.js'
 import { zumiRouter } from './routes/zumi.js'
 import express from 'express'
 import helmet from 'helmet'
@@ -44,6 +45,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/chat', chatRouter({ emitirChat }))
   app.use('/api/riesgos', riesgosRouter())
   app.use('/api/zumi', zumiRouter())
+  app.use('/api/familia', familiaRouter())
   app.use('/api/comunidad', comunidadRouter())
   app.use('/api/voz', vozRouter())
   app.use('/api/planes', planesRouter())

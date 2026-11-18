@@ -11,6 +11,15 @@ export const NUMEROS = [
   { numero: '131', nombre: 'SAMU (ambulancia)', color: '#2563eb' },
 ]
 
+// Rescates especiales (Chile). Cuándo llamar a cada uno, en simple.
+export const RESCATES = [
+  { numero: '130', nombre: 'CONAF', para: 'Incendio forestal o humo en cerros y bosques' },
+  { numero: '134', nombre: 'PDI', para: 'Delitos y personas desaparecidas' },
+  { numero: '136', nombre: 'Socorro Andino', para: 'Rescate en montaña, cerros y nieve' },
+  { numero: '137', nombre: 'Armada (rescate marítimo)', para: 'Emergencias en el mar, playas, lagos y ríos navegables' },
+  { numero: '138', nombre: 'Rescate aéreo', para: 'Aviones o helicópteros en emergencia, búsqueda desde el aire' },
+]
+
 export const contactos = () => leer('sos:contactos', [])
 export function guardarContactos(lista) {
   guardar(

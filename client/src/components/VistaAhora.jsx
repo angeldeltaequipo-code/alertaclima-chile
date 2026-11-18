@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react'
-import Plegable, { Flecha } from './Plegable'
 import Desplegable from './Desplegable'
 import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
@@ -12,24 +10,14 @@ import MiraElCielo from './MiraElCielo'
 import Resguardo from './Resguardo'
 import EspacioEnVivo from './EspacioEnVivo'
 import PulsoEnVivo from './PulsoEnVivo'
-import Atajos from './Atajos'
+import Funciones from './Funciones'
+import EspacioSpaceX from './EspacioSpaceX'
 import { riesgoAluvion } from '../services/aluvion'
 import { climaInfo, condicionesActuales, intensidad } from '../services/clima'
 import { hhmm } from '../services/formato'
 
 const grados = (v) => `${Math.round(v)}°`
 const num = (v, d = 1) => v.toLocaleString('es-CL', { maximumFractionDigits: d })
-function Bloque({ titulo, children, id }) {
-  return (
-    <section aria-labelledby={id} className="tarjeta">
-      <h2 id={id} className="titulo-tarjeta text-balance">
-        {titulo}
-      </h2>
-      {children}
-    </section>
-  )
-}
-
 /** Resumen en palabras de la lluvia de las próximas 12 horas. */
 function resumenLluvia(horas) {
   const total = horas.reduce((s, h) => s + h.lluvia, 0)
@@ -49,41 +37,59 @@ function Grupo({ children }) {
   return <h2 className="px-1 pt-4 text-[13px] font-black tracking-[0.14em] text-texto-2 uppercase">{children}</h2>
 }
 
-/** Cielo y espacio: contenido para curiosear, plegado para que la página principal sea corta. */
-function Explorar({ horas, dias, punto, comuna }) {
-  const [abierto, setAbierto] = useState(false)
-  useEffect(() => {
-    const f = (e) => e.detail === 't-cielo-ancla' && setAbierto(true)
-    window.addEventListener('ac:abrir-seccion', f)
-    return () => window.removeEventListener('ac:abrir-seccion', f)
-  }, [])
+/** Pronóstico y detalle del clima (en la pestaña Riesgos), como secciones desplegables. */
+export function InformesClima({ clima, obs, sismos, reportesLista, enLinea, onVerRios = () => {}, comuna }) {
+  const datos = clima?.datos
+  if (!datos) return null
+  const { horas, dias } = datos
+  const ahora = condicionesActuales(datos.ahora, obs)
+  const prox12 = horas.slice(0, 12)
+  const hayLluvia = prox12.some((h) => h.lluvia > 0)
+  const urgenteAluvion = riesgoAluvion(horas)?.nivel !== 'bajo'
   return (
-    <section aria-labelledby="t-cielo-ancla" className="scroll-mt-16">
-      <button
-        type="button"
-        id="t-cielo-ancla"
-        aria-expanded={abierto}
-        onClick={() => setAbierto(!abierto)}
-        className="explorar-boton flex min-h-16 w-full items-center gap-3 rounded-[24px] px-4 py-3 text-left text-white"
-      >
-        <span className="text-[30px]" aria-hidden="true">🔭</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[18px] font-bold">Cielo y espacio en vivo</span>
-          <span className="block text-[14px] text-white/80">La Luna, los planetas sobre ti, observatorios, la Estación Espacial y el Sol.</span>
-        </span>
-        <Flecha abierto={abierto} size={18} />
-      </button>
-      <Plegable abierto={abierto}>
-        <div className="mt-3 space-y-3">
-          <Resguardo>
-            <MiraElCielo horas={horas} hoy={dias[0]} punto={punto} comuna={comuna} />
-          </Resguardo>
-          <Resguardo>
-            <EspacioEnVivo punto={punto} />
-          </Resguardo>
+    <div className="space-y-3">
+      <Grupo>Clima y pronóstico</Grupo>
+      <Desplegable id="a-horas" icono="🕐" titulo="Próximas 24 horas" adelanto={`Ahora ${grados(ahora.temperatura)} · ${ahora.texto}`} tono="sol">
+        <div className="tarjeta">
+          <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
         </div>
-      </Plegable>
-    </section>
+      </Desplegable>
+      <Desplegable id="a-dias" icono="📅" titulo="Próximos 7 días" adelanto={`Hoy máx. ${grados(dias[0].max)}, mín. ${grados(dias[0].min)} · mañana ${grados(dias[1]?.max ?? dias[0].max)}`} tono="cielo">
+        <div className="tarjeta">
+          <Semana dias={dias} actual={ahora.temperatura} />
+        </div>
+      </Desplegable>
+      {hayLluvia && (
+        <Desplegable id="a-lluvia" icono="🌧️" titulo="Lluvia en las próximas 12 horas" adelanto={resumenLluvia(prox12)} tono="lluvia">
+          <div className="tarjeta">
+            <p className="mb-2 text-[16px]">{resumenLluvia(prox12)}</p>
+            <GraficoLluvia horas={prox12} />
+          </div>
+        </Desplegable>
+      )}
+      <Desplegable id="a-detalle" icono="🌡️" titulo="Detalle de ahora" adelanto={`Viento ${Math.round(ahora.viento ?? 0)} km/h · humedad ${Math.round(ahora.humedad ?? 0)} % · UV ${Math.round(dias[0].uv ?? 0)}`} tono="detalle">
+        <Fichas ahora={ahora} dias={dias} />
+      </Desplegable>
+      {!urgenteAluvion && (
+        <Desplegable id="a-aluvion" icono="⛰️" titulo="Aluviones y desbordes" adelanto="Riesgo bajo por ahora · ríos y quebradas cerca de ti" tono="vecinos">
+          <RiesgoAluvion horas={horas} onVerRios={onVerRios} />
+        </Desplegable>
+      )}
+      <Desplegable id="a-pulso" icono="📡" titulo="Pulso en vivo" adelanto="Lo último: sismos, avisos de vecinos y datos al minuto" tono="pulso">
+        <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
+      </Desplegable>
+      <p className="px-1 text-[13px] text-texto-2">
+        Pronóstico de{' '}
+        <a href={climaInfo.url} target="_blank" rel="noopener" className="underline">
+          {climaInfo.nombre}
+        </a>{' '}
+        (CC BY 4.0), actualizado a las {hhmm(datos.obtenido)}.{' '}
+        {ahora.medido
+          ? `Temperatura medida a las ${hhmm(ahora.estacion.hora)} en la estación ${ahora.estacion.nombre}, a ${num(ahora.estacion.distanciaKm, 0)} km.`
+          : 'Sin estación meteorológica cercana con datos recientes: la temperatura es una estimación del modelo.'}
+        {datos.punto?.aprox ? ' Punto aproximado dentro de la comuna.' : comuna ? ` Para la localidad de ${comuna.nombre}.` : ''}
+      </p>
+    </div>
   )
 }
 
@@ -142,12 +148,6 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
     <div className={`${entrada} space-y-3 px-4 pt-3 pb-24`}>
       {/* ZUMI es la portada: él te cuenta el clima y conversa contigo */}
       {zumi ? zumi({ hoy: dias[0] }) : <Portada ahora={ahora} hoy={dias[0]} comuna={comuna} nombre={nombre} />}
-      <Atajos />
-      {resumen}
-      <Desplegable id="a-pulso" icono="📡" titulo="Pulso en vivo" adelanto="Lo último: sismos, avisos de vecinos y datos al minuto" tono="pulso">
-        <PulsoEnVivo obtenido={datos.obtenido} sismos={sismos} reportes={reportesLista} enLinea={enLinea} />
-      </Desplegable>
-
       {invitacion}
 
       {(ahora.lloviendoEnEstacion || lluviaAhora) && (
@@ -155,73 +155,28 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
           {ahora.lloviendoEnEstacion ? `Está lloviendo en la estación: ${ahora.texto.toLowerCase()}.` : `Lloviendo: ${num(ahora.lluvia)} mm en la última hora (lluvia ${intensidad(ahora.lluvia)}).`}
         </p>
       )}
-
       {urgenteAluvion && aluvion}
 
-      <Grupo>Pronóstico</Grupo>
-      <Desplegable id="a-horas" icono="🕐" titulo="Próximas 24 horas" adelanto={`Ahora ${grados(ahora.temperatura)} · ${ahora.texto}`} tono="sol">
-        <div className="tarjeta">
-          {/* La primera columna ("Ahora") muestra lo mismo que la portada. */}
-          <GraficoHoras horas={[{ ...horas[0], temperatura: ahora.temperatura, codigo: datos.ahora.codigo, texto: ahora.texto, esDeDia: ahora.esDeDia, viento: ahora.viento, rafagas: ahora.rafagas, direccion: ahora.direccion }, ...horas.slice(1)]} />
-        </div>
-      </Desplegable>
-
-      <Desplegable id="a-dias" icono="📅" titulo="Próximos 7 días" adelanto={`Hoy máx. ${grados(dias[0].max)}, mín. ${grados(dias[0].min)} · mañana ${grados(dias[1]?.max ?? dias[0].max)}`} tono="cielo">
-        <div className="tarjeta">
-          <Semana dias={dias} actual={ahora.temperatura} />
-        </div>
-      </Desplegable>
-
-      {hayLluvia && (
-        <Desplegable id="a-lluvia" icono="🌧️" titulo="Lluvia en las próximas 12 horas" adelanto={resumenLluvia(prox12)} tono="lluvia">
-          <div className="tarjeta">
-            <p className="mb-2 text-[16px]">{resumenLluvia(prox12)}</p>
-            <GraficoLluvia horas={prox12} />
-          </div>
-        </Desplegable>
-      )}
-
-      {!urgenteAluvion && (
-        <Desplegable id="a-aluvion" icono="⛰️" titulo="Aluviones y desbordes" adelanto="Riesgo bajo por ahora · ríos y quebradas cerca de ti" tono="vecinos">
-          {aluvion}
-        </Desplegable>
-      )}
-
-      <Grupo>Tu zona</Grupo>
-      {familia && (
-        <Desplegable id="a-familia" icono="👨‍👩‍👧" titulo="Mi familia" adelanto="El clima y las alertas de donde vive cada uno" tono="hogar">
-          {familia}
-        </Desplegable>
-      )}
-      {reportes && (
-        <Desplegable id="a-reportes" icono="📣" titulo="Avisos de vecinos" adelanto={reportesLista?.length ? `${reportesLista.length} avisos cerca de ti` : 'Lo que ven tus vecinos ahora'} tono="vecinos">
-          {reportes}
-        </Desplegable>
-      )}
-      {camaras && (
-        <Desplegable id="a-camaras" icono="🎥" titulo="Cámaras en vivo" adelanto="Mira cómo está el cielo y las calles cerca de ti" tono="camara">
-          {camaras}
-        </Desplegable>
-      )}
-
-      <Desplegable id="a-detalle" icono="🌡️" titulo="Detalle de ahora" adelanto={`Viento ${Math.round(ahora.viento ?? 0)} km/h · humedad ${Math.round(ahora.humedad ?? 0)} % · UV ${Math.round(dias[0].uv ?? 0)}`} tono="detalle">
-        <Fichas ahora={ahora} dias={dias} />
-      </Desplegable>
-
-      <Grupo>Explorar</Grupo>
-      <Explorar horas={horas} dias={dias} punto={datos.punto} comuna={comuna?.nombre} />
-
-      <p className="px-1 text-[13px] text-texto-2">
-        Pronóstico de{' '}
-        <a href={climaInfo.url} target="_blank" rel="noopener" className="underline">
-          {climaInfo.nombre}
-        </a>{' '}
-        (CC BY 4.0), actualizado a las {hhmm(datos.obtenido)}.{' '}
-        {ahora.medido
-          ? `Temperatura medida a las ${hhmm(ahora.estacion.hora)} en la estación ${ahora.estacion.nombre}, a ${num(ahora.estacion.distanciaKm, 0)} km (el modelo estimaba ${grados(ahora.temperaturaModelo)})`
-          : `Sin estación meteorológica cercana con datos recientes: la temperatura es una estimación del modelo`}
-        {datos.punto?.aprox ? `. Punto aproximado dentro de la comuna.` : `, para la localidad de ${comuna.nombre}.`}
-      </p>
+      {/* Las 4 funciones de ZUMI (el pronóstico, el detalle y los riesgos viven en la pestaña Riesgos) */}
+      <Funciones
+        familia={familia}
+        reportes={reportes}
+        nReportes={reportesLista?.length ?? 0}
+        camaras={camaras}
+        cielo={
+          <>
+            <Resguardo>
+              <MiraElCielo horas={horas} hoy={dias[0]} punto={datos.punto} comuna={comuna?.nombre} />
+            </Resguardo>
+            <Resguardo>
+              <EspacioSpaceX />
+            </Resguardo>
+            <Resguardo>
+              <EspacioEnVivo punto={datos.punto} />
+            </Resguardo>
+          </>
+        }
+      />
     </div>
   )
 }

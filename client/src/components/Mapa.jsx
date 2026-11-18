@@ -236,6 +236,7 @@ export default function Mapa({
   lugares = [],
   onLugar = () => {},
   viaje = null,
+  familia = [],
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
@@ -662,7 +663,7 @@ export default function Mapa({
   // ---- Enfocar un punto (p. ej. un sismo abierto desde Riesgos) ----
   useEffect(() => {
     if (!enfocar) return
-    cuandoListo((mapa) => mapa.flyTo({ center: [enfocar.lng, enfocar.lat], zoom: Math.max(mapa.getZoom(), 6.5), duration: 1200 }))
+    cuandoListo((mapa) => mapa.flyTo({ center: [enfocar.lng, enfocar.lat], zoom: enfocar.zoom ?? Math.max(mapa.getZoom(), 6.5), duration: 1200 }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enfocar])
 
@@ -803,6 +804,31 @@ export default function Mapa({
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lugares])
+
+  // ---- GPS familiar: cada integrante con su inicial ----
+  const pinesFamilia = useRef(new Map())
+  useEffect(() => {
+    cuandoListo((mapa) =>
+      sincronizar(
+        mapa,
+        pinesFamilia.current,
+        familia.map((m) => ({ ...m, clave: m.id, firma: `${m.lat.toFixed(5)}${m.lng.toFixed(5)}${m.t}` })),
+        (m) => {
+          const el = document.createElement('div')
+          el.className = `pin-familia ${m.yo ? 'yo' : ''}`
+          el.setAttribute('role', 'img')
+          el.setAttribute('aria-label', `${m.yo ? 'Tú' : m.nombre}`)
+          const b = document.createElement('b')
+          b.textContent = (m.nombre || '?').slice(0, 1).toUpperCase()
+          const s = document.createElement('span')
+          s.textContent = m.yo ? 'Tú' : m.nombre
+          el.append(b, s)
+          return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([m.lng, m.lat])
+        },
+      ),
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familia])
 
   // ---- Viaje: vuela al lugar en 3D, con satélite, y gira lento alrededor (como un dron) ----
   useEffect(() => {

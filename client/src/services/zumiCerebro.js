@@ -1,3 +1,4 @@
+import { leerGrupo, ultimaFamilia, distanciaKm, haceCuanto } from './familiaGPS'
 import { anotarPregunta, aprenderSolo, leerMemoria, recordar, resumenParaIA } from './zumiMemoria'
 // El «cerebro» de ZUMI para conversar.
 // 1. Si el servidor tiene IA activa (Claude) y la persona tiene cuenta, ZUMI responde con IA
@@ -70,7 +71,7 @@ export async function hayIA() {
 export function esPreguntaRapida(pregunta) {
   const t = sinTildes(String(pregunta ?? ''))
   if (t.length > 90 || aprenderSolo(pregunta).length) return false
-  if (QUIERE.emergencia.test(t) || QUIERE.saludo.test(t) || QUIERE.gracias.test(t) || QUIERE.memoria.test(t)) return true
+  if (QUIERE.emergencia.test(t) || QUIERE.saludo.test(t) || QUIERE.gracias.test(t) || QUIERE.memoria.test(t) || QUIERE.familia.test(t)) return true
   return ['lluvia', 'temperatura', 'ropa', 'alerta', 'sismo', 'viento', 'sol', 'luna'].some((k) => QUIERE[k].test(t)) && !/por que|como funciona|explica|historia|que es (el|la|un|una)/.test(t)
 }
 
@@ -109,6 +110,7 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
 const QUIERE = {
   emergencia: /emergencia|ayuda|auxilio|atrapad|herid|incendio|me ahogo|peligro|socorro|sos\b/,
   saludo: /^(hola|holi|buenas|buen dia|buenos dias|buenas tardes|buenas noches|hey|wena|que tal)\b/,
+  familia: /donde (esta|estan|anda|andan)( mi| mis| la| el)? ?(hij|mama|papa|abuel|herman|pareja|esposa|esposo|familia|polol|nieto|nieta)/,
   memoria: /te acuerdas de mi|que sabes de mi|me recuerdas|que recuerdas|sabes quien soy/,
   quien: /quien eres|como te llamas|que eres|eres (un|una)|tu nombre/,
   gracias: /gracias|te quiero|eres (lo mejor|genial|bacan)|buena zumi/,
@@ -148,6 +150,17 @@ export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, a
 
   if (QUIERE.emergencia.test(t))
     return `${tu}si estás en peligro, llama ahora al 133 de Carabineros, al 132 de Bomberos o al 131 del SAMU. También puedes tocar el botón rojo SOS para enviar tu ubicación a tu familia.`
+  if (QUIERE.familia.test(t)) {
+    if (!leerGrupo()) return 'Todavía no tienes tu GPS familiar. Abre «Mi familia» bajo mí, crea tu familia en 10 segundos e invita a los tuyos: así te digo dónde está cada uno, con su clima y si hay alertas ahí.'
+    const l = ultimaFamilia()
+    const yo = l.find((m) => m.yo)
+    const otros = l.filter((m) => !m.yo)
+    if (!otros.length) return 'Aún no veo a nadie de tu familia. Invítalos desde «Mi familia»: cuando acepten en su teléfono, te digo dónde están.'
+    return otros
+      .slice(0, 4)
+      .map((m) => `${m.nombre} (${m.rol.toLowerCase()})${yo ? ` está a ${distanciaKm(yo, m) < 1 ? `${Math.round(distanciaKm(yo, m) * 1000)} metros` : `${distanciaKm(yo, m).toFixed(1).replace('.', ',')} kilómetros`} de ti` : ' compartió su ubicación'}, ${haceCuanto(m.t)}${m.bateria != null && m.bateria <= 20 ? `, y le queda poca batería (${m.bateria} %)` : ''}.`)
+      .join(' ') + ' Te lo muestro en «Mi familia».'
+  }
   if (QUIERE.memoria.test(t)) {
     const h = leerMemoria().hechos.slice(-4).map((x) => x.texto.charAt(0).toLowerCase() + x.texto.slice(1))
     return h.length
