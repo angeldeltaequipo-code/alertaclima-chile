@@ -452,7 +452,7 @@ export default function App() {
                         setEnfocarMapa({ lat: m.lat, lng: m.lng, zoom: 16, t: Date.now() })
                       }}
                     />
-                    <h3 className="pt-3 text-[17px] font-bold">Además, el clima de sus comunas</h3>
+                    <h3 className="rotulo pt-4">Las comunas donde viven · aunque no compartan ubicación</h3>
                     <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
                   </>
                 }

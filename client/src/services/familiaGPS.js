@@ -10,7 +10,7 @@
 import { API_URL } from './reportes'
 
 const CLAVE = 'ac:familia-gps'
-const CADA_MS = 2 * 60e3
+const CADA_MS = 60e3
 const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const deB64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0))
 const azar = (n) => b64(crypto.getRandomValues(new Uint8Array(n)))
@@ -64,6 +64,28 @@ export async function salirDeFamilia() {
   guardarGrupo(null)
 }
 
+// ---- Lugares seguros y teléfono (se comparten cifrados) ----
+export const lugaresFamilia = () => leerGrupo()?.lugares?.l ?? []
+export function guardarLugares(l) {
+  const g = leerGrupo()
+  if (!g) return
+  g.lugares = { v: Date.now(), l: l.slice(0, 8) }
+  guardarGrupo(g)
+  reenviar()
+}
+export function cambiarTelefono(tel) {
+  const g = leerGrupo()
+  if (!g) return
+  g.yo.tel = String(tel ?? '').replace(/[^\d+]/g, '').slice(0, 16)
+  guardarGrupo(g)
+  reenviar()
+}
+/** Envía al tiro mi ubicación (después de un cambio que la familia debe ver). */
+export function reenviar() {
+  if (!('geolocation' in navigator)) return
+  navigator.geolocation.getCurrentPosition((p) => enviarUbicacion(p).catch(() => {}), () => {}, { enableHighAccuracy: true, maximumAge: 60e3, timeout: 15e3 })
+}
+
 export function cambiarCompartir(v) {
   const g = leerGrupo()
   if (!g) return
@@ -81,15 +103,31 @@ export async function enviarUbicacion(pos, extra = {}) {
   const g = leerGrupo()
   if (!g?.compartir || !API_URL) return false
   let bateria = null
+  let bat = null
   try {
-    const b = await navigator.getBattery?.()
-    if (b) bateria = Math.round(b.level * 100)
+    bat = await navigator.getBattery?.()
+    if (bat) bateria = Math.round(bat.level * 100)
   } catch {
     /* sin batería */
   }
   // «Estoy bien» / «Necesito ayuda»: viaja cifrado junto a la ubicación y dura 24 horas
   const estado = g.estado && Date.now() - g.estado.t < 24 * 3600e3 ? g.estado : undefined
-  const datos = { nombre: g.yo.nombre, rol: g.yo.rol, lat: pos.coords.latitude, lng: pos.coords.longitude, precision: Math.round(pos.coords.accuracy ?? 0), bateria, t: Date.now(), estado, ...extra }
+  const vel = pos.coords.speed != null && pos.coords.speed > 1.5 ? Math.round(pos.coords.speed * 3.6) : null
+  const datos = {
+    nombre: g.yo.nombre,
+    rol: g.yo.rol,
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude,
+    precision: Math.round(pos.coords.accuracy ?? 0),
+    bateria,
+    cargando: bat?.charging ?? null,
+    vel,
+    tel: g.yo.tel || undefined,
+    lugares: g.lugares?.l?.length ? g.lugares : undefined, // los lugares seguros viajan cifrados con cada uno
+    t: Date.now(),
+    estado,
+    ...extra,
+  }
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await llave(g), new TextEncoder().encode(JSON.stringify(datos)))
   const r = await fetch(`${API_URL}/api/familia/${g.grupo}/${g.yo.id}`, {
@@ -141,6 +179,13 @@ export async function leerFamilia() {
     }
   }
   ultima = out.sort((a, b) => Number(b.yo) - Number(a.yo) || b.t - a.t)
+  // Lugares seguros: gana la versión más nueva que tenga cualquiera de la familia
+  const nueva = out.map((m) => m.lugares).filter((l) => l?.v).sort((a, b) => b.v - a.v)[0]
+  const yoG = leerGrupo()
+  if (yoG && nueva && nueva.v > (yoG.lugares?.v ?? 0)) {
+    yoG.lugares = nueva
+    guardarGrupo(yoG)
+  }
   return ultima
 }
 let ultima = []

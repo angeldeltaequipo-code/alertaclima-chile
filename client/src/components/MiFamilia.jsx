@@ -156,7 +156,7 @@ export default function MiFamilia({ limite = MAX, onLimite = () => {} }) {
     <section aria-labelledby="t-familia" className="tarjeta scroll-mt-16">
       <div className="flex items-center justify-between gap-2">
         <h2 id="t-familia" className="titulo-tarjeta !mb-0">
-          Mi familia
+          Comunas de los tuyos
         </h2>
         {lista.length > 0 && !agregando && (
           <button type="button" onClick={() => setEditando(!editando)} className="min-h-11 rounded-full px-3 text-[15px] font-bold underline underline-offset-2">
@@ -168,7 +168,7 @@ export default function MiFamilia({ limite = MAX, onLimite = () => {} }) {
       {lista.length === 0 && !agregando && (
         <div className="mt-2 flex items-center gap-3">
           <img src={poseZumi('corazon')} alt="" width="72" height="96" className="zumi-pose h-24 w-auto shrink-0" />
-          <p className="text-[17px] leading-snug">Agrega a tus seres queridos y te muestro aquí si hay alertas o mal tiempo donde viven.</p>
+          <p className="text-[17px] leading-snug">Agrega la comuna donde vive cada uno (la abuela en Temuco, tu hermano en Antofagasta) y te aviso si hay alertas o mal tiempo allá.</p>
         </div>
       )}
 

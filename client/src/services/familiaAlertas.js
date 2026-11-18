@@ -1,7 +1,8 @@
 // Vigía familiar: cada 3 minutos (con la app abierta) revisa si algún integrante de tu familia está
 // en una comuna con alerta oficial Amarilla o Roja de SENAPRED. Si aparece una nueva, te avisa con
 // una notificación: «Tomás está en Providencia, con Alerta Roja por incendio forestal».
-import { leerFamilia, leerGrupo } from './familiaGPS'
+import { leerFamilia, leerGrupo, lugaresFamilia } from './familiaGPS'
+import { anotarRastro, detectarEventos } from './familiaVida'
 import { comunaEnPunto } from './comunas'
 import { NIVELES, alertaPrincipal, estadoComuna } from './alertas'
 
@@ -26,9 +27,19 @@ async function avisar(titulo, cuerpo) {
   }
 }
 
+/** Avisa en el teléfono las llegadas, salidas y baterías bajas de la familia. */
+export async function avisarEventos(nuevos = []) {
+  for (const e of nuevos) {
+    if (e.yo) continue
+    await avisar(`${e.icono} ${e.texto}`, e.tipo === 'bateria' ? 'Puede que pronto deje de compartir su ubicación.' : `A las ${new Date(e.t).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}. Revisa «Mi familia».`)
+  }
+}
+
 export async function revisarFamilia() {
   if (!leerGrupo()) return []
   const lista = await leerFamilia()
+  anotarRastro(lista)
+  await avisarEventos(detectarEventos(lista, lugaresFamilia()))
   const v = vistos()
   const avisos = []
   // Alguien pidió ayuda o avisó que está bien: se avisa una vez por cada aviso.

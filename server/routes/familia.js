@@ -10,7 +10,7 @@ const VIVE_MS = 48 * 3600e3
 const MAX_MIEMBROS = 12
 const MAX_GRUPOS = 20000
 const ID = /^[A-Za-z0-9_-]{16,64}$/
-const B64 = /^[A-Za-z0-9+/=_-]{8,4096}$/
+const B64 = /^[A-Za-z0-9+/=_-]{8,8192}$/
 
 export function familiaRouter({ ahora = () => Date.now() } = {}) {
   const grupos = new Map() // grupo -> Map(miembro -> { iv, datos, t })
@@ -24,14 +24,14 @@ export function familiaRouter({ ahora = () => Date.now() } = {}) {
   const reloj = setInterval(limpiar, 30 * 60e3)
   reloj.unref?.()
 
-  // cupo simple por IP: 120 envíos por hora
+  // cupo simple por IP: 600 envíos por hora (una familia entera puede compartir el wifi de la casa)
   const cupo = new Map()
   const permitido = (ip) => {
     const t = ahora()
     const c = cupo.get(ip)
     if (!c || t - c.desde > 3600e3) return cupo.set(ip, { desde: t, n: 1 }), true
     c.n += 1
-    return c.n <= 120
+    return c.n <= 600
   }
 
   const r = Router()
