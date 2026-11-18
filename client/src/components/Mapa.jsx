@@ -237,6 +237,7 @@ export default function Mapa({
   onLugar = () => {},
   viaje = null,
   familia = [],
+  ruta = null,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
@@ -829,6 +830,67 @@ export default function Mapa({
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [familia])
+
+  // ---- Ruta ZUMI: el camino pintado por tramos según el riesgo, con el clima en cada punto ----
+  const marcasRuta = useRef([])
+  const claveRuta = useRef(null)
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      marcasRuta.current.forEach((m) => m.remove())
+      marcasRuta.current = []
+      const vacio = { type: 'FeatureCollection', features: [] }
+      if (!mapa.getSource('ruta')) {
+        mapa.addSource('ruta', { type: 'geojson', data: vacio, lineMetrics: true })
+        mapa.addLayer({ id: 'ruta-borde', type: 'line', source: 'ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#000', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6, 12, 12], 'line-opacity': 0.55 } })
+        mapa.addLayer({
+          id: 'ruta-linea',
+          type: 'line',
+          source: 'ruta',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': ['match', ['get', 'nivel'], 2, '#ff5a5f', 1, '#ffc53d', '#3ddc84'], 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 3.5, 12, 7] },
+        })
+      }
+      if (!ruta) {
+        mapa.getSource('ruta').setData(vacio)
+        claveRuta.current = null
+        return
+      }
+      mapa.getSource('ruta').setData({
+        type: 'FeatureCollection',
+        features: ruta.segmentos.map((g) => ({ type: 'Feature', properties: { nivel: g.nivel }, geometry: { type: 'LineString', coordinates: g.coords } })),
+      })
+      const marca = (lng, lat, el, anchor = 'center') => marcasRuta.current.push(new maplibregl.Marker({ element: el, anchor }).setLngLat([lng, lat]).addTo(mapa))
+      // temperatura en los puntos de control
+      ruta.puntos.slice(1, -1).forEach((p) => {
+        if (p.temp == null) return
+        const el = document.createElement('div')
+        el.className = `ruta-punto nivel-${p.nivel}`
+        el.textContent = `${Math.round(p.temp)}°`
+        marca(p.lng, p.lat, el)
+      })
+      ruta.paradas.forEach((p) => {
+        const el = document.createElement('div')
+        el.className = 'ruta-parada'
+        el.textContent = '☕'
+        el.title = `Descanso en ${p.lugar}`
+        marca(p.lng, p.lat, el)
+      })
+      const fin = document.createElement('div')
+      fin.className = 'ruta-destino'
+      fin.innerHTML = '<b></b>'
+      fin.append(Object.assign(document.createElement('span'), { textContent: ruta.destino.nombre }))
+      marca(ruta.destino.lng, ruta.destino.lat, fin, 'bottom')
+      const ini = document.createElement('div')
+      ini.className = 'ruta-origen'
+      marca(ruta.origen.lng, ruta.origen.lat, ini)
+      // encuadra todo el viaje, dejando espacio para el panel de abajo
+      const b = new maplibregl.LngLatBounds()
+      ruta.segmentos.forEach((g) => g.coords.forEach((c) => b.extend(c)))
+      if (!b.isEmpty() && claveRuta.current !== ruta.clave) mapa.fitBounds(b, { padding: { top: 90, bottom: Math.round(window.innerHeight * 0.52), left: 40, right: 40 }, pitch: 0, bearing: 0, duration: calma() ? 0 : 1400, maxZoom: 12 })
+      claveRuta.current = ruta.clave
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ruta])
 
   // ---- Viaje: vuela al lugar en 3D, con satélite, y gira lento alrededor (como un dron) ----
   useEffect(() => {

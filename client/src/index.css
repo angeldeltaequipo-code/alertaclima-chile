@@ -251,7 +251,7 @@ body {
 }
 /* Controles de zoom y brújula bajo los botones de ubicación y reporte, con tamaño de dedo */
 .maplibregl-map .maplibregl-ctrl-top-right {
-  top: 7.4rem;
+  top: 10.6rem;
 }
 .maplibregl-map .maplibregl-ctrl-group button {
   width: 44px;
@@ -1461,3 +1461,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .orbe-halo, .orbe-anillo, .orbe-nucleo, .orbe-nucleo img, .ondas-estado i, .oido-vivo, .flecha-baja { animation: none !important; }
 }
+
+/* ---- Ruta ZUMI ---- */
+.ruta-punto { font: 600 12px/1 'JetBrains Mono', monospace; color: #fff; background: rgb(0 0 0 / 0.78); border: 1.5px solid #3ddc84; border-radius: 9999px; padding: 4px 7px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.4); }
+.ruta-punto.nivel-1 { border-color: #ffc53d; }
+.ruta-punto.nivel-2 { border-color: #ff5a5f; background: #3a0d10; }
+.ruta-parada { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px; background: #fff; font-size: 15px; box-shadow: 0 4px 12px rgb(0 0 0 / 0.4); }
+.ruta-origen { width: 16px; height: 16px; border-radius: 9999px; background: #fff; border: 4px solid #000; box-shadow: 0 0 0 2px #fff; }
+.ruta-destino { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ruta-destino b { width: 22px; height: 22px; border-radius: 9999px 9999px 9999px 0; transform: rotate(-45deg); background: #fff; border: 5px solid #000; box-shadow: 0 6px 16px rgb(0 0 0 / 0.5); }
+.ruta-destino span { font: 600 12px/1.1 'Inter', sans-serif; color: #fff; background: #000; padding: 3px 8px; border-radius: 9999px; white-space: nowrap; }
+.ruta-panel { animation: viaje-sube 420ms var(--curva) both; }
+.ruta-buscador { animation: ruta-baja 320ms var(--curva) both; }
+@keyframes ruta-baja { from { opacity: 0; transform: translateY(-24px); } }
+.vidrio-solido { background: rgb(8 8 10 / 0.95); border: 1px solid rgb(255 255 255 / 0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #fff; }

@@ -26,6 +26,7 @@ import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import FichaVolcan from './components/FichaVolcan'
 import FichaSismo from './components/FichaSismo'
 import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
+const RutaZumi = lazySeguro(() => import('./components/RutaZumi'))
 import { fijarAmbiente } from './services/musica'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
@@ -143,6 +144,8 @@ export default function App() {
   const [relieve3d, setRelieve3d] = useState(() => leer('mapa:3d', false))
   // Viaja con ZUMI: lugar histórico al que vuela el mapa (null = sin viaje)
   const [viaje, setViaje] = useState(null)
+  const [rutaAbierta, setRutaAbierta] = useState(false)
+  const [rutaMapa, setRutaMapa] = useState(null)
   // GPS familiar: invitación que llegó en el enlace, y ubicaciones para pintar en el mapa
   const [invitacionFamilia, setInvitacionFamilia] = useState(() => invitacionEnDireccion())
   const [familiaMapa, setFamiliaMapa] = useState([])
@@ -509,18 +512,32 @@ export default function App() {
                 onLugar={(l) => setViaje(lugarPorId(l.id))}
                 viaje={viaje}
                 familia={familiaMapa}
+                ruta={rutaMapa}
               />
             </Suspense>
             </Resguardo>
           )}
           {viaje && <ViajeZumi lugar={viaje} onCambiar={setViaje} onCerrar={() => setViaje(null)} />}
+          {rutaAbierta && vista === 'radar' && (
+            <Suspense fallback={null}>
+              <RutaZumi
+                origen={ubicacion ? { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Tu ubicación' } : { lat: comuna?.centro?.[0], lng: comuna?.centro?.[1], nombre: comuna?.nombre }}
+                onRuta={setRutaMapa}
+                onCerrar={() => {
+                  setRutaAbierta(false)
+                  setRutaMapa(null)
+                }}
+              />
+            </Suspense>
+          )}
           <ControlesMapa
             relieve3d={relieve3d}
             onRelieve3d={(v) => {
               guardar('mapa:3d', v)
               setRelieve3d(v)
             }}
-            onViajar={viaje ? null : () => setViaje(LUGARES.find((l) => !sellos[l.id]) ?? LUGARES[0])}
+            onViajar={viaje || rutaMapa ? null : () => setViaje(LUGARES.find((l) => !sellos[l.id]) ?? LUGARES[0])}
+            onRuta={viaje || rutaAbierta ? null : () => (setViaje(null), setRutaAbierta(true))}
             base={baseMapa}
             onBase={setBaseMapa}
             modoCalle={modoCalle}
