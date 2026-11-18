@@ -81,6 +81,13 @@ export default function App() {
   const clima = useClima({ comuna, ahorro: ahorro.activo, enLinea })
   const rep = useReportes({ comuna, enLinea })
   const alertas = useAlertas({ comuna, enLinea, ahorro: ahorro.activo })
+  // Despierta al servidor apenas abre la app (el plan gratis de Render se duerme): cuando la persona
+  // le hable a ZUMI, el cerebro y la voz ya están listos y responde al tiro.
+  useEffect(() => {
+    import('./services/reportes').then(({ API_URL }) => API_URL && fetch(`${API_URL}/api/salud`, { cache: 'no-store' }).catch(() => {}))
+    const t = setInterval(() => document.visibilityState === 'visible' && import('./services/reportes').then(({ API_URL }) => API_URL && fetch(`${API_URL}/api/salud`, { cache: 'no-store' }).catch(() => {})), 10 * 60e3)
+    return () => clearInterval(t)
+  }, [])
   // Widget de la pantalla de inicio (app nativa): se actualiza con lo último que se cargó.
   useEffect(() => {
     import('./services/widget').then((w) => w.actualizarWidget({ comuna, clima: clima.datos, alertas: alertas.estado })).catch(() => {})

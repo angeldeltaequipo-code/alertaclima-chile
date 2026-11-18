@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import IconoClima from './IconoClima'
 import PortalZumi from './PortalZumi'
-import ZumiMarioneta from './ZumiMarioneta'
+import ZumiCine from './ZumiCine'
 import {
   NOMBRE,
   TRAJES,
@@ -383,12 +383,12 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       <div className="relative h-full w-full max-w-[min(100vw,calc(100dvh*0.62))] overflow-hidden">
         {/* ZUMI en su estudio: video con calidad de película animada, que cambia según lo que pasa */}
         {/* ZUMI presentador: el escenario cambia según el clima, la hora, las alertas y lo que cuenta */}
-        <ZumiMarioneta
+        <ZumiCine
+          peliculas
           escena={escenario}
           estado={pensando ? 'pensando' : e.sonando ? 'hablando' : escuchando ? 'escuchando' : 'reposo'}
           gesto={gestoEscena}
           posicion={[0.5, 0.3]}
-          vivo
           pantalla={enPantalla ? <div className="holo-en-pantalla">{!conversa && <Holograma t={escena?.tarjeta} />}</div> : null}
         />
         <div className="estudio-velo absolute inset-0" aria-hidden="true" />

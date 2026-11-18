@@ -2,7 +2,7 @@
 // el estudio en rojo si hay alerta), te saluda al llegar, reacciona cuando lo tocas y está a un toque
 // de una conversación por voz. El clima de ahora va encima, para leerlo de un vistazo.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import ZumiMarioneta from './ZumiMarioneta'
+import ZumiCine from './ZumiCine'
 import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
 import { PELICULAS, consejoDelDia } from '../services/cine'
@@ -119,7 +119,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     <section ref={raiz} aria-label="ZUMI, tu amigo del clima" className={`portada-zumi relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}>
       {/* Escenario: siempre muestra a ZUMI entero (de las orejas a los pies) y cerca; nada lo tapa */}
       <div className="relative w-full" style={{ aspectRatio: '0.86', maxHeight: '47dvh', minHeight: 300 }}>
-        <ZumiMarioneta escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} peliculas={false} vivo className="escenario-zumi-lienzo" />
+        <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.6]} encuadre={ENCUADRE} className="escenario-zumi-lienzo" />
         <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
 
         {/* Tocar a ZUMI */}

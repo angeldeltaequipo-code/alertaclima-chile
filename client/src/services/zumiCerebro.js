@@ -66,8 +66,18 @@ export async function hayIA() {
 }
 
 /** Pregunta a ZUMI. Devuelve { texto, fuente: 'ia' | 'zumi' }. Nunca lanza: si la IA falla, responde ZUMI solo. */
+/** ¿Es una pregunta directa del clima que ZUMI sabe contestar solo, al instante y sin internet? */
+export function esPreguntaRapida(pregunta) {
+  const t = sinTildes(String(pregunta ?? ''))
+  if (t.length > 90 || aprenderSolo(pregunta).length) return false
+  if (QUIERE.emergencia.test(t) || QUIERE.saludo.test(t) || QUIERE.gracias.test(t) || QUIERE.memoria.test(t)) return true
+  return ['lluvia', 'temperatura', 'ropa', 'alerta', 'sismo', 'viento', 'sol', 'luna'].some((k) => QUIERE[k].test(t)) && !/por que|como funciona|explica|historia|que es (el|la|un|una)/.test(t)
+}
+
 export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
   anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
+  // Lo del clima de ahora lo responde ZUMI con sus datos, al instante (sin esperar internet).
+  if (esPreguntaRapida(pregunta)) return { texto: responderSinIA(pregunta, datos), fuente: 'zumi', rapida: true }
   if (conCuenta && navigator.onLine && (await hayIA())) {
     try {
       const r = await fetch(`${API_URL}/api/zumi/preguntar`, {

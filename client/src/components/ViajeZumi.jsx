@@ -75,7 +75,7 @@ export default function ViajeZumi({ lugar, onCambiar, onCerrar }) {
       })
       .catch(() => null)
     // ZUMI empieza a contar cuando la cámara ya llegó (unos 3 segundos), con o sin el clima.
-    const t = setTimeout(() => !ctrl.signal.aborted && contar(c0), 3200)
+    const t = setTimeout(() => !ctrl.signal.aborted && contar(c0), 1600)
     return () => {
       ctrl.abort()
       clearTimeout(t)

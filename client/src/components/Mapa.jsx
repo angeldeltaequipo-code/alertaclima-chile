@@ -293,10 +293,10 @@ export default function Mapa({
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
 
-      // Relieve real de la Tierra (Mapzen/AWS, libre): sombras de montañas siempre, y 3D al inclinar.
+      // Relieve real de la Tierra (Mapzen/AWS, libre): sombras de montañas y 3D, solo en modo 3D o viajes.
       mapa.addSource('dem', { type: 'raster-dem', tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: 'terrarium', attribution: 'Relieve: Mapzen, AWS Terrain Tiles' })
       mapa.addLayer(
-        { id: 'relieve', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.38, 'hillshade-shadow-color': '#3a2f28', 'hillshade-highlight-color': '#fffaf0', 'hillshade-accent-color': '#5b4636' } },
+        { id: 'relieve', type: 'hillshade', source: 'dem', layout: { visibility: 'none' }, paint: { 'hillshade-exaggeration': 0.38, 'hillshade-shadow-color': '#3a2f28', 'hillshade-highlight-color': '#fffaf0', 'hillshade-accent-color': '#5b4636' } },
         primeraLinea,
       )
       // Globo terráqueo al alejarse y cielo con atmósfera (como Google Earth).
@@ -747,7 +747,7 @@ export default function Mapa({
       const fin = mapa.cameraForBounds(comuna?.bbox ? aBounds(comuna.bbox) : CHILE, { padding: 40 })
       if (!fin) return
       mapa.jumpTo({ center: [-72, -36], zoom: 1.4, pitch: 0, bearing: 0 })
-      mapa.flyTo({ ...fin, zoom: Math.min(fin.zoom ?? 10, 13), pitch: 42, bearing: -12, duration: 5200, curve: 1.7, essential: true })
+      mapa.flyTo({ ...fin, zoom: Math.min(fin.zoom ?? 10, 13), pitch: 42, bearing: -12, duration: 2800, curve: 1.5, essential: true })
       mapa.once('moveend', () => !props.current.relieve3d && !props.current.viaje && mapa.easeTo({ pitch: 0, bearing: 0, duration: 1600 }))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -757,6 +757,8 @@ export default function Mapa({
   useEffect(() => {
     cuandoListo((mapa) => {
       const en3d = relieve3d || Boolean(viaje)
+      // Sombras y 3D solo cuando se piden (son lo más pesado del mapa: así el mapa normal vuela)
+      mapa.setLayoutProperty('relieve', 'visibility', en3d ? 'visible' : 'none')
       try {
         mapa.setTerrain(en3d ? { source: 'dem', exaggeration: viaje ? 1.25 : 1.6 } : null)
       } catch {
@@ -806,7 +808,7 @@ export default function Mapa({
       mapa.resize()
       mapa.setLayoutProperty('satelite', 'visibility', 'visible')
       mapa.setLayoutProperty('nubes', 'visibility', 'none') // las nubes del satélite taparían el lugar
-      mapa.flyTo({ center: [viaje.lng, viaje.lat], zoom: viaje.zoom ?? 15, pitch: 68, bearing: viaje.rumbo ?? 0, duration: calma() ? 0 : 5600, curve: 1.9, essential: true })
+      mapa.flyTo({ center: [viaje.lng, viaje.lat], zoom: viaje.zoom ?? 15, pitch: 68, bearing: viaje.rumbo ?? 0, duration: calma() ? 0 : 3400, curve: 1.6, essential: true })
       const girar = () => {
         if (!vivo || calma()) return
         mapa.easeTo({ bearing: mapa.getBearing() + 40, duration: 16000, easing: (x) => x })

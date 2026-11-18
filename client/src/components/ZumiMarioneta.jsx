@@ -9,6 +9,7 @@
 // se inclina hacia ti cuando escucha y se pone serio en una alerta. Sus películas (con su voz y la boca
 // perfecta) se reproducen encima cuando el narrador las pide.
 import { useEffect, useRef, useState } from 'react'
+import { VIDEOS, ahorroDatos } from '../services/zumiVideos'
 import { VISEMAS, alCambiarBoca, energiaVoz } from '../services/labios'
 import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
 import { RUTA_CINE, marcarVista } from '../services/cine'
@@ -90,18 +91,6 @@ function dibujarPelota(g, { x, y, r, giro }) {
   g.drawImage(PELOTA.luz, -r, -r, r * 2, r * 2)
   g.restore()
 }
-
-// Videos reales de ZUMI (hechos con Google Flow a partir de su pose de descanso de cada escena; empiezan
-// y terminan en ese mismo cuadro, así el bucle y el regreso a la marioneta no se notan). Cubren la escena
-// completa. «reposo» se repite mientras está quieto; los demás son gestos que se reproducen una vez.
-const VIDEOS = {
-  sala: ['reposo', 'saludo', 'celebrar', 'senalar', 'pensar', 'curioso', 'habla', 'habla2', 'habla3'],
-  noche: ['reposo', 'saludo', 'habla', 'habla2'],
-  lluvia: ['reposo', 'saludo'],
-  alerta: ['reposo', 'calma'],
-  estudio: ['reposo'],
-}
-const ahorroDatos = () => typeof navigator !== 'undefined' && !!navigator.connection?.saveData
 
 export default function ZumiMarioneta({ escena = 'sala', estado = 'reposo', gesto = null, posicion = [0.5, 0.3], pantalla = null, className = '', peliculas = true, encuadre = null, vivo = false }) {
   const capas = useRef({}) // nombre → <video>
