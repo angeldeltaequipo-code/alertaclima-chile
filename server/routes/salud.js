@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { dbDisponible } from '../db/pool.js'
+import { dbDisponible, urlBase } from '../db/pool.js'
 
 // Estado del servicio. Lo usa Docker para saber si el contenedor está sano
 // y, más adelante, la página pública de estado.
@@ -16,9 +16,9 @@ saludRouter.get('/', async (req, res) => {
     // Solo el nombre del servidor de la base (nunca usuario ni contraseña), para diagnosticar.
     hostBase: (() => {
       try {
-        return new URL(process.env.DATABASE_URL ?? '').hostname.replace(/^[^.]+/, (x) => x.slice(0, 6) + '…') || null
+        return new URL(urlBase() ?? '').hostname.replace(/^[^.]+/, (x) => x.slice(0, 6) + '…') || null
       } catch {
-        return null
+        return process.env.DATABASE_URL ? 'formato no reconocido' : 'sin configurar'
       }
     })(),
     hora: new Date().toISOString(),

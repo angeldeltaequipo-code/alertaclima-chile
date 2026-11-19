@@ -3,9 +3,9 @@
 // tramos con riesgo (lluvia fuerte, nieve o hielo, viento, niebla, tormenta), sugiere la mejor hora
 // para salir y dónde descansar, y abre la navegación en Waze o Google Maps.
 import REGIONES from '../data/comunas.json'
-import { buscarComunas, normalizar } from './comunas'
+import { buscarComunas, comunaPorCut, normalizar } from './comunas'
 import { LUGARES } from './viajes'
-import { describir } from './clima'
+import { describir, puntoDeComuna } from './clima'
 
 const COMUNAS = REGIONES.flatMap((r) => r.comunas.map((c) => ({ ...c, region: r.nombre })))
 const R = 6371
@@ -56,6 +56,31 @@ export function buscarLugares(texto, limite = 8) {
   const dest = DESTACADOS.filter((d) => normalizar(d.nombre).includes(t)).map((d) => ({ ...d, tipo: 'lugar' }))
   const com = buscarComunas(texto, limite).map((c) => ({ id: `c-${c.cut}`, nombre: c.nombre, sub: c.region?.etiqueta ?? c.region ?? '', lat: c.centro?.[0] ?? c.lat, lng: c.centro?.[1] ?? c.lng, tipo: 'comuna' }))
   return [...dest, ...com].filter((x) => x.lat != null).slice(0, limite)
+}
+
+/**
+ * Una comuna como destino es su ciudad (la cabecera), nunca su centro geográfico: en comunas grandes
+ * (Linares, San Fernando, Cochamó…) el centro cae en plena cordillera, a decenas de km del pueblo.
+ * Se busca el poblado con ese nombre dentro de la comuna (Open-Meteo, luego OpenStreetMap).
+ * Si no se encuentra, se avisa (`aprox`) en vez de llevar a la persona a un punto en el cerro.
+ */
+export async function resolverDestino(d, { signal } = {}) {
+  if (d?.tipo !== 'comuna') return d
+  const comuna = comunaPorCut(String(d.id).replace(/^c-/, ''))
+  if (!comuna) return d
+  const p = await puntoDeComuna(comuna, { signal }).catch((e) => {
+    if (e.name === 'AbortError') throw e
+    return null
+  })
+  if (p && !p.aprox) return { ...d, lat: p.lat, lng: p.lng, aprox: false }
+  try {
+    const dentro = (x) => !comuna.bbox || (x.lat >= comuna.bbox[0][0] - 0.02 && x.lat <= comuna.bbox[1][0] + 0.02 && x.lng >= comuna.bbox[0][1] - 0.02 && x.lng <= comuna.bbox[1][1] + 0.02)
+    const r = (await buscarDireccion(`${comuna.nombre}, Chile`, { signal })).find((x) => normalizar(x.nombre) === normalizar(comuna.nombre) && dentro(x))
+    if (r) return { ...d, lat: r.lat, lng: r.lng, aprox: false }
+  } catch (e) {
+    if (e.name === 'AbortError') throw e
+  }
+  return { ...d, aprox: true }
 }
 
 /** Direcciones o lugares exactos (OpenStreetMap). Solo en Chile. */

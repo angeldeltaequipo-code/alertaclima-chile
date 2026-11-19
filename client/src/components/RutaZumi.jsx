@@ -7,6 +7,7 @@ import IconoClima from './IconoClima'
 import {
   buscarDireccion,
   buscarLugares,
+  resolverDestino,
   anotarReciente,
   calcularRutas,
   recientes,
@@ -136,13 +137,16 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
   const [navegando, setNavegando] = useState(null) // null | 'real' | 'simulada'
   const ac = useRef(null)
 
-  const elegir = async (d) => {
-    setDestino(d)
+  const elegir = async (d0) => {
+    setDestino(d0)
     setEstado('calculando')
     setError(null)
     ac.current?.abort()
     ac.current = new AbortController()
     try {
+      // una comuna se resuelve a su ciudad (no al centro geográfico, que puede estar en la cordillera)
+      const d = await resolverDestino(d0, { signal: ac.current.signal })
+      setDestino(d)
       anotarReciente(d)
       const rutas = await calcularRutas(origen, d, { signal: ac.current.signal })
       // clima de cada alternativa, en paralelo, para compararlas también por seguridad
@@ -265,6 +269,11 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
             <span className="punto-vivo" aria-hidden="true" /> Ruta ZUMI · clima en el camino
           </p>
           <h2 className="titulo-x mt-1 truncate text-[24px]">{destino?.nombre}</h2>
+          {destino?.aprox && (
+            <p role="alert" className="mt-1 text-[13px] leading-snug text-amber-300">
+              No encontré el centro exacto de {destino.nombre}: el punto es aproximado. Toca «Cambiar» y escribe una dirección o lugar.
+            </p>
+          )}
         </div>
         <button type="button" onClick={() => setEstado('buscar')} className="boton-vidrio min-h-10 rounded-full px-3 text-[13px] font-semibold">
           Cambiar

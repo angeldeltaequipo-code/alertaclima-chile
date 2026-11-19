@@ -8,7 +8,7 @@ import maplibregl from 'maplibre-gl'
 import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { PASEOS, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
-import { buscarLugares } from '../services/ruta'
+import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
 import { registrarEsri } from '../services/satelite'
@@ -277,7 +277,8 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     const c = m.getCenter()
     m.easeTo({ bearing: rumboHacia({ lat: c.lat, lng: c.lng }, l), duration: 900 })
   }
-  function irA(p) {
+  async function irA(p0) {
+    const p = await resolverDestino(p0).catch(() => p0)
     const m = mapa.current
     setBuscar(false)
     setQ('')

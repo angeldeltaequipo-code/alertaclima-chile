@@ -1,8 +1,16 @@
 import pg from 'pg'
 
+// La dirección de la base, tolerante a cómo se pegó: Neon a veces copia el comando completo
+// («psql 'postgresql://…'») o con comillas/espacios. Se toma solo la parte postgres(ql)://…
+export function urlBase(v = process.env.DATABASE_URL) {
+  const m = String(v ?? '').match(/postgres(?:ql)?:\/\/[^\s'"`]+/)
+  return m ? m[0] : v
+}
+if (urlBase() !== process.env.DATABASE_URL && process.env.DATABASE_URL) console.warn('Base de datos: DATABASE_URL traía texto extra; se usa solo la dirección postgresql://…')
+
 // Una sola conexión compartida a PostgreSQL/PostGIS.
 export const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: urlBase(),
   max: Number(process.env.DB_POOL_MAX ?? 10),
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 8_000, // si la base no responde, se falla rápido (no se cuelgan las peticiones)

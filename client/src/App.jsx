@@ -564,7 +564,7 @@ export default function App() {
           {rutaAbierta && vista === 'radar' && (
             <Suspense fallback={null}>
               <RutaZumi
-                origen={ubicacion ? { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Tu ubicación' } : { lat: comuna?.centro?.[0], lng: comuna?.centro?.[1], nombre: comuna?.nombre }}
+                origen={ubicacion ? { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Tu ubicación' } : { lat: clima.datos?.punto?.lat ?? comuna?.centro?.[0], lng: clima.datos?.punto?.lng ?? comuna?.centro?.[1], nombre: comuna?.nombre }}
                 onRuta={setRutaMapa}
                 onSeguir={setNavPos}
                 onCerrar={() => {
