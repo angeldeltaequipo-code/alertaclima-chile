@@ -1517,3 +1517,5 @@ body {
 .demo-app { display: block; font: 600 10.5px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: rgb(0 0 0 / 0.5); margin-bottom: 3px; }
 .demo-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 9999px; background: color-mix(in srgb, var(--c) 25%, #000); color: var(--c); box-shadow: inset 0 0 0 1.5px var(--c); font-weight: 700; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .barra-historia { animation: none; } }
+.senal-ahora { border-color: color-mix(in srgb, var(--t) 35%, transparent); background: color-mix(in srgb, var(--t) 8%, var(--superficie)); transition: transform 0.15s var(--curva); }
+.senal-ahora:active { transform: scale(0.97); }

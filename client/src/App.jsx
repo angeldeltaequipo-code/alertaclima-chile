@@ -400,6 +400,8 @@ export default function App() {
           <div className="escala-letra mx-auto max-w-xl">
             {comuna && (
               <VistaAhora
+                alertas={alertas.estado}
+                onIr={setVista}
                 clima={clima}
                 sismos={riesgos.datos?.sismos}
                 reportesLista={rep.reportes}

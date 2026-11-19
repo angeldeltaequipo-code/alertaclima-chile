@@ -26,6 +26,7 @@ import { SUGERENCIAS, preguntarZumi } from '../services/zumiCerebro'
 import { PELICULAS, consejoDelDia, frasePelicula, peliculaPara, vistaHoy, yaVista } from '../services/cine'
 import { NIVELES, alertaPrincipal } from '../services/alertas'
 import { NARRADOR } from '../services/viajes'
+import { emocionDe } from '../services/zumiEmocion'
 
 
 /** Alto de ZUMI según la pantalla: grande, pero dejando sitio a los datos y a los subtítulos. */
@@ -420,7 +421,9 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
   const enPantalla = escenario === 'estudio' || escenario === 'alerta'
   // Lo que hace con el cuerpo según lo que cuenta (la clave cambia en cada frase para repetir el gesto)
   const GESTO_DE = { saludo: 'saludo', ok: 'celebrar', lluvia: 'senalar', temp: 'senalar', minmax: 'caminar', viento: 'senalar', alerta: 'calma', sismo: 'calma', aluvion: 'calma', vecinos: 'caminar', luna: 'senalar' }
-  const gestoEscena = escuchando && !vigia.current && gestoOido ? gestoOido : respondiendo ? `explicar:${ultima?.pregunta}` : escena?.tarjeta?.tipo && GESTO_DE[escena.tarjeta.tipo] ? `${GESTO_DE[escena.tarjeta.tipo]}:${i}` : i === -1 && conversa && !e.hablando ? 'reposo' : null
+  // Al responder, ZUMI reacciona con la emoción que corresponde (se alegra, advierte, piensa, se pone serio…)
+  const reaccion = respondiendo && ultima ? emocionDe(ultima.pregunta, ultima.texto, escenario) : null
+  const gestoEscena = escuchando && !vigia.current && gestoOido ? gestoOido : respondiendo ? (reaccion?.toma ? `${reaccion.toma}:${ultima?.pregunta}` : null) : escena?.tarjeta?.tipo && GESTO_DE[escena.tarjeta.tipo] ? `${GESTO_DE[escena.tarjeta.tipo]}:${i}` : i === -1 && conversa && !e.hablando ? 'reposo' : null
 
   const subtitulo = pensando
     ? 'Déjame pensar…'

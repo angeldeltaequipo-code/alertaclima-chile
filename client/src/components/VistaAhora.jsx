@@ -13,6 +13,7 @@ import PulsoEnVivo from './PulsoEnVivo'
 import Funciones from './Funciones'
 import { lazySeguro } from '../services/cargaSegura'
 import HoyEnDiez from './HoyEnDiez'
+import MundoAhora from './MundoAhora'
 import AireZumi from './AireZumi'
 import EstoyBien from './EstoyBien'
 import { leerGrupo } from '../services/familiaGPS'
@@ -108,7 +109,7 @@ function Cargando() {
   )
 }
 
-export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null, emergencia = false }) {
+export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resumen = null, invitacion = null, reportes = null, camaras = null, obs = null, sismos = null, reportesLista = null, onVerRios = () => {}, zumi = null, familia = null, emergencia = false, alertas = null, onIr = () => {} }) {
   const { datos, error, recargar } = clima
   const entrada = useEntrada()
 
@@ -159,6 +160,9 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
           <EstoyBien compacto />
         </Resguardo>
       )}
+      <Resguardo>
+        <MundoAhora alertas={alertas} punto={datos.punto} onIr={onIr} />
+      </Resguardo>
       <Resguardo>
         <HoyEnDiez punto={datos.punto} horas={horas} dias={dias} ahora={ahora} />
       </Resguardo>
