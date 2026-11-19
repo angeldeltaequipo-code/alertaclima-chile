@@ -6,11 +6,11 @@ Textos listos para copiar en App Store Connect y Google Play Console. Los límit
 
 **Nombre (30):** AlertaClima: alertas y clima
 
-**Subtítulo (30):** Sismos, lluvia y tu familia
+**Subtítulo (30):** Alertas, GPS familiar y rutas
 
 **Texto promocional (170):** ZUMI te cuenta el día en palabras simples y te avisa si hay alertas oficiales en tu comuna o en la de tus seres queridos. Letra grande y fácil de usar.
 
-**Palabras clave (100):** alerta,sismo,temblor,tsunami,lluvia,senapred,emergencia,volcan,evacuacion,radar,familia,chile
+**Palabras clave (100):** alerta,sismo,temblor,tsunami,lluvia,senapred,gps familiar,ruta,carretera,aire,radar,chile
 
 **Categoría principal:** Clima. **Secundaria:** Utilidades.
 
@@ -24,7 +24,7 @@ Textos listos para copiar en App Store Connect y Google Play Console. Los límit
 
 **Título (30):** AlertaClima: alertas y clima
 
-**Descripción breve (80):** Alertas oficiales, sismos y lluvia de tu comuna. Cuida a tu familia con ZUMI.
+**Descripción breve (80):** Alertas oficiales, GPS familiar cifrado y rutas con clima. Con tu amigo ZUMI.
 
 **Categoría:** Clima. **Etiquetas:** clima, alertas, seguridad.
 
@@ -32,11 +32,17 @@ Textos listos para copiar en App Store Connect y Google Play Console. Los límit
 
 AlertaClima te avisa a tiempo y te explica el clima en palabras simples, para que tú y tu familia estén preparados.
 
-ZUMI TE CUENTA EL DÍA
-Tu guía, ZUMI, resume cómo está tu comuna en dos o tres frases y te lo lee en voz alta. También puedes hacerle preguntas con tu voz: "¿va a llover mañana?", "¿qué ropa me pongo?".
+ZUMI, TU AMIGO DEL CLIMA
+Habla con ZUMI como en una videollamada: te escucha, te responde al tiro y puedes interrumpirlo. Sabe de clima, emergencias, primeros auxilios y de cada una de las 346 comunas de Chile. Te avisa "empieza a llover en 15 minutos" y te resume tu día en 10 segundos.
 
-CUIDA A TU FAMILIA
-Agrega a tus seres queridos y mira de un vistazo cómo está el clima donde viven y si tienen alertas oficiales. Recibe avisos de hasta cinco comunas: tu casa, tu trabajo, la de tus padres o tus hijos.
+GPS FAMILIAR CIFRADO: ¿DÓNDE ESTÁ MI HIJO?
+Mira a tu familia en un mapa en vivo, con su batería, el clima y las alertas donde está cada uno. Te avisa cuando llegan al colegio o a la casa, y con un toque pueden avisar "Estoy bien" o pedir ayuda. Todo cifrado de punta a punta: ni nosotros podemos ver dónde están.
+
+RUTA ZUMI: VIAJA SEGURO POR CHILE
+Busca cualquier destino y mira el clima en cada tramo del camino, justo a la hora en que vas a pasar: lluvia, nieve, hielo, viento o niebla. Te dice la mejor hora para salir, dónde descansar y si cruzas un paso de alta montaña. Abre la navegación en Waze o Google Maps.
+
+CALIDAD DEL AIRE
+El material particulado de tu comuna y las próximas 24 horas, con los niveles de alerta, preemergencia y emergencia.
 
 ALERTAS OFICIALES AL INSTANTE
 Te avisamos cuando SENAPRED publica una alerta en tus comunas, cuando sube de nivel y cuando termina, aunque la app esté cerrada. Siempre con la fuente oficial.
@@ -53,8 +59,11 @@ Letra grande ajustable, botones cómodos, modo claro para el sol y modo oscuro p
 BOTÓN SOS
 En una emergencia, llama al 131, 132 o 133, o envía tu ubicación a tu familia con un toque.
 
+ESPACIO
+El próximo lanzamiento de SpaceX con cuenta regresiva, Starship, y cómo ver los trenes de Starlink desde Chile.
+
 TU PRIVACIDAD
-Tu lista de familiares se guarda solo en tu teléfono. No vendemos tus datos.
+Las ubicaciones de tu familia viajan cifradas y lo que ZUMI recuerda de ti queda en tu teléfono. Entra con Google o Apple, y borra tu cuenta cuando quieras. No vendemos tus datos.
 
 Importante: AlertaClima no reemplaza a los organismos oficiales. Sigue siempre las instrucciones de SENAPRED, SHOA y tu municipio.
 
@@ -69,7 +78,8 @@ Importante: AlertaClima no reemplaza a los organismos oficiales. Sigue siempre l
 
 | Dato | Para qué | ¿Vinculado a la persona? |
 |---|---|---|
-| Ubicación aproximada y precisa | Clima, ríos y zonas seguras cerca | No (no se guarda en el servidor) |
+| Ubicación aproximada y precisa | Clima, ríos, rutas y zonas seguras cerca | No (no se guarda en el servidor) |
+| Ubicación precisa (GPS familiar, opcional) | Que tu familia vea dónde estás | No: viaja cifrada de punta a punta; el servidor no puede leerla y la borra a las 48 h |
 | Correo y nombre (solo si crea cuenta) | Cuenta para reportes y chat | Sí |
 | Contenido del usuario (reportes, fotos, chat) | Reportes vecinales y chat | Sí |
 | Identificador del dispositivo para notificaciones | Enviar alertas | No |
