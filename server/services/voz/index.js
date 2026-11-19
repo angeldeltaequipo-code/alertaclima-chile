@@ -33,6 +33,8 @@ const MODELOS_GEMINI = () => (process.env.GEMINI_TTS_MODELO ? [process.env.GEMIN
 export const VOZ_ZUMI = () => process.env.ZUMI_VOZ || 'Zephyr'
 export const VOCES_PRUEBA = ['Fenrir', 'Puck', 'Leda', 'Sadachbia', 'Laomedeia', 'Zephyr', 'Aoede']
 
+/** Qué modelo generó la última frase (diagnóstico: distintos modelos suenan distinto). */
+export let ultimoModelo = null
 export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = VOZ_ZUMI() } = {}) {
   let ultimoError = null
   for (const model of MODELOS_GEMINI()) {
@@ -49,6 +51,7 @@ export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, 
     })
     if (!r.ok) {
       ultimoError = new Error(`Gemini ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
+      console.warn(`Voz: el modelo ${model} falló (${ultimoError.message.slice(0, 120)})`)
       if (r.status === 404 || r.status === 400 || r.status === 429) continue // otro modelo (o sin cupo en este): misma voz
       throw ultimoError
     }
@@ -56,6 +59,7 @@ export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, 
     const audio = (d.steps ?? []).filter((x) => x.type === 'model_output').flatMap((x) => x.content ?? []).filter((c) => c.type === 'audio').at(-1)
     if (!audio?.data) throw new Error('Gemini no devolvió audio')
     const b = Buffer.from(audio.data, 'base64')
+    ultimoModelo = model
     return b.subarray(0, 4).toString() === 'RIFF' ? b : pcmAWav(b, 24000)
   }
   throw ultimoError ?? new Error('Gemini sin modelo de voz disponible')

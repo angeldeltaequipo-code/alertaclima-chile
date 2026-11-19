@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { MAX_TEXTO, proveedorVoz, sintetizar, vozActiva, vozSinCupo } from '../services/voz/index.js'
+import { MAX_TEXTO, proveedorVoz, sintetizar, ultimoModelo, vozActiva, vozSinCupo } from '../services/voz/index.js'
 
 // Límite por IP: frases por minuto (un reporte completo son ~8 frases).
 const VENTANA = 60_000
@@ -29,7 +29,7 @@ export function vozRouter() {
       if (!t || t.length > MAX_TEXTO) return res.status(400).json({ error: `Texto entre 1 y ${MAX_TEXTO} caracteres` })
       if (!permitido(req.ip)) return res.status(429).json({ error: 'Demasiadas frases seguidas; espera un momento' })
       const wav = await sintetizar(t, { matiz: req.query.matiz === 'escena' ? 'escena' : undefined, voz: typeof req.query.voz === 'string' ? req.query.voz : undefined })
-      res.set({ 'Content-Type': 'audio/wav', 'Cache-Control': 'public, max-age=86400', 'Content-Length': wav.length }).send(wav)
+      res.set({ 'Content-Type': 'audio/wav', 'Cache-Control': 'public, max-age=86400', 'Content-Length': wav.length, 'X-Voz-Modelo': ultimoModelo ?? 'cache', 'Access-Control-Expose-Headers': 'X-Voz-Modelo' }).send(wav)
     } catch (e) {
       if (e?.status === 503) return res.status(503).set('Retry-After', '600').json({ error: 'La voz de ZUMI descansa un rato; vuelve pronto' })
       next(e)
