@@ -183,15 +183,8 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
 
   if (!comuna) return null
 
-  if (cuenta.estado === 'cargando') {
-    return (
-      <div className="grid h-full place-items-center p-6 text-center">
-        <p className="rotulo">Conectando con {comuna.nombre}…</p>
-      </div>
-    )
-  }
   // Mientras el chat entre vecinos no está activo, esta pestaña igual sirve: ZUMI, familia y números de emergencia.
-  if (cuenta.estado === 'desactivada') return <ComunidadSinChat comuna={comuna} />
+  if (cuenta.estado === 'desactivada' || cuenta.estado === 'cargando') return <ComunidadSinChat comuna={comuna} conectando={cuenta.estado === 'cargando'} />
 
   if (cuenta.estado === 'sin-sesion') {
     return (
@@ -378,7 +371,7 @@ const NUMEROS = [
 ]
 const preguntarZumi = (detalle) => window.dispatchEvent(new CustomEvent('ac:zumi', { detail: detalle }))
 
-function ComunidadSinChat({ comuna }) {
+function ComunidadSinChat({ comuna, conectando }) {
   return (
     <div className="h-full overflow-y-auto px-4 pt-4 pb-28">
       <div className="mx-auto max-w-md space-y-4">
@@ -411,7 +404,7 @@ function ComunidadSinChat({ comuna }) {
           </div>
         </section>
 
-        <p className="px-2 text-center text-[13.5px] text-texto-2">El chat en vivo entre vecinos de {comuna.nombre} se activa pronto. Mientras, ZUMI responde al instante.</p>
+        <p className="px-2 text-center text-[13.5px] text-texto-2">{conectando ? `Buscando el chat en vivo de ${comuna.nombre}…` : `El chat en vivo entre vecinos de ${comuna.nombre} se activa pronto.`} Mientras, ZUMI responde al instante.</p>
       </div>
     </div>
   )

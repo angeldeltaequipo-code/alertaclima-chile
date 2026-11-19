@@ -57,12 +57,19 @@ import { irASeccion } from './components/Desplegable'
 import { LUGARES, NARRADOR, leerPasaporte, lugarPorId } from './services/viajes'
 import TirarParaActualizar from './components/TirarParaActualizar'
 
-// El mapa (Leaflet) se carga aparte y solo al abrir el radar por primera vez.
+// El mapa (maplibre) se carga aparte: al abrir «Mapa» o precargado más tarde (ver abajo).
 const Mapa = lazySeguro(() => import('./components/Mapa'))
-// El mapa (lo más pesado) se descarga en segundo plano apenas la app queda tranquila: al tocar «Mapa» abre al tiro.
 if (typeof window !== 'undefined') {
-  const precargar = () => import('./components/Mapa').catch(() => {})
-  ;(window.requestIdleCallback ?? ((f) => setTimeout(f, 3500)))(precargar, { timeout: 6000 })
+  // El mapa (maplibre, el trozo más pesado) se precarga cuando la persona ya interactuó, o tras 12 s:
+  // así no compite con la primera pantalla en celulares lentos.
+  let listo = false
+  const precargar = () => {
+    if (listo) return
+    listo = true
+    import('./components/Mapa').catch(() => {})
+  }
+  window.addEventListener('pointerdown', () => setTimeout(precargar, 400), { once: true, passive: true })
+  setTimeout(() => (window.requestIdleCallback ?? ((f) => f()))(precargar, { timeout: 4000 }), 12000)
 }
 const FormReporte = lazySeguro(() => import('./components/FormReporte'))
 // Lo que no se ve al abrir la app se descarga recién cuando hace falta: la primera carga es más liviana.
@@ -231,7 +238,9 @@ export default function App() {
   // Alerta nueva (o que subió de nivel) que esta persona todavía no ha visto: aviso grande y vibración.
   const [, setVistas] = useState(0)
   const principal = alertaPrincipal(alertas.estado?.alertas ?? [])
-  const avisoPendiente = principal && !yaVista(principal) ? principal : null
+  // La Temprana Preventiva (aviso informativo, frecuente) va en la banda y ZUMI la cuenta; no tapa la pantalla.
+  // Pantalla completa solo desde Amarilla: así el aviso grande nunca se vuelve ruido y se sigue tomando en serio.
+  const avisoPendiente = principal && NIVELES[principal.nivel]?.gravedad >= 2 && !yaVista(principal) ? principal : null
   useEffect(() => {
     if (avisoPendiente) vibrar(avisoPendiente.nivel)
   }, [avisoPendiente?.id, avisoPendiente?.nivel]) // eslint-disable-line react-hooks/exhaustive-deps

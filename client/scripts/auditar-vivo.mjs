@@ -64,6 +64,12 @@ const paso = async (n, f) => {
   await p.getByText(/°/).first().waitFor({ timeout: 20000 }).catch(() => {})
   informe.tiempos.temperatura_visible_ms = Date.now() - t0
   await p.waitForTimeout(5000)
+  // si hay una alerta nueva a pantalla completa, primero se fotografía y se cierra (como haría una persona)
+  if (await p.getByRole('button', { name: 'Entendido' }).count()) {
+    await foto(p, '09-aviso-alerta')
+    await p.getByRole('button', { name: 'Entendido' }).first().click()
+    await p.waitForTimeout(1500)
+  }
   await foto(p, '10-ahora')
   informe.texto_ahora = (await p.locator('body').innerText()).slice(0, 3000)
   await paso('scroll', async () => {
@@ -111,6 +117,7 @@ const paso = async (n, f) => {
   await paso('zumi', async () => {
     await p.goto(url)
     await p.waitForTimeout(3000)
+    if (await p.getByRole('button', { name: 'Entendido' }).count()) await p.getByRole('button', { name: 'Entendido' }).first().click()
     await p.getByRole('button', { name: /Hablar con ZUMI/ }).first().click()
     await p.waitForTimeout(4000)
     await foto(p, '70-zumi')
