@@ -53,7 +53,7 @@ await prueba('Lo que se comenta', false, async () => {
   return { ok: r.status === 200, detalle: `HTTP ${r.status}` }
 })
 await prueba('Familia: enviar y recibir ubicación cifrada', true, async () => {
-  const id = () => Math.random().toString(36).slice(2, 12).padEnd(10, 'x')
+  const id = () => ('prueba' + Math.random().toString(36).slice(2)).padEnd(20, 'x').slice(0, 24)
   const g = id()
   const m = id()
   const p = await pedir(`/api/familia/${g}/${m}`, { method: 'PUT', body: JSON.stringify({ iv: 'AAAAAAAAAAAAAAAA', datos: 'cHJ1ZWJhLWRlLWNpZnJhZG8=' }) })
