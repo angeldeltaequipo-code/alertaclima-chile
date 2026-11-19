@@ -200,10 +200,11 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       ref={raiz}
       aria-label="ZUMI, tu amigo del clima"
       className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''} ${charm ? 'modo-charm' : ''}`}
-      style={{ height: alto ? `${alto}px` : 'calc(100svh - 9rem)' }}
+      // Charm: el alto mínimo es la pantalla; en celulares bajos crece (nunca se superpone nada).
+      style={charm ? { minHeight: alto ? `${alto}px` : 'calc(100svh - 9rem)', display: 'flex', flexDirection: 'column' } : { height: alto ? `${alto}px` : 'calc(100svh - 9rem)' }}
     >
       {charm ? (
-        <div className="absolute inset-x-0 top-0 z-[2]" style={{ bottom: hud ? `${hud}px` : '16rem' }}>
+        <div className="relative z-[2] flex flex-1 flex-col" style={alto && hud ? { '--cabe': `${alto - hud}px` } : undefined}>
           <ZumiCharm
             temperatura={ahora?.temperatura}
             llueve={escena === 'lluvia'}
@@ -266,7 +267,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       </button>}
 
       {/* Telemetría y acciones, sobre el video */}
-      <div ref={hudRef} className="portada-acciones hud-zumi absolute inset-x-0 bottom-0 z-[3] px-4 pb-1 text-white">
+      <div ref={hudRef} className={`portada-acciones hud-zumi ${charm ? 'relative' : 'absolute inset-x-0 bottom-0'} z-[3] px-4 pb-1 text-white`}>
         <div className="mb-3 flex items-end justify-between gap-3">
           {ahora?.temperatura != null && (
             <p className="cifra text-[84px]" aria-label={`${Math.round(ahora.temperatura)} grados`}>

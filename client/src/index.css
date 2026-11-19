@@ -1585,7 +1585,8 @@ body {
     #07080b;
 }
 .charm {
-  height: 100%;
+  flex: 1;
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1609,7 +1610,9 @@ body {
 }
 .charm-pantalla {
   position: relative;
-  width: clamp(150px, min(62vw, 34svh), 300px);
+  /* siempre cuadrada: se achica según el alto que quede (con banda de alerta, pantallas bajas) */
+  /* lo que cabe: el alto de la portada menos los controles de abajo y el globo/misión (todo a la vista) */
+  width: clamp(112px, min(60cqw, calc(var(--cabe, 30svh) - 11.5rem)), 290px);
   aspect-ratio: 1;
   border-radius: 34%;
   background: radial-gradient(80% 80% at 50% 35%, #1b1d24 0%, #0d0e12 70%);
@@ -1621,7 +1624,7 @@ body {
     0 0 0 7px rgba(255, 255, 255, 0.06),
     0 0 80px -10px rgba(255, 130, 60, 0.25);
   overflow: hidden;
-  flex-shrink: 1;
+  flex-shrink: 0;
 }
 .charm-sueno .charm-pantalla { background: radial-gradient(80% 80% at 50% 30%, #121a33 0%, #070a14 75%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 0 6px #17181d, 0 0 0 7px rgba(255,255,255,.06), 0 0 80px -10px rgba(110,140,255,.28); }
 .charm-alerta .charm-pantalla { box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 0 6px #17181d, 0 0 0 7px rgba(255,210,63,.35), 0 0 80px -10px rgba(255,210,63,.35); }
