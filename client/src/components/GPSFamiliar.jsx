@@ -112,6 +112,9 @@ function Bienvenida({ onCrear }) {
 
 /** Lo que la familia ve de alguien, en una línea: dónde está y desde cuándo. */
 function dondeEsta(m, lugares, comuna) {
+  const v = m.viaje
+  if (v?.d && !v.llego && Date.now() - v.t < 12 * 3600e3) return `🚗 Camino a ${v.d}${v.eta ? ` · llega ${hora(v.eta)}` : ''}${m.vel >= 8 ? ` · ${m.vel} km/h` : ''}`
+  if (v?.llego && Date.now() - v.llego < 3 * 3600e3) return `🏁 Llegó a ${v.d} a las ${hora(v.llego)}`
   const l = lugarDe(m, lugares)
   if (l) {
     const d = desdeCuando(m.id)

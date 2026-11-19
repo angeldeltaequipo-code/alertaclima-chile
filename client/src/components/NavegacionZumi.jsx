@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { calcularRuta, distanciaCorta, distanciaDicha, flecha, horaCL, prepararNavegacion, ubicarEnRuta } from '../services/ruta'
 import { callar, hablar } from '../services/narrador'
 import { NARRADOR } from '../services/viajes'
-import { leerGrupo, marcarEstado } from '../services/familiaGPS'
+import { compartirViaje, leerGrupo } from '../services/familiaGPS'
 
 const minus = (t) => t.charAt(0).toLowerCase() + t.slice(1)
 
@@ -16,7 +16,7 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
   const [mudo, setMudo] = useState(false)
   const [aviso, setAviso] = useState(null) // mensaje de ZUMI en pantalla
   const [estado, setEstado] = useState('navegando') // navegando | recalculando | llegaste
-  const [avisado, setAvisado] = useState(false)
+  const [familia] = useState(() => Boolean(leerGrupo()?.compartir) && !simular)
   const r = useRef({ dichos: new Set(), fuera: 0, inicio: Date.now(), descanso: Date.now(), ultimo: null, i: 0 })
   const mudoRef = useRef(mudo)
   mudoRef.current = mudo
@@ -43,10 +43,28 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Tu familia ve tu viaje en vivo (cifrado): destino y hora de llegada; al llegar, se le avisa solo.
+  useEffect(() => {
+    if (!familia) return
+    compartirViaje({ d: destino.nombre, eta: Date.now() + nav.segundos * 1000 })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!familia || estado !== 'navegando') return
+    const t = setInterval(() => compartirViaje({ d: destino.nombre, eta: Date.now() + ((nav.total - r.current.avance) / nav.total) * nav.segundos * 1000 }), 4 * 60e3)
+    return () => clearInterval(t)
+  }, [familia, estado, nav]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (estado === 'llegaste' && familia) compartirViaje({ llego: true })
+  }, [estado, familia])
+  const salir = () => {
+    if (familia && estado !== 'llegaste') compartirViaje(null)
+    onSalir()
+  }
+
   // Saludo de partida
   useEffect(() => {
     const llegada = new Date(Date.now() + nav.segundos * 1000)
-    decir(`¡Vamos a ${destino.nombre}! Son ${distanciaDicha(nav.total)} y llegamos cerca de las ${horaCL(llegada)}. ${nav.pasos[0]?.texto ?? ''}.`)
+    decir(`¡Vamos a ${destino.nombre}! Son ${distanciaDicha(nav.total)} y llegamos cerca de las ${horaCL(llegada)}.${familia ? ' Tu familia verá tu viaje.' : ''} ${nav.pasos[0]?.texto ?? ''}.`)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Posición: GPS real, o simulada para ver el recorrido antes de salir.
@@ -88,6 +106,7 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
     if (!pos || estado !== 'navegando') return
     const u = ubicarEnRuta(nav, pos, r.current.i)
     r.current.i = u.i
+    r.current.avance = u.avance
     setProg(u)
     // rumbo del mapa: el del GPS si te mueves; si no, el de la ruta
     const c = nav.coords
@@ -224,17 +243,8 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
 
         {estado === 'llegaste' ? (
           <div className="vidrio-solido safe-bottom mb-3 space-y-2 rounded-[26px] p-4">
-            {leerGrupo() && (
-              <button
-                type="button"
-                disabled={avisado}
-                onClick={() => marcarEstado('bien').then(() => setAvisado(true))}
-                className="boton-primario w-full text-[17px] disabled:opacity-60"
-              >
-                {avisado ? '✓ Tu familia sabe que llegaste' : 'Avisar a mi familia que llegué'}
-              </button>
-            )}
-            <button type="button" onClick={onSalir} className="boton-linea w-full text-[16px]">
+            {familia && <p className="text-center text-[15px] font-semibold text-[#3ddc84]">✓ Tu familia ya sabe que llegaste bien</p>}
+            <button type="button" onClick={onSalir} className="boton-primario w-full text-[16px]">
               Terminar
             </button>
           </div>
@@ -247,7 +257,7 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
             <div className="min-w-0 flex-1">
               <p className="mono text-[22px] leading-none font-semibold">{horaCL(llegada)}</p>
               <p className="mono mt-1 text-[12.5px] text-white/60">
-                {distanciaCorta(resta)} · {Math.round(segRestantes / 60)} min{simular ? ' · VISTA PREVIA' : ''}
+                {distanciaCorta(resta)} · {Math.round(segRestantes / 60)} min{simular ? ' · VISTA PREVIA' : familia ? ' · FAMILIA VE TU VIAJE' : ''}
               </p>
             </div>
             <button type="button" onClick={() => (setMudo(!mudo), !mudo && callar())} aria-pressed={mudo} aria-label={mudo ? 'Activar la voz de ZUMI' : 'Silenciar a ZUMI'} className="boton-vidrio grid size-12 place-items-center rounded-full">
@@ -256,7 +266,7 @@ export default function NavegacionZumi({ ruta, destino, cond = [], onSeguir, onN
                 {mudo ? <path d="M22 9l-6 6M16 9l6 6" /> : <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14" />}
               </svg>
             </button>
-            <button type="button" onClick={onSalir} className="grid min-h-12 place-items-center rounded-full bg-[#ff3b30] px-4 text-[15px] font-semibold text-white">
+            <button type="button" onClick={salir} className="grid min-h-12 place-items-center rounded-full bg-[#ff3b30] px-4 text-[15px] font-semibold text-white">
               Salir
             </button>
           </div>

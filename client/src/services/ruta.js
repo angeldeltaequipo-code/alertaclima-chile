@@ -66,7 +66,35 @@ export async function buscarDireccion(texto, { signal } = {}) {
   return (await r.json()).map((x) => ({ id: `o-${x.place_id}`, nombre: x.name || x.display_name.split(',')[0], sub: x.display_name.split(',').slice(1, 3).join(',').trim(), lat: Number(x.lat), lng: Number(x.lon), tipo: 'direccion' }))
 }
 
+// ---- Destinos recientes (en el teléfono) ----
+const K_RECIENTES = 'ac:ruta-recientes'
+export function recientes() {
+  try {
+    return JSON.parse(localStorage.getItem(K_RECIENTES) ?? '[]')
+  } catch {
+    return []
+  }
+}
+export function anotarReciente(d) {
+  try {
+    const l = [{ id: d.id, nombre: d.nombre, sub: d.sub, lat: d.lat, lng: d.lng, tipo: d.tipo }, ...recientes().filter((x) => x.id !== d.id && x.nombre !== d.nombre)].slice(0, 6)
+    localStorage.setItem(K_RECIENTES, JSON.stringify(l))
+  } catch {
+    /* sin almacenamiento */
+  }
+}
+
 // ---- Calcular la ruta ----
+/** La ruta principal y hasta dos alternativas (para comparar por tiempo y por clima). */
+export async function calcularRutas(origen, destino, { signal } = {}) {
+  const u = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&alternatives=2&steps=true`
+  const r = await fetch(u, { signal })
+  if (!r.ok) throw new Error('No pude calcular la ruta')
+  const d = await r.json()
+  if (!d.routes?.length) throw new Error('No encontré un camino en auto hasta ahí')
+  return d.routes.map(convertirRuta)
+}
+
 export async function calcularRuta(origen, destino, { signal } = {}) {
   const rumbo = origen.rumbo != null ? `&bearings=${Math.round(origen.rumbo)},60;` : ''
   const u = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&alternatives=false&steps=true${rumbo}`
@@ -75,6 +103,10 @@ export async function calcularRuta(origen, destino, { signal } = {}) {
   const d = await r.json()
   const ruta = d.routes?.[0]
   if (!ruta) throw new Error('No encontré un camino en auto hasta ahí')
+  return convertirRuta(ruta)
+}
+
+function convertirRuta(ruta) {
   const pasos = (ruta.legs?.[0]?.steps ?? []).map((p) => ({
     tipo: p.maneuver.type,
     mod: p.maneuver.modifier ?? null,
@@ -87,7 +119,11 @@ export async function calcularRuta(origen, destino, { signal } = {}) {
     metros: p.distance,
     segundos: p.duration,
   }))
-  return { coords: ruta.geometry.coordinates, metros: ruta.distance, segundos: ruta.duration, pasos }
+  // la vía principal de la ruta (la más larga): «por Ruta 5 Sur»
+  const vias = new Map()
+  for (const p of pasos) if (p.nombre || p.ref) vias.set(p.ref || p.nombre, (vias.get(p.ref || p.nombre) ?? 0) + p.metros)
+  const via = [...vias].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+  return { coords: ruta.geometry.coordinates, metros: ruta.distance, segundos: ruta.duration, pasos, via: via && /^\d|^[A-Z]-?\d/.test(via) ? `Ruta ${via.split(';')[0]}` : via }
 }
 
 // ---- Navegación paso a paso ----
@@ -117,7 +153,7 @@ export function indicacion(p) {
     case 'depart':
       return `Sal${por || ' por el camino'}`
     case 'arrive':
-      return p.mod === 'left' ? 'Tu destino está a la izquierda' : p.mod === 'right' ? 'Tu destino está a la derecha' : 'Llegaste a tu destino'
+      return p.mod === 'left' ? 'Llegarás a tu destino, a la izquierda' : p.mod === 'right' ? 'Llegarás a tu destino, a la derecha' : 'Llegarás a tu destino'
     case 'roundabout':
     case 'rotary':
       return `En la rotonda, toma la ${ORDINAL[p.salida] ?? `salida ${p.salida}`}${p.salida && ORDINAL[p.salida] ? ' salida' : ''}${c ? ` hacia ${c}` : ''}`
@@ -265,7 +301,8 @@ export function mejorSalida(puntos, pron, segundos, ahora = new Date()) {
     const c = condiciones(puntos, pron, salida, segundos)
     const llegada = new Date(salida.getTime() + segundos * 1000)
     // la noche suma riesgo (menos visibilidad, más cansancio)
-    const noche = c.filter((x) => x.eta.getHours() >= 22 || x.eta.getHours() < 6).length * 0.3
+    // la noche solo pesa en viajes largos (cansancio y menos visibilidad por horas)
+    const noche = segundos > 2 * 3600 ? c.filter((x) => x.eta.getHours() >= 22 || x.eta.getHours() < 6).length * 0.3 : 0
     const puntaje = c.reduce((s, x) => s + (x.riesgo?.nivel ?? 0) ** 2, 0) + noche
     return { horas: h, salida, llegada, puntaje, peligro: c.some((x) => x.riesgo?.nivel === 2) }
   })
@@ -322,6 +359,6 @@ export function resumenZumi(destino, ruta, cond, mejor) {
     const p = atencion[0]
     clima = ` Atento a ${p.riesgo.motivos[0]} cerca de ${comunaCercana(p)?.nombre ?? 'la ruta'}.`
   } else clima = ' El camino se ve tranquilo, sin problemas de clima.'
-  const sugerencia = mejor && mejor.mejor.horas > 0 ? ` Si puedes, sal en ${mejor.mejor.horas} ${mejor.mejor.horas === 1 ? 'hora' : 'horas'}: el clima en la ruta estará mejor.` : ''
+  const sugerencia = mejor && mejor.mejor.horas > 0 && (peligros.length || atencion.length || ruta.segundos > 2 * 3600) && mejor.ahora.puntaje - mejor.mejor.puntaje >= 1 ? ` Si puedes, sal en ${mejor.mejor.horas} ${mejor.mejor.horas === 1 ? 'hora' : 'horas'}: el clima en la ruta estará mejor.` : ''
   return base + clima + sugerencia
 }

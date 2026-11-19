@@ -80,6 +80,21 @@ export function cambiarTelefono(tel) {
   guardarGrupo(g)
   reenviar()
 }
+/**
+ * Comparte con la familia el viaje en curso (cifrado): destino, hora de llegada y, al final, que llegó.
+ * v = { d: 'Linares', eta: ms } · { llego: true } · null para dejar de compartir.
+ */
+export function compartirViaje(v) {
+  const g = leerGrupo()
+  if (!g?.compartir) return false
+  if (v === null) g.viaje = null
+  else if (v.llego) g.viaje = { ...(g.viaje ?? {}), llego: Date.now(), t: Date.now() }
+  else g.viaje = { d: String(v.d).slice(0, 40), eta: v.eta, inicio: g.viaje?.d === v.d ? g.viaje.inicio : Date.now(), t: Date.now() }
+  guardarGrupo(g)
+  reenviar()
+  return true
+}
+
 /** Envía al tiro mi ubicación (después de un cambio que la familia debe ver). */
 export function reenviar() {
   if (!('geolocation' in navigator)) return
@@ -124,6 +139,7 @@ export async function enviarUbicacion(pos, extra = {}) {
     vel,
     tel: g.yo.tel || undefined,
     lugares: g.lugares?.l?.length ? g.lugares : undefined, // los lugares seguros viajan cifrados con cada uno
+    viaje: g.viaje && Date.now() - g.viaje.t < 12 * 3600e3 ? g.viaje : undefined, // «va camino a Linares, llega 21:45»
     t: Date.now(),
     estado,
     ...extra,

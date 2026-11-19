@@ -7,7 +7,9 @@ import IconoClima from './IconoClima'
 import {
   buscarDireccion,
   buscarLugares,
-  calcularRuta,
+  anotarReciente,
+  calcularRutas,
+  recientes,
   comunaCercana,
   condiciones,
   descansos,
@@ -23,6 +25,7 @@ import {
 import { hablar } from '../services/narrador'
 import { lazySeguro } from '../services/cargaSegura'
 import { Suspense } from 'react'
+import { lugaresFamilia } from '../services/familiaGPS'
 
 const NavegacionZumi = lazySeguro(() => import('./NavegacionZumi'))
 
@@ -48,6 +51,9 @@ function Buscador({ origen, onElegir, onCerrar }) {
   }, [q])
   const lista = [...locales, ...extra.filter((e) => !locales.some((l) => Math.abs(l.lat - e.lat) < 0.01 && Math.abs(l.lng - e.lng) < 0.01))]
   const SUGERIDOS = ['Valparaíso', 'La Serena', 'Pucón', 'Valle Nevado', 'Concepción', 'Paso Los Libertadores']
+  const mios = useMemo(() => lugaresFamilia().map((l) => ({ id: `f-${l.id}`, nombre: l.n, sub: 'Lugar de tu familia', lat: l.lat, lng: l.lng, tipo: 'mio', e: l.e })), [])
+  const antes = useMemo(() => recientes(), [])
+  const buscando = q.trim().length >= 2
   return (
     <div className="ruta-buscador fixed inset-0 z-[1200] bg-black/95 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4 text-white backdrop-blur-xl">
       <div className="mx-auto max-w-xl">
@@ -71,8 +77,36 @@ function Buscador({ origen, onElegir, onCerrar }) {
           </button>
         </div>
         <p className="rotulo mt-3 !text-white/55">Desde · {origen?.nombre ?? 'tu ubicación'}</p>
-        <ul className="mt-2 max-h-[75vh] divide-y divide-white/10 overflow-y-auto">
-          {(q.trim().length >= 2 ? lista : SUGERIDOS.flatMap((s) => buscarLugares(s, 1))).map((l) => (
+        {!buscando && mios.length > 0 && (
+          <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]" aria-label="Tus lugares">
+            {mios.map((l) => (
+              <button key={l.id} type="button" onClick={() => onElegir(l)} className="flex min-h-12 shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 text-[15px] font-semibold ring-1 ring-white/10 active:bg-white/20">
+                <span aria-hidden="true">{l.e}</span> {l.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+        {!buscando && antes.length > 0 && <p className="rotulo mt-4 !text-white/45">Recientes</p>}
+        {!buscando && antes.length > 0 && (
+          <ul className="mt-1 divide-y divide-white/10">
+            {antes.map((l) => (
+              <li key={`r-${l.id}`}>
+                <button type="button" onClick={() => onElegir(l)} className="flex min-h-13 w-full items-center gap-3 py-2 text-left active:bg-white/5">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-[14px]" aria-hidden="true">
+                    ↺
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[16px] font-semibold">{l.nombre}</span>
+                    <span className="block truncate text-[13px] text-white/55">{l.sub}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!buscando && <p className="rotulo mt-4 !text-white/45">Destinos populares</p>}
+        <ul className="mt-2 max-h-[60vh] divide-y divide-white/10 overflow-y-auto">
+          {(buscando ? lista : SUGERIDOS.flatMap((s) => buscarLugares(s, 1))).map((l) => (
             <li key={l.id}>
               <button type="button" onClick={() => onElegir(l)} className="flex min-h-14 w-full items-center gap-3 py-2 text-left active:bg-white/5">
                 <span className="mono w-14 shrink-0 text-[10px] tracking-[0.08em] text-white/45 uppercase">{l.tipo === 'comuna' ? 'Comuna' : l.tipo === 'direccion' ? 'Dirección' : 'Lugar'}</span>
@@ -94,6 +128,8 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
   const [destino, setDestino] = useState(null)
   const [estado, setEstado] = useState('buscar') // buscar → calculando → lista | error
   const [error, setError] = useState(null)
+  const [alternativas, setAlternativas] = useState([]) // [{ ruta, muestra, pron, riesgo }]
+  const [sel, setSel] = useState(0)
   const [datos, setDatos] = useState(null) // { ruta, muestra, pron }
   const [salidaH, setSalidaH] = useState(0)
   const [abierto, setAbierto] = useState(false)
@@ -107,10 +143,29 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
     ac.current?.abort()
     ac.current = new AbortController()
     try {
-      const ruta = await calcularRuta(origen, d, { signal: ac.current.signal })
-      const muestra = muestrear(ruta.coords)
-      const pron = await pronosticoPuntos(muestra.puntos, { signal: ac.current.signal }).catch(() => null)
-      setDatos({ ruta, muestra, pron })
+      anotarReciente(d)
+      const rutas = await calcularRutas(origen, d, { signal: ac.current.signal })
+      // clima de cada alternativa, en paralelo, para compararlas también por seguridad
+      const alts = await Promise.all(
+        rutas.map(async (ruta) => {
+          const muestra = muestrear(ruta.coords)
+          const pron = await pronosticoPuntos(muestra.puntos, { signal: ac.current.signal }).catch(() => null)
+          const c = pron ? condiciones(muestra.puntos, pron, new Date(), ruta.segundos) : []
+          const riesgo = c.reduce((m, x) => Math.max(m, x.riesgo?.nivel ?? 0), 0)
+          const puntos = c.reduce((s2, x) => s2 + (x.riesgo?.nivel ?? 0) ** 2, 0)
+          return { ruta, muestra, pron, riesgo, puntos }
+        }),
+      )
+      // recomendada: la más rápida, salvo que otra sea claramente más segura sin tardar mucho más
+      const rapida = alts[0]
+      let rec = 0
+      alts.forEach((a, i) => {
+        if (i && a.puntos + 1 < alts[rec].puntos && a.ruta.segundos < rapida.ruta.segundos * 1.25) rec = i
+      })
+      alts.forEach((a, i) => (a.recomendada = i === rec))
+      setAlternativas(alts)
+      setSel(rec)
+      setDatos(alts[rec])
       setSalidaH(0)
       setEstado('lista')
     } catch (e) {
@@ -233,6 +288,29 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
 
       {estado === 'lista' && datos && (
         <>
+          {alternativas.length > 1 && (
+            <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]" role="radiogroup" aria-label="Rutas posibles">
+              {alternativas.map((a, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="radio"
+                  aria-checked={sel === i}
+                  onClick={() => (setSel(i), setDatos(a))}
+                  className={`min-w-[9.5rem] shrink-0 rounded-2xl px-3 py-2 text-left ring-1 ${sel === i ? 'bg-white text-black ring-white' : 'bg-white/5 ring-white/15'}`}
+                >
+                  <span className="mono flex items-center gap-1.5 text-[10.5px] tracking-[0.06em] uppercase opacity-70">
+                    <span className="size-2 rounded-full" style={{ background: NIVEL[a.riesgo].color }} aria-hidden="true" />
+                    {a.recomendada ? 'Recomendada' : i === 0 ? 'Más rápida' : 'Alternativa'}
+                  </span>
+                  <span className="mt-0.5 block text-[17px] font-semibold">{duracion(a.ruta.segundos)}</span>
+                  <span className="block truncate text-[12.5px] opacity-70">
+                    {Math.round(a.ruta.metros / 1000)} km{a.ruta.via ? ` · por ${a.ruta.via}` : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="mt-3 grid grid-cols-3 gap-2 border-y border-white/10 py-3">
             <div>
               <p className="rotulo !text-[10px]">Distancia</p>

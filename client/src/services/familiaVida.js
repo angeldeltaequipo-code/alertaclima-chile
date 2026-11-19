@@ -103,6 +103,12 @@ export function detectarEventos(miembros, lugares = []) {
     const ahora = lugarDe(m, lugares)
     const a = antes[m.id]
     const quien = m.yo ? 'Llegaste' : `${m.nombre} llegó`
+    // viajes: «va camino a…» y «llegó bien a…» (también si recién lo vemos, si empezó hace poco)
+    const v = m.viaje
+    const reciente = (t) => t && Date.now() - t < 15 * 60e3
+    if (!m.yo && v?.inicio && v.inicio !== a?.viaje && !v.llego && (a !== undefined || reciente(v.inicio)))
+      nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, tipo: 'viaje', icono: '🚗', texto: `${m.nombre} va camino a ${v.d}${v.eta ? `, llega cerca de las ${new Date(v.eta).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}` : ''}` })
+    if (!m.yo && v?.llego && v.llego !== a?.llego && (a !== undefined || reciente(v.llego))) nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, tipo: 'llego', icono: '🏁', texto: `${m.nombre} llegó bien a ${v.d}` })
     if (a !== undefined) {
       if (ahora && a?.lugar !== ahora.id) nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, yo: m.yo, tipo: 'llego', lugar: ahora.n, icono: ahora.e, texto: `${quien} ${aLugar(ahora.n)}` })
       else if (!ahora && a?.lugar) {
@@ -112,7 +118,7 @@ export function detectarEventos(miembros, lugares = []) {
       if (m.bateria != null && m.bateria <= 15 && (a?.bateria ?? 100) > 15 && !m.yo)
         nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, tipo: 'bateria', icono: '🔋', texto: `A ${m.nombre} le queda ${m.bateria} % de batería` })
     }
-    antes[m.id] = { lugar: ahora?.id ?? null, desde: ahora ? (a?.lugar === ahora.id ? a.desde : m.t) : null, bateria: m.bateria }
+    antes[m.id] = { lugar: ahora?.id ?? null, desde: ahora ? (a?.lugar === ahora.id ? a.desde : m.t) : null, bateria: m.bateria, viaje: m.viaje?.inicio ?? null, llego: m.viaje?.llego ?? null }
   }
   ev.l = [...nuevos, ...ev.l].slice(0, 80)
   guardar(K_ESTADO, antes)
