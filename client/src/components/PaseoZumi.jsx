@@ -130,7 +130,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     let raf = 0
     let antes = performance.now()
     const paso = (ahora) => {
-      const dt = Math.min(0.1, (ahora - antes) / 1000)
+      const dt = Math.min(0.25, (ahora - antes) / 1000) // hasta 0,25 s: en celulares lentos se camina igual de rápido
       antes = ahora
       const m = mapa.current
       const k = teclas.current

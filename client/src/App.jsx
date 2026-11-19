@@ -1,12 +1,11 @@
 import Cosmos from './components/Cosmos'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { lazySeguro } from './services/cargaSegura'
+import AvisoAlerta from './components/AvisoAlerta' // fijo: el aviso de emergencia nunca espera una descarga
 import BandaEstado from './components/BandaEstado'
-import ControlRadar from './components/ControlRadar'
 import VistaAhora, { InformesClima } from './components/VistaAhora'
 import Navegacion from './components/Navegacion'
 import ListaReportes from './components/ListaReportes'
-import DetalleReporte from './components/DetalleReporte'
 import { useConexion } from './hooks/useConexion'
 import { useAhorro, useComunaGuardada, useLetra, useTema } from './hooks/usePreferencias'
 import { useRadar } from './hooks/useRadar'
@@ -15,24 +14,30 @@ import { useReportes } from './hooks/useReportes'
 import { useAlertas } from './hooks/useAlertas'
 import { useObservacion } from './hooks/useObservacion'
 import { useCamaras, useCamarasChile } from './hooks/useCamaras'
-import CamarasCercanas, { FichaCamara, VisorCamara } from './components/Camaras'
-import AvisoAlerta from './components/AvisoAlerta'
 import Resumen from './components/Resumen'
 import { useNotificaciones } from './hooks/useNotificaciones'
 import { useCuenta } from './hooks/useCuenta'
 import { useRiesgos } from './hooks/useRiesgos'
 import { useComunidad } from './hooks/useComunidad'
 import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
-import FichaVolcan from './components/FichaVolcan'
-import FichaSismo from './components/FichaSismo'
 import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
 const RutaZumi = lazySeguro(() => import('./components/RutaZumi'))
 const PaseoZumi = lazySeguro(() => import('./components/PaseoZumi'))
+// Lo que no se ve en la primera pantalla se descarga al necesitarlo (arranque más liviano en celulares lentos).
+const ControlRadar = lazySeguro(() => import('./components/ControlRadar'))
+const DetalleReporte = lazySeguro(() => import('./components/DetalleReporte'))
+const CamarasCercanas = lazySeguro(() => import('./components/Camaras'))
+const FichaCamara = lazySeguro(() => import('./components/Camaras').then((m) => ({ default: m.FichaCamara })))
+const VisorCamara = lazySeguro(() => import('./components/Camaras').then((m) => ({ default: m.VisorCamara })))
+const FichaVolcan = lazySeguro(() => import('./components/FichaVolcan'))
+const FichaSismo = lazySeguro(() => import('./components/FichaSismo'))
+const MiFamilia = lazySeguro(() => import('./components/MiFamilia'))
+const PanelRios = lazySeguro(() => import('./components/PanelRios'))
+const PanelEvacuacion = lazySeguro(() => import('./components/PanelEvacuacion'))
 const ControlesMapa = lazySeguro(() => import('./components/ControlesMapa'))
 const ViajeZumi = lazySeguro(() => import('./components/ViajeZumi'))
 const GPSFamiliar = lazySeguro(() => import('./components/GPSFamiliar'))
 import { fijarAmbiente } from './services/musica'
-import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
 const Planes = lazySeguro(() => import('./components/Planes'))
 import { BotonZumi } from './components/Zumi'
@@ -45,8 +50,6 @@ import { comunaPorCut } from './services/comunas'
 import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
 import { enlaceStreetView } from './services/fotos'
-import PanelRios from './components/PanelRios'
-import PanelEvacuacion from './components/PanelEvacuacion'
 import { obtenerEvacuacion } from './services/evacuacion'
 import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
@@ -477,11 +480,13 @@ export default function App() {
                       }}
                     />
                     <h3 className="rotulo pt-4">Las comunas donde viven · aunque no compartan ubicación</h3>
-                    <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
+                    <Suspense fallback={null}>
+                      <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
+                    </Suspense>
                   </>
                 }
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
-                camaras={<CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} />}
+                camaras={<Suspense fallback={null}><CamarasCercanas datos={camaras} comuna={comuna} onAbrir={setCamaraVisor} totalChile={camarasChile.total ? camarasChile.total + CAMARAS_OBSERVATORIOS.length : 0} onVerMapa={() => setVista('radar')} /></Suspense>}
                 onVerRios={() => buscarRios()}
               />
             )}
@@ -652,6 +657,7 @@ export default function App() {
                   {avisoUbicacion}
                 </p>
               )}
+              <Suspense fallback={null}>
               {evac ? (
                 <PanelEvacuacion evac={evac} punto={evac.punto ?? ubicacion} comuna={comuna?.nombre} onCerrar={() => setEvac(null)} />
               ) : rios ? (
@@ -676,6 +682,7 @@ export default function App() {
               ) : (
                 <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
               )}
+              </Suspense>
             </div>
           </div>
         </div>
@@ -777,7 +784,7 @@ export default function App() {
         </Suspense>
       )}
 
-      {camaraVisor && <VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} />}
+      {camaraVisor && <Suspense fallback={null}><VisorCamara camara={camaraVisor} onCerrar={() => setCamaraVisor(null)} /></Suspense>}
 
       {aviso && (
         <div role="status" className="pointer-events-none fixed inset-x-0 top-3 z-[1100] flex justify-center px-4">
