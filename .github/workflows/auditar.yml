@@ -1,0 +1,22 @@
+name: Auditar app publicada
+on:
+  workflow_dispatch:
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar Playwright
+        run: cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: Recorrer la app como una persona nueva
+        run: cd client && node scripts/auditar-vivo.mjs "https://angeldeltaequipo-code.github.io/alertaclima-chile/" ../auditoria
+      - name: Lighthouse (celular)
+        run: npx -y lighthouse@12.2.1 "https://angeldeltaequipo-code.github.io/alertaclima-chile/" --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile --output=json --output-path=auditoria/lighthouse.json --chrome-flags="--headless=new --no-sandbox" --quiet || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auditoria
+          path: auditoria
