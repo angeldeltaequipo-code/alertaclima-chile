@@ -56,7 +56,7 @@ export function BotonZumi({ onAbrir, traje }) {
     }
   }, [])
   return (
-    <div className={`pointer-events-none fixed right-3 bottom-[5.25rem] z-[900] flex items-end gap-2 transition-[transform,opacity] duration-300 ${(oculto && !hablando) || enEscena ? 'translate-x-[130%] opacity-0' : ''}`}>
+    <div className={`zumi-flotante pointer-events-none fixed right-3 bottom-[5.25rem] z-[900] flex items-end gap-2 transition-[transform,opacity] duration-300 ${(oculto && !hablando) || enEscena ? 'translate-x-[130%] opacity-0' : ''}`}>
       {globo && (
         <p className="globo-zumi pointer-events-auto max-w-[200px] rounded-2xl rounded-br-sm px-3 py-2 text-[14px] leading-snug font-bold">
           ¡Hola! Soy {NOMBRE}. Tócame y te cuento cómo está el clima.

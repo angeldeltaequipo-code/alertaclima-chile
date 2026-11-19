@@ -238,6 +238,7 @@ export default function Mapa({
   viaje = null,
   familia = [],
   ruta = null,
+  seguir = null,
 }) {
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
@@ -891,6 +892,35 @@ export default function Mapa({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ruta])
+
+  // ---- Navegación: la cámara te sigue, inclinada y girando con tu rumbo, con tu flecha ----
+  const marcaNav = useRef(null)
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      if (!seguir) {
+        marcaNav.current?.remove()
+        marcaNav.current = null
+        return
+      }
+      if (!marcaNav.current) {
+        const el = document.createElement('div')
+        el.className = 'nav-yo'
+        el.innerHTML = '<b></b>'
+        marcaNav.current = new maplibregl.Marker({ element: el, rotationAlignment: 'map', pitchAlignment: 'map' }).setLngLat([seguir.lng, seguir.lat]).addTo(mapa)
+      }
+      marcaNav.current.setLngLat([seguir.lng, seguir.lat]).setRotation(0)
+      mapa.easeTo({
+        center: [seguir.lng, seguir.lat],
+        bearing: seguir.rumbo ?? mapa.getBearing(),
+        pitch: 58,
+        zoom: 16.6,
+        padding: { top: Math.round(window.innerHeight * 0.3), bottom: Math.round(window.innerHeight * 0.18), left: 0, right: 0 },
+        duration: calma() ? 0 : 950,
+        easing: (t) => t,
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seguir?.lat, seguir?.lng, seguir?.rumbo, Boolean(seguir)])
 
   // ---- Viaje: vuela al lugar en 3D, con satélite, y gira lento alrededor (como un dron) ----
   useEffect(() => {

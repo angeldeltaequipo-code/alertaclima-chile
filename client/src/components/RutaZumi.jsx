@@ -13,8 +13,6 @@ import {
   descansos,
   diaCL,
   duracion,
-  enlaceGoogle,
-  enlaceWaze,
   horaCL,
   mejorSalida,
   muestrear,
@@ -23,6 +21,10 @@ import {
   resumenZumi,
 } from '../services/ruta'
 import { hablar } from '../services/narrador'
+import { lazySeguro } from '../services/cargaSegura'
+import { Suspense } from 'react'
+
+const NavegacionZumi = lazySeguro(() => import('./NavegacionZumi'))
 
 const NIVEL = [
   { texto: 'Camino tranquilo', color: '#3ddc84' },
@@ -88,13 +90,14 @@ function Buscador({ origen, onElegir, onCerrar }) {
   )
 }
 
-export default function RutaZumi({ origen, onRuta, onCerrar }) {
+export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {} }) {
   const [destino, setDestino] = useState(null)
   const [estado, setEstado] = useState('buscar') // buscar → calculando → lista | error
   const [error, setError] = useState(null)
   const [datos, setDatos] = useState(null) // { ruta, muestra, pron }
   const [salidaH, setSalidaH] = useState(0)
   const [abierto, setAbierto] = useState(false)
+  const [navegando, setNavegando] = useState(null) // null | 'real' | 'simulada'
   const ac = useRef(null)
 
   const elegir = async (d) => {
@@ -167,6 +170,33 @@ export default function RutaZumi({ origen, onRuta, onCerrar }) {
     }
   }
 
+  // Recalculó en el camino: nueva ruta, nuevos puntos de clima
+  const nuevaRuta = (ruta) => {
+    const muestra = muestrear(ruta.coords)
+    setDatos((d) => ({ ...d, ruta, muestra, pron: null }))
+    pronosticoPuntos(muestra.puntos)
+      .then((pron) => setDatos((d) => (d.ruta === ruta ? { ...d, pron } : d)))
+      .catch(() => {})
+  }
+
+  if (navegando && datos)
+    return (
+      <Suspense fallback={null}>
+        <NavegacionZumi
+          ruta={datos.ruta}
+          destino={destino}
+          cond={cond}
+          simular={navegando === 'simulada'}
+          onSeguir={onSeguir}
+          onNuevaRuta={nuevaRuta}
+          onSalir={() => {
+            onSeguir(null)
+            setNavegando(null)
+          }}
+        />
+      </Suspense>
+    )
+
   if (estado === 'buscar') return createPortal(<Buscador origen={origen} onElegir={elegir} onCerrar={onCerrar} />, document.body)
 
   return createPortal(
@@ -195,9 +225,9 @@ export default function RutaZumi({ origen, onRuta, onCerrar }) {
       {estado === 'error' && (
         <div className="mt-3 mb-1">
           <p className="text-[15px] text-amber-200">{error}. Revisa tu conexión o prueba otro destino.</p>
-          <a href={enlaceGoogle(origen, destino)} target="_blank" rel="noopener" className="boton-linea mt-3 w-full text-[15px]">
-            Abrir en Google Maps
-          </a>
+          <button type="button" onClick={() => elegir(destino)} className="boton-linea mt-3 w-full text-[15px]">
+            Reintentar
+          </button>
         </div>
       )}
 
@@ -301,20 +331,23 @@ export default function RutaZumi({ origen, onRuta, onCerrar }) {
             </div>
           )}
 
-          <div className="mt-3 grid grid-cols-[1fr_1fr_auto] gap-2">
-            <a href={enlaceWaze(destino)} target="_blank" rel="noopener" className="boton-primario min-h-12 text-[15px]">
-              Ir con Waze
-            </a>
-            <a href={enlaceGoogle(origen, destino)} target="_blank" rel="noopener" className="boton-linea min-h-12 text-[15px]">
-              Google Maps
-            </a>
+          <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
+            <button type="button" onClick={() => setNavegando('real')} className="boton-primario min-h-13 text-[16px]">
+              <span className="onda-zumi" aria-hidden="true">
+                <i /><i /><i /><i />
+              </span>
+              Ir con ZUMI
+            </button>
+            <button type="button" onClick={() => setNavegando('simulada')} className="boton-linea min-h-13 px-4 text-[14px]" aria-label="Ver una vista previa del recorrido">
+              Vista previa
+            </button>
             <button type="button" onClick={compartir} aria-label="Compartir mi viaje con mi familia" className="boton-linea min-h-12 px-4">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" />
               </svg>
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-white/40">Rutas: OpenStreetMap (OSRM). Clima: Open-Meteo. Revisa siempre el estado de las rutas antes de salir.</p>
+          <p className="mt-2 text-[11px] text-white/40">ZUMI te guía por voz todo el camino. Rutas: OpenStreetMap. Clima: Open-Meteo. Mira el camino, no el teléfono.</p>
         </>
       )}
     </div>,

@@ -1490,3 +1490,19 @@ body {
 .pin-fam.sos { border-color: #ff3b30; color: #fff; background: #ff3b30; }
 .pin-fam i { position: absolute; bottom: -10px; font: 600 9.5px/1 'JetBrains Mono', monospace; font-style: normal; color: #000; background: var(--c); border-radius: 9999px; padding: 2px 4px; }
 .integrante { transition: border-color 0.2s; }
+
+/* ---- Navegación con ZUMI ---- */
+.nav-indicacion { background: #0b0b0d; border: 1px solid rgb(255 255 255 / 0.12); box-shadow: 0 16px 40px rgb(0 0 0 / 0.5); animation: ruta-baja 300ms var(--curva) both; }
+.nav-flecha { background: #3ddc84; color: #000; }
+.nav-zumi { box-shadow: 0 12px 30px rgb(0 0 0 / 0.45); animation: viaje-sube 300ms var(--curva) both; }
+.nav-yo { width: 34px; height: 34px; display: grid; place-items: center; }
+.nav-yo b { width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-bottom: 30px solid #fff; filter: drop-shadow(0 0 0 #000) drop-shadow(0 3px 6px rgb(0 0 0 / 0.6)); }
+.nav-yo::before { content: ''; position: absolute; inset: -14px; border-radius: 9999px; background: radial-gradient(closest-side, rgb(124 196 255 / 0.35), transparent); }
+/* Mientras ZUMI guía: solo el mapa y las indicaciones */
+:root.navegando .barra-nav,
+:root.navegando .cabecera,
+:root.navegando .zumi-flotante,
+:root.navegando .control-radar,
+:root.navegando .panel-mapa-inferior,
+:root.navegando .maplibregl-ctrl-top-right,
+:root.navegando .maplibregl-ctrl-bottom-right { visibility: hidden; }

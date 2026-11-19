@@ -68,13 +68,132 @@ export async function buscarDireccion(texto, { signal } = {}) {
 
 // ---- Calcular la ruta ----
 export async function calcularRuta(origen, destino, { signal } = {}) {
-  const u = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&alternatives=false&steps=false`
+  const rumbo = origen.rumbo != null ? `&bearings=${Math.round(origen.rumbo)},60;` : ''
+  const u = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson&alternatives=false&steps=true${rumbo}`
   const r = await fetch(u, { signal })
   if (!r.ok) throw new Error('No pude calcular la ruta')
   const d = await r.json()
   const ruta = d.routes?.[0]
   if (!ruta) throw new Error('No encontré un camino en auto hasta ahí')
-  return { coords: ruta.geometry.coordinates, metros: ruta.distance, segundos: ruta.duration }
+  const pasos = (ruta.legs?.[0]?.steps ?? []).map((p) => ({
+    tipo: p.maneuver.type,
+    mod: p.maneuver.modifier ?? null,
+    salida: p.maneuver.exit ?? null,
+    nombre: p.name || '',
+    ref: p.ref || '',
+    destinos: p.destinations || '',
+    lat: p.maneuver.location[1],
+    lng: p.maneuver.location[0],
+    metros: p.distance,
+    segundos: p.duration,
+  }))
+  return { coords: ruta.geometry.coordinates, metros: ruta.distance, segundos: ruta.duration, pasos }
+}
+
+// ---- Navegación paso a paso ----
+const ORDINAL = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta', 'séptima', 'octava']
+const LADO = {
+  uturn: 'da la vuelta en U',
+  'sharp right': 'gira cerrado a la derecha',
+  right: 'gira a la derecha',
+  'slight right': 'mantente a la derecha',
+  straight: 'sigue derecho',
+  'slight left': 'mantente a la izquierda',
+  left: 'gira a la izquierda',
+  'sharp left': 'gira cerrado a la izquierda',
+}
+const calle = (p) => {
+  const n = p.nombre && p.ref && !p.nombre.includes(p.ref) ? `${p.nombre} (${p.ref.split(';')[0]})` : p.nombre || (p.ref ? `la ${p.ref.split(';')[0]}` : '')
+  return n
+}
+/** La indicación en palabras: «Gira a la derecha en Avenida Brasil». */
+export function indicacion(p) {
+  const c = calle(p)
+  const en = c ? ` en ${c}` : ''
+  const por = c ? ` por ${c}` : ''
+  const lado = LADO[p.mod] ?? 'sigue'
+  const hacia = p.destinos ? ` hacia ${p.destinos.split(',')[0].split(':').pop().trim()}` : ''
+  switch (p.tipo) {
+    case 'depart':
+      return `Sal${por || ' por el camino'}`
+    case 'arrive':
+      return p.mod === 'left' ? 'Tu destino está a la izquierda' : p.mod === 'right' ? 'Tu destino está a la derecha' : 'Llegaste a tu destino'
+    case 'roundabout':
+    case 'rotary':
+      return `En la rotonda, toma la ${ORDINAL[p.salida] ?? `salida ${p.salida}`}${p.salida && ORDINAL[p.salida] ? ' salida' : ''}${c ? ` hacia ${c}` : ''}`
+    case 'exit roundabout':
+    case 'exit rotary':
+      return `Sal de la rotonda${por}`
+    case 'fork':
+      return `En la bifurcación, ${p.mod?.includes('left') ? 'mantente a la izquierda' : 'mantente a la derecha'}${hacia || por}`
+    case 'on ramp':
+      return `Toma la entrada${c ? ` a ${c}` : ''}${hacia}`
+    case 'off ramp':
+      return `Toma la salida${hacia || por}`
+    case 'merge':
+      return `Incorpórate${c ? ` a ${c}` : ' al camino'}`
+    case 'end of road':
+      return `Al final del camino, ${lado}${en}`
+    case 'new name':
+    case 'continue':
+      return p.mod && p.mod !== 'straight' ? `${lado[0].toUpperCase()}${lado.slice(1)}${por}` : `Sigue${por || ' derecho'}`
+    default:
+      return `${lado[0].toUpperCase()}${lado.slice(1)}${en}`
+  }
+}
+/** Ícono de la maniobra (flecha). */
+export function flecha(p) {
+  if (p.tipo === 'arrive') return '◉'
+  if (p.tipo === 'roundabout' || p.tipo === 'rotary') return '↻'
+  return { uturn: '↶', 'sharp right': '↱', right: '↱', 'slight right': '↗', straight: '↑', 'slight left': '↖', left: '↰', 'sharp left': '↰' }[p.mod] ?? '↑'
+}
+export const distanciaDicha = (m) => (m >= 950 ? `${(Math.round(m / 100) / 10).toString().replace('.', ',')} kilómetros` : `${m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10)} metros`)
+export const distanciaCorta = (m) => (m >= 950 ? `${(m / 1000).toFixed(1).replace('.', ',')} km` : `${m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10)} m`)
+
+/** Prepara la ruta para navegar: distancias acumuladas y en qué punto del trazado está cada maniobra. */
+export function prepararNavegacion(ruta) {
+  const c = ruta.coords
+  const acum = [0]
+  for (let i = 1; i < c.length; i++) acum.push(acum[i - 1] + km({ lat: c[i - 1][1], lng: c[i - 1][0] }, { lat: c[i][1], lng: c[i][0] }) * 1000)
+  let desde = 0
+  const pasos = ruta.pasos.map((p) => {
+    let mejor = desde
+    let d = Infinity
+    for (let i = desde; i < Math.min(c.length, desde + 4000); i++) {
+      const x = km(p, { lat: c[i][1], lng: c[i][0] })
+      if (x < d) {
+        d = x
+        mejor = i
+      }
+      if (d < 0.002) break
+    }
+    desde = mejor
+    return { ...p, metro: acum[mejor], texto: indicacion(p) }
+  })
+  return { coords: c, acum, total: acum.at(-1), pasos, segundos: ruta.segundos }
+}
+
+/** Dónde voy en la ruta: avance (metros), distancia a la ruta (m) y el índice del tramo. */
+export function ubicarEnRuta(nav, p, desde = 0) {
+  const { coords: c, acum } = nav
+  const cosLat = Math.cos((p.lat * Math.PI) / 180)
+  const X = (lng) => lng * 111320 * cosLat
+  const Y = (lat) => lat * 110540
+  const px = X(p.lng)
+  const py = Y(p.lat)
+  let mejor = { d: Infinity, avance: 0, i: desde }
+  const ini = Math.max(0, desde - 30)
+  const fin = Math.min(c.length - 1, desde + 1500)
+  for (let i = ini; i < fin; i++) {
+    const ax = X(c[i][0]), ay = Y(c[i][1]), bx = X(c[i + 1][0]), by = Y(c[i + 1][1])
+    const dx = bx - ax, dy = by - ay
+    const L = dx * dx + dy * dy || 1
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L))
+    const qx = ax + t * dx, qy = ay + t * dy
+    const d = Math.hypot(px - qx, py - qy)
+    if (d < mejor.d) mejor = { d, avance: acum[i] + t * (acum[i + 1] - acum[i]), i, lat: qy / 110540, lng: qx / (111320 * cosLat) }
+  }
+  return mejor
 }
 
 /** Puntos de control a lo largo de la ruta (cada ~40 km, máximo 14), con su avance (0..1). */

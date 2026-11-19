@@ -24,7 +24,7 @@ export default function ControlRadar({ radar, ahorro, enLinea }) {
   if (!abierto) {
     const actualP = cuadros[indice]
     return (
-      <div className="flex justify-start">
+      <div className="control-radar flex justify-start">
         <div className="flex items-center gap-1 rounded-full bg-superficie/95 p-1 pr-1.5 shadow-lg ring-1 ring-linea backdrop-blur">
           {actualP && (
             <button

@@ -146,6 +146,7 @@ export default function App() {
   const [viaje, setViaje] = useState(null)
   const [rutaAbierta, setRutaAbierta] = useState(false)
   const [rutaMapa, setRutaMapa] = useState(null)
+  const [navPos, setNavPos] = useState(null) // posición mientras ZUMI te guía
   // GPS familiar: invitación que llegó en el enlace, y ubicaciones para pintar en el mapa
   const [invitacionFamilia, setInvitacionFamilia] = useState(() => invitacionEnDireccion())
   const [familiaMapa, setFamiliaMapa] = useState([])
@@ -517,6 +518,7 @@ export default function App() {
                 viaje={viaje}
                 familia={familiaMapa}
                 ruta={rutaMapa}
+                seguir={navPos}
               />
             </Suspense>
             </Resguardo>
@@ -531,6 +533,7 @@ export default function App() {
               <RutaZumi
                 origen={ubicacion ? { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Tu ubicación' } : { lat: comuna?.centro?.[0], lng: comuna?.centro?.[1], nombre: comuna?.nombre }}
                 onRuta={setRutaMapa}
+                onSeguir={setNavPos}
                 onCerrar={() => {
                   setRutaAbierta(false)
                   setRutaMapa(null)
@@ -538,7 +541,7 @@ export default function App() {
               />
             </Suspense>
           )}
-          <Suspense fallback={null}>
+          {!navPos && <Suspense fallback={null}>
             <ControlesMapa
             relieve3d={relieve3d}
             onRelieve3d={(v) => {
@@ -586,7 +589,7 @@ export default function App() {
                 .catch((err) => setEvac((e) => (e ? { estado: 'error', error: err.message } : e)))
             }}
           />
-          </Suspense>
+          </Suspense>}
           <button
             type="button"
             onClick={ubicarme}
@@ -614,7 +617,7 @@ export default function App() {
               <span className="text-[10px] leading-tight font-black" aria-hidden="true">Avisar</span>
             </button>
           )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[500] p-3">
+          <div className="panel-mapa-inferior pointer-events-none absolute inset-x-0 bottom-0 z-[500] p-3">
             <div className="pointer-events-auto mx-auto max-w-xl space-y-2">
               {avisoUbicacion && (
                 <p role="alert" className="rounded-lg border-2 border-borde bg-superficie px-3 py-2 text-[15px]">
