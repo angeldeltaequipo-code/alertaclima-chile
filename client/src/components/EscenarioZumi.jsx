@@ -3,6 +3,8 @@
 // de una conversación por voz. El clima de ahora va encima, para leerlo de un vistazo.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ZumiCine from './ZumiCine'
+import ZumiCharm from './ZumiCharm'
+import { abrirFuncion } from './Funciones'
 import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
 import { PELICULAS, consejoDelDia } from '../services/cine'
@@ -154,6 +156,41 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   }, [])
   const bajar = () => raiz.current?.closest('#vista-ahora')?.scrollTo({ top: (alto || 600) - 8, behavior: 'smooth' })
 
+  // Charm (ZUMI vivo, dibujado) o Cine (videos). Charm por defecto; se recuerda la elección.
+  const [presencia, setPresencia] = useState(() => {
+    try {
+      return localStorage.getItem('ac:presencia-ahora') ?? 'charm'
+    } catch {
+      return 'charm'
+    }
+  })
+  const charm = presencia === 'charm'
+  const cambiarPresencia = (v) => {
+    setPresencia(v)
+    try {
+      localStorage.setItem('ac:presencia-ahora', v)
+    } catch {
+      /* sin almacenamiento */
+    }
+  }
+  const hudRef = useRef(null)
+  const [hud, setHud] = useState(0)
+  useEffect(() => {
+    const el = hudRef.current
+    if (!el) return
+    const medir = () => setHud(el.offsetHeight)
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const tocarCharm = () => {
+    if (principal && NIVELES[principal.nivel]?.gravedad >= 2) return 'Estoy atento a la alerta. Toca «Hablar con ZUMI» y te explico qué hacer.'
+    const [texto] = REACCIONES[toques.current % REACCIONES.length]
+    toques.current += 1
+    return texto
+  }
+
   const consejo = consejoDelDia(datos)
   const ahora = datos.ahora
   const globo = reaccion ?? (principal ? `${NIVELES[principal.nivel].etiqueta}: ${principal.amenaza}. Tócame y te explico qué hacer.` : frases[k % frases.length])
@@ -162,12 +199,41 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
     <section
       ref={raiz}
       aria-label="ZUMI, tu amigo del clima"
-      className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''}`}
+      className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''} ${charm ? 'modo-charm' : ''}`}
       style={{ height: alto ? `${alto}px` : 'calc(100svh - 9rem)' }}
     >
-      {/* ZUMI a pantalla completa, cara a cara: la cámara se acerca y los controles van sobre el video */}
-      <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.45]} encuadre={ENCUADRE} zoom={1.1} zona={0.66} className="escenario-zumi-lienzo" />
-      <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
+      {charm ? (
+        <div className="absolute inset-x-0 top-0 z-[2]" style={{ bottom: hud ? `${hud}px` : '16rem' }}>
+          <ZumiCharm
+            temperatura={ahora?.temperatura}
+            llueve={escena === 'lluvia'}
+            alerta={escena === 'alerta'}
+            globo={globo}
+            onTocar={tocarCharm}
+            onPreguntar={onPreguntar}
+            onAbrir={(f) => abrirFuncion(f)}
+            onLlamar={onLlamar}
+          />
+        </div>
+      ) : (
+        <>
+          {/* ZUMI a pantalla completa, cara a cara: la cámara se acerca y los controles van sobre el video */}
+          <ZumiCine escena={escena} estado="reposo" gesto={gesto} posicion={[0.5, 0.45]} encuadre={ENCUADRE} zoom={1.1} zona={0.66} className="escenario-zumi-lienzo" />
+          <div className="escenario-velo pointer-events-none absolute inset-0" aria-hidden="true" />
+        </>
+      )}
+
+      {/* Cómo ver a ZUMI: Charm (vivo, dibujado en tiempo real) o Cine (videos) */}
+      <div role="group" aria-label="Cómo ver a ZUMI" className="vidrio absolute top-3 left-[3.6rem] z-10 flex rounded-full p-1 text-[12.5px] font-semibold">
+        {[
+          ['charm', 'Charm'],
+          ['cine', 'Cine'],
+        ].map(([v, t]) => (
+          <button key={v} type="button" aria-pressed={presencia === v} onClick={() => cambiarPresencia(v)} className={`min-h-9 rounded-full px-3 ${presencia === v ? 'bg-white text-black' : 'text-white/80'}`}>
+            {t}
+          </button>
+        ))}
+      </div>
 
       {/* Música de fondo: encender / apagar */}
       <button
@@ -187,20 +253,20 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       </button>
 
       {/* Tocar a ZUMI */}
-      <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[20%] top-[14%] bottom-[44%] z-[1] rounded-[40%] focus-visible:outline-4" />
+      {!charm && <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[20%] top-[14%] bottom-[44%] z-[1] rounded-[40%] focus-visible:outline-4" />}
 
       {/* Lo que dice ZUMI */}
-      <button
+      {!charm && <button
         type="button"
         onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
         className="globo-escenario absolute top-3 right-3 left-[30%] z-[2] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug"
         aria-live="polite"
       >
         <span key={globo} className="globo-texto block">{globo}</span>
-      </button>
+      </button>}
 
       {/* Telemetría y acciones, sobre el video */}
-      <div className="portada-acciones hud-zumi absolute inset-x-0 bottom-0 z-[2] px-4 pb-1 text-white">
+      <div ref={hudRef} className="portada-acciones hud-zumi absolute inset-x-0 bottom-0 z-[3] px-4 pb-1 text-white">
         <div className="mb-3 flex items-end justify-between gap-3">
           {ahora?.temperatura != null && (
             <p className="cifra text-[84px]" aria-label={`${Math.round(ahora.temperatura)} grados`}>

@@ -1576,3 +1576,138 @@ body {
 }
 @keyframes paseo-llueve { to { background-position: -30px 120px; } }
 @media (prefers-reduced-motion: reduce) { .paseo-lluvia { animation: none; } }
+
+/* ---- ZUMI Charm: compañero vivo, dibujado en tiempo real ---- */
+.portada-zumi.modo-charm {
+  background:
+    radial-gradient(120% 70% at 50% 28%, rgba(255, 140, 70, 0.16), transparent 60%),
+    radial-gradient(90% 60% at 50% 100%, rgba(61, 220, 132, 0.08), transparent 70%),
+    #07080b;
+}
+.charm {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 3.6rem 1rem 0.6rem;
+  color: #fff;
+}
+.charm-globo {
+  max-width: 22rem;
+  min-height: 2.6em;
+  text-align: center;
+  font-size: 15.5px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.charm-pantalla {
+  position: relative;
+  width: clamp(150px, min(62vw, 34svh), 300px);
+  aspect-ratio: 1;
+  border-radius: 34%;
+  background: radial-gradient(80% 80% at 50% 35%, #1b1d24 0%, #0d0e12 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 30px 60px -20px rgba(0, 0, 0, 0.8),
+    0 0 0 6px #17181d,
+    0 0 0 7px rgba(255, 255, 255, 0.06),
+    0 0 80px -10px rgba(255, 130, 60, 0.25);
+  overflow: hidden;
+  flex-shrink: 1;
+}
+.charm-sueno .charm-pantalla { background: radial-gradient(80% 80% at 50% 30%, #121a33 0%, #070a14 75%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 0 6px #17181d, 0 0 0 7px rgba(255,255,255,.06), 0 0 80px -10px rgba(110,140,255,.28); }
+.charm-alerta .charm-pantalla { box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 0 6px #17181d, 0 0 0 7px rgba(255,210,63,.35), 0 0 80px -10px rgba(255,210,63,.35); }
+.charm-lluvia .charm-pantalla { background: radial-gradient(80% 80% at 50% 30%, #18222e 0%, #0a0e14 75%); }
+.charm-cielo { position: absolute; inset: 0; pointer-events: none; }
+.charm-gotas {
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(100deg, transparent 0 11px, rgba(160, 200, 255, 0.35) 11px 12px, transparent 12px 26px);
+  background-size: 90px 90px;
+  animation: paseo-llueve 0.5s linear infinite;
+  opacity: 0.6;
+}
+.charm-estrellas {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(1.5px 1.5px at 20% 25%, #fff, transparent), radial-gradient(1px 1px at 70% 18%, #fff, transparent), radial-gradient(1.2px 1.2px at 85% 40%, #fff, transparent), radial-gradient(1px 1px at 35% 12%, #fff, transparent), radial-gradient(1.4px 1.4px at 12% 55%, #fff, transparent);
+  animation: charm-titila 3s ease-in-out infinite alternate;
+  opacity: 0.7;
+}
+@keyframes charm-titila { to { opacity: 0.35; } }
+.charm-zumi {
+  position: absolute;
+  inset: 6% 6% 0;
+  width: 88%;
+  height: 94%;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.charm-zumi:focus-visible { filter: drop-shadow(0 0 6px #3ddc84); }
+.charm-cuerpo { transform-origin: 100px 190px; animation: charm-respira 3.6s ease-in-out infinite; }
+@keyframes charm-respira { 50% { transform: scale(1.018, 0.985); } }
+.charm-sueno .charm-cuerpo { animation-duration: 5.5s; }
+.charm-cabeza { transform-origin: 100px 140px; transition: transform 0.35s cubic-bezier(.3,1.6,.5,1); }
+.charm-zumi.contento .charm-cabeza { transform: rotate(-6deg); }
+.charm-zumi.salta .charm-cuerpo { animation: charm-salta 0.6s cubic-bezier(.3,1.5,.5,1); }
+@keyframes charm-salta { 30% { transform: translateY(-14px) scale(0.97, 1.04); } 60% { transform: translateY(0) scale(1.05, 0.95); } }
+.charm-oreja { transform-box: fill-box; transform-origin: 50% 100%; animation: charm-oreja 7s ease-in-out infinite; }
+.charm-oreja.der { animation-delay: 3.4s; }
+@keyframes charm-oreja { 0%, 92%, 100% { transform: rotate(0); } 95% { transform: rotate(-12deg); } 97% { transform: rotate(6deg); } }
+.charm-cola { transform-origin: 140px 160px; animation: charm-cola 2.8s ease-in-out infinite; }
+@keyframes charm-cola { 50% { transform: rotate(7deg); } }
+.charm-frio .charm-cuerpo { animation: charm-tirita 0.18s linear infinite; }
+@keyframes charm-tirita { 0% { transform: translateX(-0.8px); } 50% { transform: translateX(0.8px); } 100% { transform: translateX(-0.8px); } }
+.charm-sudor { animation: charm-sudor 2.2s ease-in infinite; }
+@keyframes charm-sudor { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(18px); opacity: 0; } }
+.charm-zzz text { animation: charm-zzz 3s ease-in-out infinite; }
+.charm-zzz text:nth-child(2) { animation-delay: 0.6s; }
+.charm-zzz text:nth-child(3) { animation-delay: 1.2s; }
+@keyframes charm-zzz { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+.charm-aviso { transform-origin: 166px 34px; animation: charm-latido 1.4s ease-in-out infinite; }
+@keyframes charm-latido { 50% { transform: scale(1.15); } }
+.charm-paraguas { transform-origin: 150px 128px; animation: charm-cola 3.4s ease-in-out infinite; }
+.charm-corazones { position: absolute; inset: 0; pointer-events: none; }
+.charm-corazones i {
+  position: absolute; left: calc(30% + var(--i) * 8%); bottom: 40%;
+  font-style: normal; color: #ff6f91; font-size: 18px;
+  animation: charm-corazon 1.5s ease-out forwards;
+  animation-delay: calc(var(--i) * 90ms);
+  opacity: 0;
+}
+@keyframes charm-corazon { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-70px) scale(1.2); opacity: 0; } }
+.charm-nombre {
+  margin-top: -0.35rem;
+  font: 600 10.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55); padding: 6px 10px; border-radius: 999px; white-space: nowrap;
+}
+.charm-nivel { color: #ffd23f; }
+.charm-mision {
+  width: min(100%, 22rem);
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.55rem 0.55rem 0.55rem 0.95rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.charm-mision.hecha { border-color: rgba(61, 220, 132, 0.45); background: rgba(61, 220, 132, 0.08); }
+.charm-hecho {
+  min-height: 2.6rem; min-width: 4.4rem; padding: 0 0.9rem; border-radius: 999px;
+  background: #fff; color: #000; font-weight: 700; font-size: 14.5px;
+}
+.charm-mision.hecha .charm-hecho { background: #3ddc84; }
+@media (prefers-reduced-motion: reduce) {
+  .charm-cuerpo, .charm-oreja, .charm-cola, .charm-gotas, .charm-estrellas, .charm-sudor, .charm-zzz text, .charm-aviso, .charm-paraguas, .charm-frio .charm-cuerpo { animation: none !important; }
+}
+@media (max-height: 700px) {
+  .charm { gap: 0.45rem; padding-top: 3.3rem; }
+  .charm-globo { -webkit-line-clamp: 2; font-size: 14.5px; }
+}
