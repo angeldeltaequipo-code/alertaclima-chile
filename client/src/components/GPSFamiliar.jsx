@@ -99,7 +99,7 @@ function Bienvenida({ onCrear }) {
             ['E2E', 'Cifrado AES-256: ni nosotros podemos verla'],
           ].map(([k, t]) => (
             <li key={k} className="flex items-baseline gap-3 py-2">
-              <span className="mono w-14 shrink-0 text-[10.5px] tracking-[0.1em] text-white/45">{k}</span>
+              <span className="mono w-14 shrink-0 text-[10.5px] tracking-[0.1em] text-white/65">{k}</span>
               <span className="text-white/90">{t}</span>
             </li>
           ))}

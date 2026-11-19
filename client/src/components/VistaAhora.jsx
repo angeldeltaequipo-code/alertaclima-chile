@@ -50,7 +50,6 @@ export function InformesClima({ clima, obs, sismos, reportesLista, enLinea, onVe
   const { horas, dias } = datos
   const ahora = condicionesActuales(datos.ahora, obs)
   const prox12 = horas.slice(0, 12)
-  const hayLluvia = prox12.some((h) => h.lluvia > 0)
   const urgenteAluvion = riesgoAluvion(horas)?.nivel !== 'bajo'
   return (
     <div className="space-y-3">
@@ -145,7 +144,6 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
   const ahora = condicionesActuales(datos.ahora, obs)
   const prox12 = horas.slice(0, 12)
   const lluviaAhora = !ahora.medido && ahora.lluvia > 0
-  const hayLluvia = prox12.some((h) => h.lluvia > 0)
   // Con riesgo, la tarjeta de aluviones sube arriba; sin riesgo, queda más abajo.
   const urgenteAluvion = riesgoAluvion(horas)?.nivel !== 'bajo'
   const aluvion = <RiesgoAluvion horas={horas} onVerRios={onVerRios} />

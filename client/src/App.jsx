@@ -94,7 +94,7 @@ function unirCamaras(cerca = [], pais = []) {
 }
 
 export default function App() {
-  const [tema, setTema, temaVisible] = useTema()
+  const [tema, setTema] = useTema()
   const [letra, setLetra] = useLetra()
   const ahorro = useAhorro()
   const enLinea = useConexion()

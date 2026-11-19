@@ -4,8 +4,8 @@
 // No es Street View: es una maqueta 3D del lugar real, y lo dice.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import maplibregl from 'maplibre-gl'
-import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
+import * as maplibregl from 'maplibre-gl'
+import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { PASEOS, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
 import { buscarLugares, resolverDestino } from '../services/ruta'

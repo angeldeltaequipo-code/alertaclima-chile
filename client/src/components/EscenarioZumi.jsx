@@ -336,7 +336,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             {puedeLlamar ? 'Reporte' : 'Escuchar a ZUMI'}
           </button>
         </div>
-        <button type="button" onClick={bajar} className="rotulo mx-auto mt-1 flex min-h-7 items-center gap-1.5 !text-white/45" aria-label="Ver las funciones">
+        <button type="button" onClick={bajar} className="rotulo mx-auto mt-1 flex min-h-7 items-center gap-1.5 !text-white/65" aria-label="Ver las funciones">
           Funciones
           <svg width="12" height="12" viewBox="0 0 12 12" className="flecha-baja" aria-hidden="true">
             <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

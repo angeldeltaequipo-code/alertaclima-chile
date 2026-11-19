@@ -275,7 +275,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
               <button type="button" onClick={() => setPaso(1)} className="boton-primario mt-4 w-full text-[18px]">
                 Empezar gratis
               </button>
-              <p className="mono mt-2.5 text-center text-[10.5px] tracking-[0.1em] text-white/45">SIN TARJETA · SIN CREAR CUENTA · 30 SEGUNDOS</p>
+              <p className="mono mt-2.5 text-center text-[10.5px] tracking-[0.1em] text-white/65">SIN TARJETA · SIN CREAR CUENTA · 30 SEGUNDOS</p>
               <div className="mt-3 flex items-center justify-between text-[14px] font-bold text-white/65">
                 <button type="button" onClick={() => setConocer(true)} className="min-h-11 underline underline-offset-2">
                   ¿Qué hace AlertaClima?

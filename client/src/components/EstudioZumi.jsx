@@ -538,7 +538,7 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
 
           {llamada && oido && (
             <p className="oido-vivo mt-2 text-right text-[17px] leading-snug font-medium text-white/80" aria-live="polite">
-              <span className="rotulo mr-2 !text-white/45">Tú</span>
+              <span className="rotulo mr-2 !text-white/65">Tú</span>
               {oido}
             </p>
           )}

@@ -87,7 +87,7 @@ function Buscador({ origen, onElegir, onCerrar }) {
             ))}
           </div>
         )}
-        {!buscando && antes.length > 0 && <p className="rotulo mt-4 !text-white/45">Recientes</p>}
+        {!buscando && antes.length > 0 && <p className="rotulo mt-4 !text-white/65">Recientes</p>}
         {!buscando && antes.length > 0 && (
           <ul className="mt-1 divide-y divide-white/10">
             {antes.map((l) => (
@@ -105,12 +105,12 @@ function Buscador({ origen, onElegir, onCerrar }) {
             ))}
           </ul>
         )}
-        {!buscando && <p className="rotulo mt-4 !text-white/45">Destinos populares</p>}
+        {!buscando && <p className="rotulo mt-4 !text-white/65">Destinos populares</p>}
         <ul className="mt-2 max-h-[60vh] divide-y divide-white/10 overflow-y-auto">
           {(buscando ? lista : SUGERIDOS.flatMap((s) => buscarLugares(s, 1))).map((l) => (
             <li key={l.id}>
               <button type="button" onClick={() => onElegir(l)} className="flex min-h-14 w-full items-center gap-3 py-2 text-left active:bg-white/5">
-                <span className="mono w-14 shrink-0 text-[10px] tracking-[0.08em] text-white/45 uppercase">{l.tipo === 'comuna' ? 'Comuna' : l.tipo === 'direccion' ? 'Dirección' : 'Lugar'}</span>
+                <span className="mono w-14 shrink-0 text-[10px] tracking-[0.08em] text-white/65 uppercase">{l.tipo === 'comuna' ? 'Comuna' : l.tipo === 'direccion' ? 'Dirección' : 'Lugar'}</span>
                 <span className="min-w-0">
                   <span className="block truncate text-[16px] font-semibold">{l.nombre}</span>
                   <span className="block truncate text-[13px] text-white/55">{l.sub}</span>
@@ -434,7 +434,7 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
               </svg>
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-white/40">ZUMI te guía por voz todo el camino. Rutas: OpenStreetMap. Clima: Open-Meteo. Mira el camino, no el teléfono.</p>
+          <p className="mt-2 text-[11px] text-white/60">ZUMI te guía por voz todo el camino. Rutas: OpenStreetMap. Clima: Open-Meteo. Mira el camino, no el teléfono.</p>
         </>
       )}
     </div>,

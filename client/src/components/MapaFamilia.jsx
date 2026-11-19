@@ -1,10 +1,13 @@
 // El mapa vivo de la familia: cada integrante con su inicial y un anillo que dice si está en vivo,
 // los lugares seguros como círculos, y el recorrido de hoy del que elijas.
 import { useEffect, useRef } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
+import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { rastroDe } from '../services/familiaVida'
 import { colorDe } from './colorFamilia'
+
+maplibregl.setWorkerUrl(urlTrabajador)
 
 const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
 
