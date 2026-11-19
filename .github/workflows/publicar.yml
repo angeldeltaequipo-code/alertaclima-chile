@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
         working-directory: client
       # Control de calidad: si ZUMI empeora en su examen, no se publica.
+      - name: Revisión de código (variables sin definir, claves duplicadas, reglas de hooks)
+        run: cd client && npx oxlint
       - name: Examen de ZUMI
         run: node scripts/evaluar-zumi.mjs --minimo 90 && node scripts/evaluar-zumi.mjs --ciega
         working-directory: client
