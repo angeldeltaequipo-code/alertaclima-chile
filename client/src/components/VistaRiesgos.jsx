@@ -15,8 +15,8 @@ const num = (v, d = 1) => v.toLocaleString('es-CL', { maximumFractionDigits: d }
 const ir = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 /** Resumen de un vistazo: cada fila dice si hay algo de qué preocuparse y lleva a su detalle. */
-function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }) {
-  const filas = [
+function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos, consultando = false }) {
+  const filas0 = [
     {
       id: 't-tsunami',
       ok: !amenaza,
@@ -43,10 +43,15 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }
       texto: picos ? `Mucha gente habla de: ${picos}` : 'Nada fuera de lo normal',
     },
   ]
+  // Sin datos del servidor no se puede decir «OK»: se dice que no se pudo consultar (nunca una calma falsa).
+  const SIN = { 't-tsunami': 'shoa.cl', 't-sismos': 'sismologia.cl', 't-volcanes': 'sernageomin.cl' }
+  const filas = filas0.map((f) =>
+    datos || !SIN[f.id] ? f : { ...f, ok: null, enlace: `https://www.${SIN[f.id]}/`, texto: consultando ? 'Consultando…' : `No se pudo consultar ahora. Revisa ${SIN[f.id]}` },
+  )
   return (
     <section aria-labelledby="t-resumen-riesgos" className="riesgos-tierra relative overflow-hidden rounded-[28px] px-4 pt-5 pb-4 text-white">
       <div className="cielo-estrellas" aria-hidden="true" />
-      <img src={poseZumi(filas.every((f) => f.ok) ? 'ok' : 'alerta')} alt="" width="64" height="76" className="zumi-pose absolute top-3 right-3 h-[76px] w-auto" />
+      <img src={poseZumi(filas.some((f) => f.ok === false) ? 'alerta' : 'ok')} alt="" width="64" height="76" className="zumi-pose absolute top-3 right-3 h-[76px] w-auto" />
       <div className="relative">
         <p className="rotulo flex items-center gap-2 !text-white/60">
           <span className="punto-vivo" aria-hidden="true" /> Monitoreo en vivo
@@ -58,8 +63,8 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos }
           {filas.map((f) => (
             <li key={f.id}>
               <button type="button" onClick={() => (f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-14 w-full items-center gap-3 py-2.5 text-left active:bg-white/5">
-                <span className={`mono w-12 shrink-0 text-[10.5px] font-medium tracking-[0.08em] ${f.ok ? 'text-vivo' : 'text-amber-300'}`} aria-hidden="true">
-                  {f.ok ? '● OK' : '▲ OJO'}
+                <span className={`mono w-12 shrink-0 text-[10.5px] font-medium tracking-[0.08em] ${f.ok === null ? 'text-white/50' : f.ok ? 'text-vivo' : 'text-amber-300'}`} aria-hidden="true">
+                  {f.ok === null ? '○ —' : f.ok ? '● OK' : '▲ OJO'}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15.5px] font-semibold tracking-tight">{f.titulo}</span>
@@ -168,6 +173,7 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerS
         cercaUltimo={cerca[0] ?? null}
         volcanesNoticia={(volcanesNivel ?? []).filter((v) => v.noticia || v.origen === 'prensa').map((v) => v.nombre)}
         picos={picosTexto}
+        consultando={riesgos.cargando || (!riesgos.error && !datos)}
       />
 
       {informes}

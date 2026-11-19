@@ -1,6 +1,8 @@
 name: Auditar app publicada
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   auditar:
     runs-on: ubuntu-latest
@@ -16,6 +18,14 @@ jobs:
         run: cd client && node scripts/auditar-vivo.mjs "https://angeldeltaequipo-code.github.io/alertaclima-chile/" ../auditoria
       - name: Lighthouse (celular)
         run: npx -y lighthouse@12.2.1 "https://angeldeltaequipo-code.github.io/alertaclima-chile/" --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile --output=json --output-path=auditoria/lighthouse.json --chrome-flags="--headless=new --no-sandbox" --quiet || true
+      - name: Guardar resultados en la rama «auditoria»
+        run: |
+          cd auditoria
+          git init -q -b auditoria
+          git config user.name "auditoria-bot"
+          git config user.email "auditoria-bot@users.noreply.github.com"
+          git add -A && git commit -qm "Auditoría $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" auditoria
       - uses: actions/upload-artifact@v4
         with:
           name: auditoria

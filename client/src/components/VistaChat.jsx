@@ -1,3 +1,4 @@
+import EstoyBien from './EstoyBien'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import BotonGoogle from './BotonGoogle'
 import { useChat } from '../hooks/useChat'
@@ -182,16 +183,15 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
 
   if (!comuna) return null
 
-  if (cuenta.estado === 'desactivada' || cuenta.estado === 'cargando') {
+  if (cuenta.estado === 'cargando') {
     return (
       <div className="grid h-full place-items-center p-6 text-center">
-        <div>
-          <p className="text-[20px] font-bold">El chat de {comuna.nombre} estará disponible muy pronto</p>
-          <p className="mt-2 text-[16px] text-texto-2">Podrás conversar en tiempo real con tus vecinos durante una emergencia.</p>
-        </div>
+        <p className="rotulo">Conectando con {comuna.nombre}…</p>
       </div>
     )
   }
+  // Mientras el chat entre vecinos no está activo, esta pestaña igual sirve: ZUMI, familia y números de emergencia.
+  if (cuenta.estado === 'desactivada') return <ComunidadSinChat comuna={comuna} />
 
   if (cuenta.estado === 'sin-sesion') {
     return (
@@ -365,6 +365,54 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
         </div>
         {texto.length > LARGO_MAXIMO - 80 && <p className="mt-1 px-2 text-right text-[12px] text-texto-2">{LARGO_MAXIMO - texto.length} caracteres</p>}
       </form>
+    </div>
+  )
+}
+
+const PREGUNTAS = ['¿Va a llover hoy?', '¿Qué hago si tiembla?', '¿Hay alertas en mi comuna?', '¿Qué llevo en la mochila de emergencia?', '¿Cómo me preparo para un corte de luz?']
+const NUMEROS = [
+  ['131', 'Ambulancia (SAMU)'],
+  ['132', 'Bomberos'],
+  ['133', 'Carabineros'],
+  ['134', 'PDI'],
+]
+const preguntarZumi = (detalle) => window.dispatchEvent(new CustomEvent('ac:zumi', { detail: detalle }))
+
+function ComunidadSinChat({ comuna }) {
+  return (
+    <div className="h-full overflow-y-auto px-4 pt-4 pb-28">
+      <div className="mx-auto max-w-md space-y-4">
+        <section className="vidrio-solido rounded-[24px] p-4">
+          <p className="rotulo">Pregúntale a ZUMI · 24/7</p>
+          <h2 className="titulo-x mt-1 text-[26px] leading-tight">¿Qué necesitas saber?</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PREGUNTAS.map((q) => (
+              <button key={q} type="button" onClick={() => preguntarZumi({ pregunta: q })} className="boton-linea min-h-11 rounded-full px-3.5 text-left text-[14.5px]">
+                {q}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => preguntarZumi({ modo: 'llamada' })} className="boton-primario mt-4 min-h-13 w-full text-[16px]">
+            Llamar a ZUMI por voz
+          </button>
+        </section>
+
+        <EstoyBien compacto />
+
+        <section className="rounded-[22px] border border-linea p-4">
+          <p className="rotulo">Números de emergencia · toca para llamar</p>
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
+            {NUMEROS.map(([n, q]) => (
+              <a key={n} href={`tel:${n}`} className="flex min-h-14 items-center gap-3 rounded-[18px] border border-linea px-3 active:bg-white/5">
+                <span className="cifra text-[24px] font-bold text-peligro">{n}</span>
+                <span className="text-[13.5px] leading-tight text-texto-2">{q}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <p className="px-2 text-center text-[13.5px] text-texto-2">El chat en vivo entre vecinos de {comuna.nombre} se activa pronto. Mientras, ZUMI responde al instante.</p>
+      </div>
     </div>
   )
 }

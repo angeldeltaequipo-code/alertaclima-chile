@@ -149,7 +149,12 @@ export default function App() {
   useEffect(() => {
     const f = (e) => setPaseo(e.detail ?? true)
     window.addEventListener('ac:paseo', f)
-    return () => window.removeEventListener('ac:paseo', f)
+    const z = (e) => setZumi(e.detail ?? true)
+    window.addEventListener('ac:zumi', z)
+    return () => {
+      window.removeEventListener('ac:paseo', f)
+      window.removeEventListener('ac:zumi', z)
+    }
   }, [])
   const [rutaAbierta, setRutaAbierta] = useState(false)
   const [rutaMapa, setRutaMapa] = useState(null)

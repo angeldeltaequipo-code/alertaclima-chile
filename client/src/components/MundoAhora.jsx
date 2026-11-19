@@ -59,7 +59,9 @@ export default function MundoAhora({ alertas, punto, onIr = () => {} }) {
   const nivel = a ? NIVELES[a.nivel] : null
   const alerta = !alertas
     ? { tono: '#9b9ea6', texto: 'Consultando…', sub: 'SENAPRED' }
-    : a
+    : !a && alertas.tipo === 'sin_conexion'
+      ? { tono: '#9b9ea6', texto: 'Sin datos', sub: 'revisa senapred.cl' }
+      : a
       ? { tono: nivel.gravedad >= 3 ? '#ff5a5f' : nivel.gravedad === 2 ? '#ffd23f' : '#3ddc84', texto: nivel.etiqueta.replace('Alerta ', ''), sub: a.amenaza }
       : { tono: '#3ddc84', texto: 'Sin alertas', sub: 'SENAPRED · en vivo' }
 
@@ -92,7 +94,7 @@ export default function MundoAhora({ alertas, punto, onIr = () => {} }) {
 
   return (
     <section aria-label="Tu mundo ahora" className="flex gap-2">
-      <Senal tono={alerta.tono} rotulo="Alertas" texto={alerta.texto} sub={alerta.sub} onClick={() => onIr('riesgos')} vivo={Boolean(alertas)} />
+      <Senal tono={alerta.tono} rotulo="Alertas" texto={alerta.texto} sub={alerta.sub} onClick={() => onIr('riesgos')} vivo={alertas?.tipo === 'ok'} />
       <Senal tono={ll.tono} rotulo="Lluvia" texto={ll.texto} sub={ll.sub} onClick={() => onIr('radar')} vivo={lluvia?.estado === 'empieza' || lluvia?.estado === 'lloviendo'} />
       <Senal tono={fam.tono} rotulo="Familia" texto={fam.texto} sub={fam.sub} onClick={() => abrirFuncion('familia')} vivo={enVivo > 0 || Boolean(sos)} />
     </section>
