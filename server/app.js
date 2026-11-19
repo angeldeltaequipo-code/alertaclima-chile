@@ -1,3 +1,4 @@
+import { calleRouter } from './routes/calle.js'
 import { familiaRouter } from './routes/familia.js'
 import { zumiRouter } from './routes/zumi.js'
 import express from 'express'
@@ -34,6 +35,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use(express.json({ limit: '20kb' }))
 
   app.use('/api/salud', saludRouter)
+  app.use('/api/calle', calleRouter())
   app.use('/api/reportes', reportesRouter({ emitir: emitirReporte }))
   app.use('/api/fotos', fotosRouter({ emitir: emitirReporte }))
   app.use('/api/alertas', alertasRouter())

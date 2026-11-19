@@ -12,6 +12,7 @@ import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
 import { registrarEsri } from '../services/satelite'
+import { abrirCalle } from '../services/calle'
 
 maplibregl.setWorkerUrl(urlTrabajador)
 registrarEsri(maplibregl)
@@ -397,6 +398,9 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
           </button>
           <button type="button" onClick={() => setSatelite(!satelite)} aria-pressed={satelite} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
             {satelite ? '🛰️ Foto real' : '🗺️ Mapa'}
+          </button>
+          <button type="button" onClick={() => abrirCalle({ lat: yo.lat, lng: yo.lng, nombre: inicio.nombre })} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
+            📷 Calle real
           </button>
         </div>
         <div className="paseo-cruz grid grid-cols-3 grid-rows-2 gap-1.5" aria-label="Flechas para caminar">

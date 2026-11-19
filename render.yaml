@@ -12,6 +12,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: MAPILLARY_TOKEN # Vista de calle real (Mapillary, gratis). Se pega a mano en Environment.
+        sync: false
       - key: DATABASE_URL # Base de datos en Neon (gratis, no vence). Se pega a mano en Environment; no se versiona.
         sync: false
       - key: HASH_SECRET

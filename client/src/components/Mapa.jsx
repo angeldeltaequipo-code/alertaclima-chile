@@ -10,6 +10,7 @@ import { caucesCercanos } from '../services/rios'
 import { COLOR_VOLCAN } from '../services/riesgos'
 
 import { registrarEsri } from '../services/satelite'
+import { abrirCalle } from '../services/calle'
 
 maplibregl.setWorkerUrl(urlTrabajador)
 
@@ -986,6 +987,18 @@ export default function Mapa({
       {cerca && !seguir && (
         <button type="button" onClick={pasearAqui} className="boton-pasear-aqui absolute top-[19rem] right-3 z-[450] max-w-[9.5rem] rounded-2xl bg-black/80 px-3 py-2.5 text-left text-[13.5px] leading-tight font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,.45)] ring-1 ring-white/25 active:scale-[0.97]">
           🚶 Caminar aquí, a nivel de calle
+        </button>
+      )}
+      {cerca && !seguir && (
+        <button
+          type="button"
+          onClick={() => {
+            const c = ref.current.mapa?.getCenter()
+            if (c) abrirCalle({ lat: c.lat, lng: c.lng, nombre: viaje?.nombre })
+          }}
+          className="absolute top-[23.2rem] right-3 z-[450] max-w-[9.5rem] rounded-2xl bg-black/80 px-3 py-2.5 text-left text-[13.5px] leading-tight font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,.45)] ring-1 ring-white/25 active:scale-[0.97]"
+        >
+          📷 Ver la calle real
         </button>
       )}
     </div>

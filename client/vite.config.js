@@ -36,6 +36,8 @@ export default defineConfig({
       filename: 'sw.js',
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // La vista de calle (1 MB) solo se descarga si alguien la abre; no se guarda por adelantado.
+        globIgnores: ['**/VistaCalle-*'],
       },
     }),
   ],

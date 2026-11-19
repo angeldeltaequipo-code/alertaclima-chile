@@ -23,6 +23,7 @@ import { resumenParaZumi, ubicar, volcanesConNivel } from './services/comunidad'
 import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
 const RutaZumi = lazySeguro(() => import('./components/RutaZumi'))
 const PaseoZumi = lazySeguro(() => import('./components/PaseoZumi'))
+const VistaCalle = lazySeguro(() => import('./components/VistaCalle'))
 // Lo que no se ve en la primera pantalla se descarga al necesitarlo (arranque más liviano en celulares lentos).
 const ControlRadar = lazySeguro(() => import('./components/ControlRadar'))
 const DetalleReporte = lazySeguro(() => import('./components/DetalleReporte'))
@@ -156,14 +157,18 @@ export default function App() {
   // Viaja con ZUMI: lugar histórico al que vuela el mapa (null = sin viaje)
   const [viaje, setViaje] = useState(null)
   const [paseo, setPaseo] = useState(null)
+  const [calle, setCalle] = useState(null)
   useEffect(() => {
     const f = (e) => setPaseo(e.detail ?? true)
     window.addEventListener('ac:paseo', f)
     const z = (e) => setZumi(e.detail ?? true)
     window.addEventListener('ac:zumi', z)
+    const c = (e) => e.detail && setCalle(e.detail)
+    window.addEventListener('ac:calle', c)
     return () => {
       window.removeEventListener('ac:paseo', f)
       window.removeEventListener('ac:zumi', z)
+      window.removeEventListener('ac:calle', c)
     }
   }, [])
   const [rutaAbierta, setRutaAbierta] = useState(false)
@@ -550,6 +555,11 @@ export default function App() {
               />
             </Suspense>
             </Resguardo>
+          )}
+          {calle && (
+            <Suspense fallback={null}>
+              <VistaCalle punto={calle} onCerrar={() => setCalle(null)} />
+            </Suspense>
           )}
           {paseo && (
             <Suspense fallback={null}>
