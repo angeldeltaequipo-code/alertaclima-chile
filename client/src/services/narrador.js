@@ -164,10 +164,21 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
     avisar()
     // Película: ZUMI la actúa con su voz; si no se puede (sin escenario o sin sonido), la dice normal.
     if (frases[i]?.pelicula && reproductorPelicula) {
+      // ZUMI actúa la escena (video sin su audio) y la dice con SU voz de siempre, a ritmo normal:
+      // el audio grabado en las películas era otra voz y sonaba lento.
       pedir(i + 1)
+      const linea = paraVoz(textoDe(frases[i]))
+      const f = propia && !silencio ? await pedirFrase(linea).catch(() => null) : null
+      if (estado.frases !== frases) return false
       const hecho = await new Promise((ok) => {
         cortarPelicula = () => ok(true)
-        reproductorPelicula(frases[i].pelicula, { silencio }).then(ok, () => ok(false))
+        // sin la voz de ZUMI disponible, la película usa su propio audio (mejor que quedar mudo)
+        const video = reproductorPelicula(frases[i].pelicula, { silencio: silencio || Boolean(f) })
+        if (!f) return video.then(ok, () => ok(false))
+        reproducirFrase(f, linea).then(() => {
+          URL.revokeObjectURL(f.url)
+          ok(true)
+        })
       })
       cortarPelicula = null
       if (estado.frases !== frases) return false
