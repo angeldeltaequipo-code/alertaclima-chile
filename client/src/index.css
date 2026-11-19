@@ -1405,6 +1405,7 @@ body {
 .acento-vecinos { --acento: #3ddc84; }
 .acento-camaras { --acento: #7cc4ff; }
 .acento-espacio { --acento: #b9a4ff; }
+.acento-paseo { --acento: #3ddc84; }
 
 /* ---- Escenario de ZUMI: HUD sobre negro ---- */
 .hud-zumi .chip-escenario {
@@ -1519,3 +1520,59 @@ body {
 @media (prefers-reduced-motion: reduce) { .barra-historia { animation: none; } }
 .senal-ahora { border-color: color-mix(in srgb, var(--t) 35%, transparent); background: color-mix(in srgb, var(--t) 8%, var(--superficie)); transition: transform 0.15s var(--curva); }
 .senal-ahora:active { transform: scale(0.97); }
+
+/* ---- Pasea con ZUMI ---- */
+.paseo .maplibregl-ctrl-attrib { font-size: 10px; }
+.paseo-pin {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font: 600 12px/1 Inter, system-ui, sans-serif;
+  padding: 6px 10px 6px 22px;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.paseo-pin::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: var(--vivo, #3ddc84);
+}
+.paseo-flecha {
+  display: grid;
+  place-items: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 18px;
+  background: rgba(10, 12, 16, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 20px;
+  color: #fff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.paseo-flecha:active { background: rgba(61, 220, 132, 0.35); transform: scale(0.96); }
+.paseo-cuenta { animation: paseo-entra 0.35s ease-out; }
+@keyframes paseo-entra { from { opacity: 0; transform: translateY(-8px); } }
+.paseo-lluvia {
+  background-image: repeating-linear-gradient(105deg, rgba(200, 220, 255, 0.0) 0 9px, rgba(200, 220, 255, 0.28) 9px 10px, rgba(200, 220, 255, 0) 10px 23px);
+  background-size: 120px 120px;
+  animation: paseo-llueve 0.45s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes paseo-llueve { to { background-position: -30px 120px; } }
+@media (prefers-reduced-motion: reduce) { .paseo-lluvia { animation: none; } }

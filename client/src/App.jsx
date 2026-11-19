@@ -27,6 +27,7 @@ import FichaVolcan from './components/FichaVolcan'
 import FichaSismo from './components/FichaSismo'
 import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
 const RutaZumi = lazySeguro(() => import('./components/RutaZumi'))
+const PaseoZumi = lazySeguro(() => import('./components/PaseoZumi'))
 const ControlesMapa = lazySeguro(() => import('./components/ControlesMapa'))
 const ViajeZumi = lazySeguro(() => import('./components/ViajeZumi'))
 const GPSFamiliar = lazySeguro(() => import('./components/GPSFamiliar'))
@@ -144,6 +145,12 @@ export default function App() {
   const [relieve3d, setRelieve3d] = useState(() => leer('mapa:3d', false))
   // Viaja con ZUMI: lugar histórico al que vuela el mapa (null = sin viaje)
   const [viaje, setViaje] = useState(null)
+  const [paseo, setPaseo] = useState(null)
+  useEffect(() => {
+    const f = (e) => setPaseo(e.detail ?? true)
+    window.addEventListener('ac:paseo', f)
+    return () => window.removeEventListener('ac:paseo', f)
+  }, [])
   const [rutaAbierta, setRutaAbierta] = useState(false)
   const [rutaMapa, setRutaMapa] = useState(null)
   const [navPos, setNavPos] = useState(null) // posición mientras ZUMI te guía
@@ -524,6 +531,11 @@ export default function App() {
               />
             </Suspense>
             </Resguardo>
+          )}
+          {paseo && (
+            <Suspense fallback={null}>
+              <PaseoZumi lugar={paseo === true ? undefined : paseo} onCerrar={() => setPaseo(null)} />
+            </Suspense>
           )}
           {viaje && (
             <Suspense fallback={null}>

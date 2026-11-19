@@ -9,10 +9,18 @@ const FUNCIONES = [
   { id: 'vecinos', icono: '📣', titulo: 'Vecinos', rotulo: 'Red local', sub: 'Lo que ven cerca de ti', acento: 'vecinos' },
   { id: 'aire', icono: '🌫️', titulo: 'Aire', rotulo: 'MP2,5 · en vivo', sub: '¿Se puede respirar hoy?', acento: 'camaras' },
   { id: 'cielo', icono: '🚀', titulo: 'Espacio', rotulo: 'SpaceX · X', sub: 'Starship, Starlink y la Luna', acento: 'espacio' },
+  // abre a pantalla completa (no en hoja)
+  { id: 'paseo', icono: '🚶', titulo: 'Pasea en 3D', rotulo: 'Simulador · nuevo', sub: 'Camina por la Plaza de Linares con ZUMI', acento: 'paseo', ancho: true },
 ]
 
 // Íconos de línea, del mismo trazo que la barra inferior.
 const ICONO = {
+  paseo: (
+    <>
+      <circle cx="13" cy="4.5" r="1.8" />
+      <path d="M10 21l2-6 3 3v3M9 12l2.5-4.5 3.5 1 2 3M11.5 7.5L10 13l2 2" />
+    </>
+  ),
   familia: (
     <>
       <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
@@ -58,8 +66,8 @@ export default function Funciones({ familia, reportes, nReportes = 0, aire, ciel
     window.addEventListener('ac:abrir-funcion', f)
     return () => window.removeEventListener('ac:abrir-funcion', f)
   }, [])
-  const contenido = { familia, vecinos: reportes, aire, cielo }
-  const actual = FUNCIONES.find((f) => f.id === abierta)
+  const contenido = { familia, vecinos: reportes, aire, cielo, paseo: true }
+  const actual = FUNCIONES.find((f) => f.id === abierta && !f.ancho)
   const sub = (f) => (f.id === 'vecinos' && nReportes ? `${nReportes} avisos cerca de ti` : f.id === 'familia' && grupo ? 'Toca para ver dónde está cada uno' : f.sub)
 
   return (
@@ -75,8 +83,8 @@ export default function Funciones({ familia, reportes, nReportes = 0, aire, ciel
           <button
             key={f.id}
             type="button"
-            onClick={() => setAbierta(f.id)}
-            className={`funcion acento-${f.acento} entrar flex min-h-[9rem] flex-col items-start justify-between p-4 text-left`}
+            onClick={() => (f.ancho ? window.dispatchEvent(new CustomEvent('ac:paseo')) : setAbierta(f.id))}
+            className={`funcion acento-${f.acento} entrar flex ${f.ancho ? 'col-span-2 min-h-[6.5rem]' : 'min-h-[9rem]'} flex-col items-start justify-between p-4 text-left`}
             style={{ animationDelay: `${80 + i * 60}ms` }}
           >
             <span className="flex w-full items-start justify-between">
