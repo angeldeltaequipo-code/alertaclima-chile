@@ -19,8 +19,15 @@ registrarEsri(maplibregl)
 
 const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
 const SATELITE = 'esri://{z}/{y}/{x}' // con respaldo: donde falta la foto de cerca, se amplía la de más arriba
-const VEL = { caminar: 2.2, trotar: 7 } // metros por segundo (un poco más rápido que la vida real, para que no aburra)
-const GIRO = 70 // grados por segundo
+// Modos de recorrido, como en un juego de mundo abierto: cada uno con su cámara, velocidad y aceleración.
+// vmax en m/s (un poco más rápido que la vida real para que no aburra); zoom/pitch = la cámara.
+export const MODOS = {
+  pie: { nombre: 'A pie', icono: '🚶', vmax: 2.6, acel: 4, giro: 75, zoom: 18.6, pitch: 78 },
+  bici: { nombre: 'Bici', icono: '🚲', vmax: 8, acel: 4, giro: 62, zoom: 18.1, pitch: 77 },
+  auto: { nombre: 'Auto', icono: '🚗', vmax: 28, acel: 7, giro: 48, zoom: 17.2, pitch: 74 },
+  dron: { nombre: 'Dron', icono: '🛸', vmax: 85, acel: 18, giro: 45, zoom: 15.2, pitch: 70 },
+}
+const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
 const RADIO_CONTAR = 70 // metros: ZUMI cuenta un lugar al acercarse a esta distancia
 
 const leerVoz = () => {
@@ -46,18 +53,21 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   const [cuenta, setCuenta] = useState(null) // lo que ZUMI está contando
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
-  const [rapido, setRapido] = useState(false)
+  const [modo, setModo] = useState('pie')
+  const [tablero, setTablero] = useState({ kmh: 0, alt: null })
+  const vel = useRef(0) // velocidad actual (m/s), con aceleración y freno suaves
+  const modoElegido = useRef(false) // si la persona eligió un modo, no se cambia solo
   const [buscar, setBuscar] = useState(false)
   const [q, setQ] = useState('')
   const [satelite, setSatelite] = useState(true)
   const [contar, setContar] = useState(false) // tras la bienvenida, ZUMI empieza a contar lugares
   const [turno, setTurno] = useState(0) // un lugar a la vez: el siguiente espera a que termine el anterior
   const vozRef = useRef(voz)
-  const rapidoRef = useRef(rapido)
+  const modoRef = useRef(modo)
+  modoRef.current = modo
   vozRef.current = voz
   const inicioRef = useRef(inicio.id)
   inicioRef.current = inicio.id
-  rapidoRef.current = rapido
 
   // ---- El mapa a nivel de calle ----
   useEffect(() => {
@@ -100,7 +110,21 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
           primeraEtiqueta,
         )
       }
+      // Relieve real (montañas, valles): sin esto Torres del Paine se veía plano.
+      m.addSource('paseo-dem', { type: 'raster-dem', tiles: [DEM], tileSize: 256, maxzoom: 14, encoding: 'terrarium', attribution: 'Relieve: Mapzen, AWS Terrain Tiles' })
+      try {
+        m.setTerrain({ source: 'paseo-dem', exaggeration: 1.15 })
+      } catch {
+        /* sin relieve */
+      }
       aplicarBase(m, true)
+      // En la naturaleza (sin edificios cerca) se parte en Dron: a pie solo se vería el suelo de cerca.
+      m.once('idle', () => {
+        if (modoElegido.current) return
+        const capas3d = m.getStyle().layers.filter((l) => l.type === 'fill-extrusion').map((l) => l.id)
+        const edificios = capas3d.length ? m.queryRenderedFeatures({ layers: capas3d }).length : 0
+        if (edificios < 4) cambiarModo('dron', false)
+      })
       try {
         m.setSky({ 'sky-color': '#5b9be0', 'horizon-color': '#d9e9f7', 'fog-color': '#e6eef6', 'sky-horizon-blend': 0.7, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.35 })
       } catch {
@@ -129,18 +153,31 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   // ---- Caminar: flechas en pantalla, teclado (WASD / flechas) ----
   useEffect(() => {
     let raf = 0
+    let ultimoTablero = 0
     let antes = performance.now()
     const paso = (ahora) => {
       const dt = Math.min(0.25, (ahora - antes) / 1000) // hasta 0,25 s: en celulares lentos se camina igual de rápido
       antes = ahora
       const m = mapa.current
       const k = teclas.current
-      if (m && (k.adelante || k.atras || k.izq || k.der)) {
-        let rumbo = m.getBearing() + (k.der - k.izq) * GIRO * dt
-        const v = (k.adelante - k.atras) * (rapidoRef.current ? VEL.trotar : VEL.caminar)
+      const md = MODOS[modoRef.current]
+      // aceleración y freno suaves (inercia), como un vehículo de verdad
+      const meta = (k.adelante - k.atras) * md.vmax * (k.adelante ? 1 : 0.4)
+      const cambio = md.acel * dt * (meta === 0 ? 1.6 : 1)
+      vel.current += Math.max(-cambio, Math.min(cambio, meta - vel.current))
+      if (Math.abs(vel.current) < 0.05 && meta === 0) vel.current = 0
+      if (m && (vel.current || k.izq || k.der)) {
+        const giro = (k.der - k.izq) * md.giro * dt * (modoRef.current === 'auto' ? Math.min(1, 0.35 + Math.abs(vel.current) / 10) : 1)
+        const rumbo = m.getBearing() + giro
         const c = m.getCenter()
-        const n = v ? avanzar({ lat: c.lat, lng: c.lng }, rumbo, v * dt) : { lat: c.lat, lng: c.lng }
+        const n = vel.current ? avanzar({ lat: c.lat, lng: c.lng }, rumbo, vel.current * dt) : { lat: c.lat, lng: c.lng }
         m.jumpTo({ center: [n.lng, n.lat], bearing: rumbo })
+      }
+      if (ahora - ultimoTablero > 200) {
+        ultimoTablero = ahora
+        const c = m?.getCenter()
+        const alt = c && m.queryTerrainElevation ? m.queryTerrainElevation(c) : null
+        setTablero({ kmh: Math.round(Math.abs(vel.current) * 3.6), alt: alt == null ? null : Math.round(alt / 1.15) })
       }
       raf = requestAnimationFrame(paso)
     }
@@ -272,6 +309,14 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     if (mapa.current && listo) aplicarBase(mapa.current, satelite)
   }, [satelite, listo])
 
+  function cambiarModo(id, elegido = true) {
+    if (elegido) modoElegido.current = true
+    setModo(id)
+    const md = MODOS[id]
+    vel.current = Math.min(vel.current, md.vmax)
+    mapa.current?.easeTo({ zoom: md.zoom, pitch: md.pitch, duration: 1100 })
+  }
+
   function mirarA(l) {
     const m = mapa.current
     if (!m) return
@@ -291,7 +336,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     setClima(null)
     const nuevo = { id: p.id, nombre: p.nombre, lat: p.lat, lng: p.lng, rumbo: p.rumbo ?? 0 }
     setInicio(nuevo)
-    m?.jumpTo({ center: [p.lng, p.lat], bearing: nuevo.rumbo, pitch: 78, zoom: 18.6 })
+    m?.jumpTo({ center: [p.lng, p.lat], bearing: nuevo.rumbo, pitch: MODOS[modoRef.current].pitch, zoom: MODOS[modoRef.current].zoom })
   }
   const cambiarVoz = () => {
     const v = !voz
@@ -351,7 +396,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
 
       {/* Lo que cuenta ZUMI */}
       {cuenta && (
-        <div className="paseo-cuenta vidrio-solido absolute top-[4.6rem] right-3 left-3 mx-auto max-w-md rounded-[20px] p-3" aria-live="polite">
+        <div className="paseo-cuenta vidrio-solido absolute top-[7.4rem] right-3 left-3 mx-auto max-w-md rounded-[20px] p-3" aria-live="polite">
           <div className="flex gap-3">
             <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className="size-10 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1">
@@ -374,7 +419,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
 
       {/* Fotos reales de aquí */}
       {fotosVivas.length > 0 && (
-        <div className="absolute right-0 bottom-[12.6rem] left-0 px-3">
+        <div className="absolute right-0 bottom-[14.4rem] left-0 px-3">
           <p className="rotulo mb-1 !text-[9.5px] [text-shadow:0_1px_4px_#000]">Fotos reales tomadas aquí</p>
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
             {fotosVivas.slice(0, 10).map((f) => (
@@ -387,14 +432,27 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         </div>
       )}
 
+      {/* Tablero, como en un juego: velocidad, altura y modo */}
+      <div className="paseo-tablero pointer-events-none absolute right-4 bottom-[max(10.4rem,calc(env(safe-area-inset-bottom)+9.9rem))] text-right" aria-live="off">
+        <p className="cifra text-[38px] leading-none font-semibold tabular-nums [text-shadow:0_2px_10px_rgba(0,0,0,.6)]">{tablero.kmh}</p>
+        <p className="rotulo !text-[9.5px] [text-shadow:0_1px_4px_#000]">km/h · {MODOS[modo].nombre}</p>
+        {tablero.alt != null && <p className="mono mt-1 text-[11px] text-white/85 [text-shadow:0_1px_4px_#000]">{tablero.alt.toLocaleString('es-CL')} msnm</p>}
+      </div>
+
+      {/* Modo de recorrido */}
+      <div role="group" aria-label="Cómo recorrer" className="vidrio-solido absolute top-[max(4.3rem,calc(env(safe-area-inset-top)+3.8rem))] left-1/2 flex -translate-x-1/2 gap-0.5 rounded-full p-1 whitespace-nowrap">
+        {Object.entries(MODOS).map(([id, md]) => (
+          <button key={id} type="button" aria-pressed={modo === id} aria-label={md.nombre} onClick={() => cambiarModo(id)} className={`min-h-10 rounded-full px-3 text-[13px] font-semibold ${modo === id ? 'bg-white text-black' : 'text-white/85'}`}>
+            {md.icono}<span className="ml-1 max-[380px]:hidden">{md.nombre}</span>
+          </button>
+        ))}
+      </div>
+
       {/* Controles para caminar */}
       <div className="absolute right-0 bottom-0 left-0 flex items-end justify-between gap-3 p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="flex flex-col gap-2">
           <button type="button" onClick={cambiarVoz} aria-pressed={voz} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
             {voz ? '🔊 ZUMI habla' : '🔇 En silencio'}
-          </button>
-          <button type="button" onClick={() => setRapido(!rapido)} aria-pressed={rapido} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
-            {rapido ? '🏃 Trotando' : '🚶 Caminando'}
           </button>
           <button type="button" onClick={() => setSatelite(!satelite)} aria-pressed={satelite} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
             {satelite ? '🛰️ Foto real' : '🗺️ Mapa'}
@@ -421,7 +479,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         </div>
       </div>
       {proximo && (
-        <button type="button" onClick={() => mirarA(proximo)} className="vidrio-solido absolute right-3 bottom-[10rem] left-3 mx-auto max-w-md truncate rounded-full px-3 py-2 text-left text-[13px]">
+        <button type="button" onClick={() => mirarA(proximo)} className="vidrio-solido absolute right-28 bottom-[11.2rem] left-3 max-w-md truncate rounded-full px-3 py-2 text-left text-[13px]">
           Cerca: <b>{proximo.titulo}</b> · {proximo.m} m {ladoDe(yo.rumbo, rumboHacia(yo, proximo))}
         </button>
       )}

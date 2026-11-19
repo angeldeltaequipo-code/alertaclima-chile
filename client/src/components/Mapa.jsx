@@ -295,7 +295,8 @@ export default function Mapa({
       mapa.addSource('nubes', { type: 'raster', tiles: ['nubes://{z}/{y}/{x}'], tileSize: 256, maxzoom: 6, attribution: 'Nubes: GOES-Este, NASA GIBS' })
       // Bajo los nombres de ciudades, para que se sigan leyendo.
       const primerTexto = mapa.getStyle().layers.find((l) => l.type === 'symbol')?.id
-      mapa.addLayer({ id: 'nubes', type: 'raster', source: 'nubes', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.9, 'raster-fade-duration': 300 } }, primerTexto)
+      // Las nubes vienen del satélite meteorológico (resolución de km): de cerca se desvanecen para no tapar el lugar con una mancha borrosa.
+      mapa.addLayer({ id: 'nubes', type: 'raster', source: 'nubes', layout: { visibility: 'none' }, paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.9, 8.5, 0.35, 10, 0], 'raster-fade-duration': 300 } }, primerTexto)
 
       mapa.addSource('comuna', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       mapa.addLayer({ id: 'comuna-halo', type: 'line', source: 'comuna', paint: { 'line-color': '#000', 'line-opacity': 0.35, 'line-width': 5 } })

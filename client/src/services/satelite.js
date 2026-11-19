@@ -8,14 +8,14 @@ const maximoZona = new Map()
 const zona = (z, y, x) => `${Math.max(0, z - 6)}/${y >> 6}/${x >> 6}`
 async function teselaEsri(z, y, x, signal) {
   const conocido = maximoZona.get(zona(z, y, x))
-  for (let k = conocido != null && conocido < z ? z - conocido : 0; k <= 4 && z - k >= 0; k++) {
+  for (let k = conocido != null && conocido < z ? z - conocido : 0; k <= 7 && z - k >= 0; k++) {
     const zp = z - k
     const yp = y >> k
     const xp = x >> k
     try {
       const r = await fetch(URL_ESRI(zp, yp, xp), { signal })
       if (!r.ok) {
-        if (zp >= 16) maximoZona.set(zona(z, y, x), zp - 1)
+        if (zp >= 12) maximoZona.set(zona(z, y, x), zp - 1)
         continue
       }
       const blob = await r.blob()
@@ -31,7 +31,7 @@ async function teselaEsri(z, y, x, signal) {
       return await (await lienzo.convertToBlob({ type: 'image/jpeg', quality: 0.9 })).arrayBuffer()
     } catch (e) {
       if (e.name === 'AbortError') throw e
-      if (zp >= 16) maximoZona.set(zona(z, y, x), zp - 1) // sin foto a este nivel (Esri responde sin permiso CORS)
+      if (zp >= 12) maximoZona.set(zona(z, y, x), zp - 1) // sin foto a este nivel (Esri responde sin permiso CORS)
     }
   }
   throw new Error('Sin imagen satelital para esta zona')
