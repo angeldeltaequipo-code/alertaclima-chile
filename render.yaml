@@ -12,10 +12,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: alertaclima-db
-          property: connectionString
+      - key: DATABASE_URL # Base de datos en Neon (gratis, no vence). Se pega a mano en Environment; no se versiona.
+        sync: false
       - key: HASH_SECRET
         generateValue: true
       - key: CORS_ORIGINS
@@ -68,10 +66,4 @@ services:
         sync: false
       - key: CORREO_DESDE # Remitente de un dominio verificado en Resend, p. ej. "AlertaClima <hola@tudominio.cl>"
         sync: false
-
-databases:
-  - name: alertaclima-db
-    plan: free # Gratis por 30 días; después hay que pasarla a un plan pagado para no perder los datos.
-    region: virginia
-    databaseName: alertaclima
-    user: alertaclima
+# La base de datos ya no la crea Render (la gratis vencía a los 30 días): vive en Neon.

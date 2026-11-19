@@ -13,6 +13,14 @@ saludRouter.get('/', async (req, res) => {
     servicio: 'alertaclima',
     estado: db.ok ? 'ok' : 'degradado',
     baseDeDatos: db,
+    // Solo el nombre del servidor de la base (nunca usuario ni contraseña), para diagnosticar.
+    hostBase: (() => {
+      try {
+        return new URL(process.env.DATABASE_URL ?? '').hostname.replace(/^[^.]+/, (x) => x.slice(0, 6) + '…') || null
+      } catch {
+        return null
+      }
+    })(),
     hora: new Date().toISOString(),
   })
 })

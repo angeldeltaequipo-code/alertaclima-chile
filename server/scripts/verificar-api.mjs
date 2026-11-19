@@ -34,7 +34,7 @@ await prueba('Servidor vivo', true, async () => {
 await prueba('Base de datos', true, async () => {
   const r = await pedir('/api/salud')
   const db = r.cuerpo?.baseDeDatos
-  return { ok: Boolean(db?.ok), detalle: db?.ok ? 'conectada' : `sin conexión${db?.error ? `: ${String(db.error).slice(0, 120)}` : ''}` }
+  return { ok: Boolean(db?.ok), detalle: (db?.ok ? 'conectada' : `sin conexión${db?.error ? `: ${String(db.error).slice(0, 120)}` : ''}`) + ` · servidor de base: ${r.cuerpo?.hostBase ?? '?'}` }
 })
 await prueba('Alertas SENAPRED (Linares)', true, async () => {
   const r = await pedir(`/api/alertas?comuna=${LINARES}`)
