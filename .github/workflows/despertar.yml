@@ -1,0 +1,17 @@
+# Mantiene despierto el servidor gratuito de Render: si pasa 15 minutos sin visitas se duerme,
+# tarda casi un minuto en despertar y olvida las ubicaciones de las familias (están en memoria).
+# Un llamado cada 10 minutos lo mantiene listo. (Un solo servicio gratis encendido todo el mes
+# usa unas 744 de las 750 horas gratuitas de Render.)
+name: Despertar servidor
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Llamar al servidor
+        run: |
+          curl -fsS -m 90 -o /dev/null -w "HTTP %{http_code} en %{time_total}s\n" "${{ vars.API_URL || 'https://alertaclima-api.onrender.com' }}/api/salud" || echo "El servidor no respondió (puede estar despertando)"

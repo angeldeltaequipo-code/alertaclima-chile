@@ -27,6 +27,10 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - run: npm ci
         working-directory: client
+      # Control de calidad: si ZUMI empeora en su examen, no se publica.
+      - name: Examen de ZUMI
+        run: node scripts/evaluar-zumi.mjs --minimo 90 && node scripts/evaluar-zumi.mjs --ciega
+        working-directory: client
       - run: npm run build
         working-directory: client
         env:

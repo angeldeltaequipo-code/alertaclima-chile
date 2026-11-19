@@ -16,10 +16,10 @@ const COMUNAS = REGIONES_DATOS.flatMap((r) =>
   r.comunas.map((c) => ({ ...c, region: r.etiqueta, capital: CAPITAL[sinTildes(r.nombre)] ?? CAPITAL[sinTildes(r.nombreOficial ?? '')] })),
 )
 const porComuna = COMUNAS.map((c) => [
-  `en que region esta ${c.nombre}|donde queda ${c.nombre}|${c.nombre} de que region es|donde esta ${c.nombre}|ubicacion de ${c.nombre}`,
+  `en que region esta ${c.nombre}|donde queda ${c.nombre}|${c.nombre} de que region es|region de ${c.nombre}|ubicacion de ${c.nombre}`,
   () =>
     `${c.nombre} está en la ${c.region}${c.capital && sinTildes(c.capital) !== sinTildes(c.nombre) ? `, cuya capital es ${c.capital}` : c.capital ? ', y es su capital' : ''}. Si quieres, te cuento cómo está el clima allá: pregúntame cómo está el clima en ${c.nombre}.`,
-  { tema: 'chile' },
+  { tema: 'chile', estricta: true },
 ])
 
 const TODAS = [...emergencias, ...app, ...clima, ...zumi, ...chile, ...porComuna]
@@ -34,6 +34,29 @@ export function deMemoria(pregunta, ctx = {}) {
   if (!m) return null
   const e = TODAS[m.id]
   return { texto: respuestaDe(e, ctx), puntaje: m.puntaje, tema: e[2]?.tema ?? 'general', frase: m.frase }
+}
+
+/** Las mejores respuestas de la memoria para una pregunta (para dárselas a la IA como base verificada). */
+export function candidatos(pregunta, n = 4) {
+  return buscar(base, pregunta, n)
+    .filter((m) => m.puntaje >= 0.35)
+    .map((m) => ({ pregunta: m.frase, respuesta: String(respuestaDe(TODAS[m.id], {})), puntaje: Math.round(m.puntaje * 100) / 100 }))
+}
+
+/**
+ * Decide qué hacer, con calibración: responder si está seguro; si duda entre dos respuestas
+ * parecidas, preguntar «¿te refieres a…?» (un error seguro destruye la confianza; una pregunta no).
+ */
+export function decidir(pregunta, ctx = {}, { umbral = 0.7 } = {}) {
+  const [a, b] = buscar(base, pregunta, 2)
+  if (!a || a.puntaje < 0.55) return { tipo: 'nada' }
+  const ea = TODAS[a.id]
+  const duda = b && b.puntaje >= a.puntaje - (globalThis.__ZUMI_DUDA ?? 0.08) && a.puntaje < 0.9 && TODAS[b.id][1] !== ea[1]
+  if (duda) {
+    const bonito = (f) => f.charAt(0).toUpperCase() + f.slice(1)
+    return { tipo: 'aclarar', puntaje: a.puntaje, opciones: [a.frase, b.frase], texto: `Quiero entenderte bien: ¿me preguntas «${bonito(a.frase)}» o «${bonito(b.frase)}»? Dímelo con otras palabras y te respondo al tiro.` }
+  }
+  return { tipo: a.puntaje >= umbral ? 'responder' : 'quizas', puntaje: a.puntaje, frase: a.frase, tema: ea[2]?.tema ?? 'general', texto: respuestaDe(ea, ctx) }
 }
 
 const SUGERIR = {

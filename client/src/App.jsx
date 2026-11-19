@@ -27,6 +27,9 @@ import FichaVolcan from './components/FichaVolcan'
 import FichaSismo from './components/FichaSismo'
 import EscenarioZumi, { escenaDeZumi } from './components/EscenarioZumi'
 const RutaZumi = lazySeguro(() => import('./components/RutaZumi'))
+const ControlesMapa = lazySeguro(() => import('./components/ControlesMapa'))
+const ViajeZumi = lazySeguro(() => import('./components/ViajeZumi'))
+const GPSFamiliar = lazySeguro(() => import('./components/GPSFamiliar'))
 import { fijarAmbiente } from './services/musica'
 import MiFamilia from './components/MiFamilia'
 import { usePlan } from './hooks/usePlan'
@@ -41,14 +44,11 @@ import { comunaPorCut } from './services/comunas'
 import { hhmm } from './services/formato'
 import { leer, guardar } from './services/almacen'
 import { enlaceStreetView } from './services/fotos'
-import ControlesMapa from './components/ControlesMapa'
 import PanelRios from './components/PanelRios'
 import PanelEvacuacion from './components/PanelEvacuacion'
 import { obtenerEvacuacion } from './services/evacuacion'
 import { CAMARAS_OBSERVATORIOS } from './services/camarasObservatorios'
 import Resguardo from './components/Resguardo'
-import ViajeZumi from './components/ViajeZumi'
-import GPSFamiliar from './components/GPSFamiliar'
 import { abrirFuncion } from './components/Funciones'
 import { invitacionEnDireccion, leerGrupo, vigilarUbicacion } from './services/familiaGPS'
 import { vigiaFamiliar } from './services/familiaAlertas'
@@ -521,7 +521,11 @@ export default function App() {
             </Suspense>
             </Resguardo>
           )}
-          {viaje && <ViajeZumi lugar={viaje} onCambiar={setViaje} onCerrar={() => setViaje(null)} />}
+          {viaje && (
+            <Suspense fallback={null}>
+              <ViajeZumi lugar={viaje} onCambiar={setViaje} onCerrar={() => setViaje(null)} />
+            </Suspense>
+          )}
           {rutaAbierta && vista === 'radar' && (
             <Suspense fallback={null}>
               <RutaZumi
@@ -534,7 +538,8 @@ export default function App() {
               />
             </Suspense>
           )}
-          <ControlesMapa
+          <Suspense fallback={null}>
+            <ControlesMapa
             relieve3d={relieve3d}
             onRelieve3d={(v) => {
               guardar('mapa:3d', v)
@@ -581,6 +586,7 @@ export default function App() {
                 .catch((err) => setEvac((e) => (e ? { estado: 'error', error: err.message } : e)))
             }}
           />
+          </Suspense>
           <button
             type="button"
             onClick={ubicarme}

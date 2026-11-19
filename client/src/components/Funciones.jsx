@@ -1,6 +1,6 @@
 // Las 4 funciones bajo ZUMI: tarjetas grandes que abren cada función en pantalla completa (hoja).
 // Así la portada es solo ZUMI + 4 puertas, y cada función tiene espacio para ser una herramienta de verdad.
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Hoja from './Hoja'
 import { leerGrupo } from '../services/familiaGPS'
 
@@ -99,7 +99,9 @@ export default function Funciones({ familia, reportes, nReportes = 0, aire, ciel
       </div>
       {actual && (
         <Hoja titulo={actual.titulo} onCerrar={() => setAbierta(null)}>
-          <div className="space-y-3 px-4 pb-6">{contenido[actual.id]}</div>
+          <div className="space-y-3 px-4 pb-6">
+            <Suspense fallback={<p className="py-6 text-center text-[15px] text-texto-2">Cargando…</p>}>{contenido[actual.id]}</Suspense>
+          </div>
         </Hoja>
       )}
     </section>

@@ -90,15 +90,21 @@ export function detectarEventos(miembros, lugares = []) {
     ev.l = []
   }
   const nuevos = []
+  // Un lugar recién agregado: quien ya estaba dentro no «llegó» (se anota en silencio).
+  const conocidos = new Set(antes._lugares ?? [])
+  const primeraVez = !antes._lugares
+  for (const l of lugares) {
+    if (conocidos.has(l.id) || primeraVez) continue
+    for (const m of miembros) if (m.lat != null && antes[m.id] && lugarDe(m, [l])) antes[m.id] = { ...antes[m.id], lugar: l.id, desde: m.t }
+  }
+  antes._lugares = lugares.map((l) => l.id)
   for (const m of miembros) {
     if (m.lat == null || Date.now() - m.t > 6 * 3600e3) continue
     const ahora = lugarDe(m, lugares)
     const a = antes[m.id]
     const quien = m.yo ? 'Llegaste' : `${m.nombre} llegó`
     if (a !== undefined) {
-      // un lugar recién creado no cuenta como «llegada» de quien ya estaba ahí
-      const recien = ahora?.c && Date.now() - ahora.c < 5 * 60e3
-      if (ahora && a?.lugar !== ahora.id && !recien) nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, yo: m.yo, tipo: 'llego', lugar: ahora.n, icono: ahora.e, texto: `${quien} ${aLugar(ahora.n)}` })
+      if (ahora && a?.lugar !== ahora.id) nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, yo: m.yo, tipo: 'llego', lugar: ahora.n, icono: ahora.e, texto: `${quien} ${aLugar(ahora.n)}` })
       else if (!ahora && a?.lugar) {
         const l = lugares.find((x) => x.id === a.lugar)
         if (l) nuevos.push({ t: m.t, id: m.id, nombre: m.nombre, yo: m.yo, tipo: 'salio', lugar: l.n, icono: l.e, texto: `${m.yo ? 'Saliste' : `${m.nombre} salió`} ${deLugar(l.n)}` })

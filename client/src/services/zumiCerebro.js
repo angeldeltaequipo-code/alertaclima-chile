@@ -89,6 +89,13 @@ function esClimaEnVivo(pregunta) {
   return ['lluvia', 'temperatura', 'ropa', 'alerta', 'sismo', 'viento', 'sol', 'luna'].some((k) => QUIERE[k].test(t)) && !/por que|como funciona|explica|historia|que es (el|la|un|una)|que significa|que hago|como (me )?protej|consejo/.test(t)
 }
 
+/** Agrega la memoria verificada al contexto sin pasarse del límite que acepta el servidor (9.000 caracteres). */
+function conSaber(ctx, saber) {
+  const s = saber.map((x) => ({ pregunta: x.pregunta, respuesta: x.respuesta.slice(0, 420) }))
+  while (s.length && JSON.stringify({ ...ctx, saber: s }).length > 8800) s.pop()
+  return s.length ? { ...ctx, saber: s } : ctx
+}
+
 export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
   anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
   const S = (memoria ??= await cargarSaber())
@@ -101,19 +108,20 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
       /* sin red: sigue */
     }
   }
-  // 2. Lo de su memoria, si lo sabe con seguridad (emergencias, salud, Chile, la app…).
-  const m = S?.deMemoria(pregunta, { ...datos, nombre: datos.nombre })
-  const segura = m && m.puntaje >= 0.75 && m.tema !== 'clima'
+  // 2. Lo de su memoria, con calibración: responde si está seguro, pregunta si duda.
+  const m = S?.decidir(pregunta, { ...datos, nombre: datos.nombre }) ?? { tipo: 'nada' }
+  const segura = m.tipo === 'responder' && m.puntaje >= 0.75 && m.tema !== 'clima'
   // 3. El clima de ahora en su comuna, con datos en vivo.
   if (esClimaEnVivo(pregunta) && !segura) return { texto: responderSinIA(pregunta, datos), fuente: 'zumi', rapida: true }
-  if (m && m.puntaje >= 0.7) return { texto: m.texto, fuente: 'zumi', rapida: true }
+  if (m.tipo === 'responder') return { texto: m.texto, fuente: 'zumi', rapida: true }
   if (esPreguntaRapida(pregunta)) return { texto: responderSinIA(pregunta, datos), fuente: 'zumi', rapida: true }
   if (conCuenta && navigator.onLine && (await hayIA())) {
     try {
       const r = await fetch(`${API_URL}/api/zumi/preguntar`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...cabeceraSesion() },
-        body: JSON.stringify({ pregunta, contexto: armarContexto(datos), historial, memoria: resumenParaIA() }),
+        // la IA recibe además las respuestas verificadas de la memoria de ZUMI más parecidas (base para no inventar)
+        body: JSON.stringify({ pregunta, contexto: conSaber(armarContexto(datos), S?.candidatos(pregunta, 3) ?? []), historial, memoria: resumenParaIA() }),
         signal: AbortSignal.timeout(22000),
       })
       if (r.ok) {
@@ -131,8 +139,8 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
       /* sin red o lento: responde ZUMI solo */
     }
   }
-  // 4. Algo parecido en su memoria, o sus propias reglas; nunca «no sé».
-  if (m && m.puntaje >= 0.55) return { texto: m.texto, fuente: 'zumi' }
+  // 4. Algo parecido en su memoria (o pedir que lo diga de otra forma), o sus propias reglas; nunca «no sé».
+  if (m.tipo === 'quizas' || m.tipo === 'aclarar') return { texto: m.texto, fuente: 'zumi' }
   return { texto: responderSinIA(pregunta, datos), fuente: 'zumi' }
 }
 
