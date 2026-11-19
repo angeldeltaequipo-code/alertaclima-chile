@@ -35,15 +35,21 @@ export const VOCES_PRUEBA = ['Fenrir', 'Puck', 'Leda', 'Sadachbia', 'Laomedeia',
 
 /** Qué modelo generó la última frase (diagnóstico: distintos modelos suenan distinto). */
 export let ultimoModelo = null
-export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = VOZ_ZUMI() } = {}) {
+const SIN_METADATOS = new Set()
+export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, voz = VOZ_ZUMI(), solo } = {}) {
   let ultimoError = null
-  for (const model of MODELOS_GEMINI()) {
+  for (const model of solo ? [solo] : MODELOS_GEMINI()) {
+    // Algunos modelos no aceptan el estilo como metadato: se les da como instrucción hablada (no la leen).
+    const sinMeta = SIN_METADATOS.has(model)
+    const contenido = sinMeta
+      ? { type: 'text', text: `Di con la voz de un panda rojo joven, alegre, cariñoso y con mucha energía, en español latino: ${texto}` }
+      : { type: 'text', text: texto, annotations: [{ type: 'speech_metadata', style: estilo }] }
     const r = await fetchFn('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST',
       headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' },
       body: JSON.stringify({
         model,
-        input: [{ type: 'user_input', content: [{ type: 'text', text: texto, annotations: [{ type: 'speech_metadata', style: estilo }] }] }],
+        input: [{ type: 'user_input', content: [contenido] }],
         response_format: { type: 'audio' },
         generation_config: { speech_config: [{ voice: voz }] },
       }),
@@ -52,6 +58,10 @@ export async function vozGemini(texto, { fetchFn = fetch, estilo = ESTILO_ZUMI, 
     if (!r.ok) {
       ultimoError = new Error(`Gemini ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
       console.warn(`Voz: el modelo ${model} falló (${ultimoError.message.slice(0, 120)})`)
+      if (r.status === 400 && !sinMeta && /speech metadata is not supported/i.test(ultimoError.message)) {
+        SIN_METADATOS.add(model)
+        return vozGemini(texto, { fetchFn, estilo, voz, solo: model })
+      }
       if (r.status === 404 || r.status === 400 || r.status === 429) continue // otro modelo (o sin cupo en este): misma voz
       throw ultimoError
     }
