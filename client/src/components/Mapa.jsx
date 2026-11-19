@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -213,6 +213,7 @@ export default function Mapa({
   const caja = useRef(null)
   const ref = useRef({ mapa: null, listo: false, pendientes: [], reportes: new Map(), radar: new Set() })
   const props = useRef({})
+  const originales = useRef({})
   props.current = { onSeleccionar, onCamara, onCalle, onRios, modoCalle, onVolcan, onSismo, camaras, volcanes, sismos, onLugar, base, relieve3d, viaje, nubes }
 
   // Ejecuta cuando el estilo esté cargado.
@@ -264,8 +265,9 @@ export default function Mapa({
         tiles: [SATELITE],
         // 256: pedir imágenes «un nivel más detalladas» cuadruplicaba las descargas y hacía lento el mapa
         tileSize: 256,
-        // Nivel 19: la foto más detallada disponible. Más cerca se amplía esa misma foto (algo borrosa, pero se acerca).
-        maxzoom: 19,
+        // Nivel 20: en ciudades Esri tiene foto de ~15 cm por píxel (se ven autos, techos, piscinas).
+        // Donde no la hay, el respaldo usa la mejor disponible (19, 18…) sin cuadros grises.
+        maxzoom: 20,
         attribution: ATRIB_ESRI,
       })
       mapa.addLayer({ id: 'satelite', type: 'raster', source: 'satelite', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 150 } }, primeraLinea)
@@ -467,6 +469,18 @@ export default function Mapa({
       for (const l of mapa.getStyle().layers) {
         if ((l.type === 'fill' || l.type === 'fill-extrusion') && l.id !== 'satelite') {
           mapa.setLayoutProperty(l.id, 'visibility', sat ? 'none' : 'visible')
+        }
+        // Inmersión: de cerca, las calles dibujadas y los íconos se desvanecen y queda la foto real.
+        if (l.source === 'openmaptiles' && (l.type === 'line' || l.type === 'symbol')) {
+          const prop = l.type === 'line' ? 'line-opacity' : 'icon-opacity'
+          const guardado = (pr) => (originales.current[`${l.id}|${pr}`] ??= mapa.getPaintProperty(l.id, pr) ?? 1)
+          const base0 = guardado(prop)
+          const fijo = typeof base0 === 'number' ? base0 : 1
+          mapa.setPaintProperty(l.id, prop, sat ? ['interpolate', ['linear'], ['zoom'], 15.5, fijo, 17.5, l.type === 'line' ? 0.12 : 0] : base0)
+          if (l.type === 'symbol' && /poi|housenumber/.test(l.id)) {
+            const t0 = guardado('text-opacity')
+            mapa.setPaintProperty(l.id, 'text-opacity', sat ? ['interpolate', ['linear'], ['zoom'], 16, typeof t0 === 'number' ? t0 : 1, 18, 0] : t0)
+          }
         }
       }
       mapa.setMaxZoom(21)
@@ -951,5 +965,29 @@ export default function Mapa({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viaje])
 
-  return <div ref={caja} className={`h-full w-full ${modoCalle ? 'modo-calle' : ''}`} role="region" aria-label="Mapa" />
+  // De cerca (barrio o calle) se ofrece caminar ahí mismo, a nivel de calle.
+  const [cerca, setCerca] = useState(false)
+  useEffect(() => {
+    cuandoListo((mapa) => {
+      const ver = () => setCerca(mapa.getZoom() >= 15.5)
+      ver()
+      mapa.on('zoomend', ver)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const pasearAqui = () => {
+    const c = ref.current.mapa?.getCenter()
+    if (!c) return
+    window.dispatchEvent(new CustomEvent('ac:paseo', { detail: { id: `aqui-${c.lat.toFixed(4)},${c.lng.toFixed(4)}`, nombre: viaje?.nombre ? `Cerca de ${viaje.nombre}` : 'Aquí', lat: c.lat, lng: c.lng, rumbo: ref.current.mapa.getBearing() } }))
+  }
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={caja} className={`h-full w-full ${modoCalle ? 'modo-calle' : ''}`} role="region" aria-label="Mapa" />
+      {cerca && !seguir && (
+        <button type="button" onClick={pasearAqui} className="boton-pasear-aqui absolute top-[19rem] right-3 z-[450] max-w-[9.5rem] rounded-2xl bg-black/80 px-3 py-2.5 text-left text-[13.5px] leading-tight font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,.45)] ring-1 ring-white/25 active:scale-[0.97]">
+          🚶 Caminar aquí, a nivel de calle
+        </button>
+      )}
+    </div>
+  )
 }

@@ -78,7 +78,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     m.on('load', () => {
       const capas = m.getStyle().layers
       const primeraEtiqueta = capas.find((l) => l.type === 'symbol')?.id
-      m.addSource('paseo-sat', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 19, attribution: 'Foto: Esri, Maxar, Earthstar Geographics' })
+      m.addSource('paseo-sat', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 20, attribution: 'Foto: Esri, Maxar, Earthstar Geographics' })
       m.addLayer({ id: 'paseo-sat', type: 'raster', source: 'paseo-sat', paint: { 'raster-fade-duration': 0 } }, primeraEtiqueta)
       // edificios reales en 3D (si el estilo no los trae ya)
       if (!capas.some((l) => l.type === 'fill-extrusion')) {
