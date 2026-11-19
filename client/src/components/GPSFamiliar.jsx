@@ -166,20 +166,20 @@ function Integrante({ m, yo, lugares, abierto, onAbrir, onVerMapa, ahora }) {
             <span className="truncate text-[13px] text-texto-2">{m.rol}</span>
           </span>
           <span className="block truncate text-[14.5px]">{dondeEsta(m, lugares, lugar?.nombre)}</span>
-          <span className={`mono mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] ${viejo ? 'text-amber-300' : 'text-texto-2'}`}>
+          <span className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[13px] ${viejo ? 'text-amber-300' : 'text-texto-2'}`}>
             {enVivo ? (
               <span className="flex items-center gap-1 text-[#3ddc84]">
-                <span className="punto-vivo" aria-hidden="true" /> EN VIVO
+                <span className="punto-vivo" aria-hidden="true" /> Ahora
               </span>
             ) : (
-              <span>{haceCuanto(m.t, ahora).toUpperCase()}</span>
+              <span>Visto {haceCuanto(m.t, ahora)}</span>
             )}
             {m.bateria != null && (
               <span className={m.bateria <= 15 && !m.cargando ? 'text-peligro' : ''}>
-                {m.cargando ? '⚡' : '▮'} {m.bateria}%
+                · batería {m.bateria} %{m.cargando ? ' (cargando)' : ''}
               </span>
             )}
-            {dist != null && <span>{dist < 1 ? `${Math.round(dist * 1000)} M` : `${dist.toFixed(1).replace('.', ',')} KM`}</span>}
+            {dist != null && <span>· a {dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1).replace('.', ',')} km`} de ti</span>}
           </span>
         </span>
         {clima && (
@@ -191,33 +191,28 @@ function Integrante({ m, yo, lugares, abierto, onAbrir, onVerMapa, ahora }) {
       </button>
       {(sos || ok) && (
         <p className={`mx-3.5 mb-3 flex items-center gap-2 rounded-xl px-3 py-1.5 text-[14px] font-semibold ${sos ? 'bg-peligro text-white' : 'bg-[#3ddc84]/15 text-[#3ddc84]'}`}>
-          <span className="mono text-[11px] tracking-[0.08em]">{sos ? 'SOS' : 'OK'}</span>
+          <span aria-hidden="true">{sos ? '🆘' : '✅'}</span>
           {sos ? `${m.yo ? 'Pediste' : 'Pidió'} ayuda ${haceCuanto(m.estado.t, ahora)}` : `${m.yo ? 'Avisaste que estás' : 'Está'} bien · ${haceCuanto(m.estado.t, ahora)}`}
         </p>
       )}
-      {alerta && <p className="mx-3.5 mb-3 rounded-xl bg-peligro px-3 py-1.5 text-[14px] font-bold text-white">⚠ {NIVELES[alerta.nivel].etiqueta} donde está: {alerta.amenaza}</p>}
+      {alerta && (
+        <p className={`mx-3.5 mb-3 rounded-xl px-3 py-1.5 text-[14px] font-semibold ${grave ? 'bg-peligro text-white' : 'bg-amber-300/15 text-amber-200'}`}>
+          {grave ? '⚠ ' : 'ⓘ '}
+          {grave ? `${NIVELES[alerta.nivel].etiqueta} donde ${m.yo ? 'estás' : 'está'}: ${alerta.amenaza}` : `Aviso preventivo donde ${m.yo ? 'estás' : 'está'}: ${alerta.amenaza.toLowerCase()}`}
+        </p>
+      )}
       {abierto && (
         <div className="border-t border-linea px-3.5 pt-3 pb-3.5">
-          <dl className="mono grid grid-cols-3 gap-2 text-[11px] text-texto-2">
-            <div>
-              <dt>HOY</dt>
-              <dd className="mt-0.5 text-[15px] text-texto">{km >= 0.1 ? `${km.toFixed(1).replace('.', ',')} km` : '—'}</dd>
-            </div>
-            <div>
-              <dt>PRECISIÓN</dt>
-              <dd className="mt-0.5 text-[15px] text-texto">{m.precision ? `±${m.precision} m` : '—'}</dd>
-            </div>
-            <div>
-              <dt>ACTUALIZADO</dt>
-              <dd className="mt-0.5 text-[15px] text-texto">{hora(m.t)}</dd>
-            </div>
-          </dl>
+          <p className="text-[14px] text-texto-2">
+            {km >= 0.1 ? `Hoy ${m.yo ? 'recorriste' : 'recorrió'} ${km.toFixed(1).replace('.', ',')} km · ` : ''}Ubicación de las {hora(m.t)}
+            {m.precision > 50 ? ` (aproximada, ±${m.precision} m)` : ''}
+          </p>
           {!m.yo && (
             <div className="mt-3 grid grid-cols-4 gap-2">
               <AccionRedonda etiqueta="Mapa" onClick={() => onVerMapa(m)} icono={<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />} />
               <AccionRedonda
-                etiqueta="Llegar"
-                href={`https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}`}
+                etiqueta="Ir donde está"
+                onClick={() => window.dispatchEvent(new CustomEvent('ac:ruta', { detail: { id: `fam-${m.id}`, tipo: 'punto', nombre: m.nombre, sub: 'Donde está ahora', lat: m.lat, lng: m.lng } }))}
                 icono={<path d="M3 11l18-8-8 18-2-8-8-2z" />}
               />
               <AccionRedonda etiqueta="Llamar" href={m.tel ? `tel:${m.tel}` : null} icono={<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />} />
@@ -254,6 +249,37 @@ function AccionRedonda({ etiqueta, icono, onClick, href }) {
   )
 }
 
+/** Primera vez (solo tú): qué es, cómo funciona en 3 pasos y un solo botón grande. */
+function Empezar({ enlace, invitar, copiado }) {
+  const wa = `https://wa.me/?text=${encodeURIComponent(`Hola, te invito a nuestra familia en AlertaClima: así sabemos que estamos bien y dónde estamos si hay una emergencia. Toca aquí: ${enlace}`)}`
+  return (
+    <section aria-labelledby="t-empezar" className="rounded-[24px] border border-linea bg-superficie p-5">
+      <h3 id="t-empezar" className="titulo-x text-[24px] leading-tight">
+        Falta tu familia
+      </h3>
+      <p className="mt-1.5 text-[16px] leading-snug text-texto-2">Así funciona:</p>
+      <ol className="mt-3 space-y-3">
+        {[
+          ['1', 'Mándales una invitación por WhatsApp.'],
+          ['2', 'Ellos tocan el enlace y aceptan en su teléfono.'],
+          ['3', 'Listo: se ven en el mapa y, si pasa algo, cada uno avisa «Estoy bien» con un toque.'],
+        ].map(([n, t]) => (
+          <li key={n} className="flex gap-3 text-[17px] leading-snug">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white text-[15px] font-bold text-black">{n}</span>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ol>
+      <a href={wa} target="_blank" rel="noopener" className="boton-primario mt-5 flex min-h-14 w-full items-center justify-center text-[18px]">
+        Invitar por WhatsApp
+      </a>
+      <button type="button" onClick={invitar} className="mt-2 min-h-12 w-full text-[15px] font-semibold text-texto-2 underline">
+        {copiado ? '¡Enlace copiado!' : 'Otra forma de invitar'}
+      </button>
+    </section>
+  )
+}
+
 /** Lugares seguros de la familia: avisan cuando alguien llega o sale. */
 function Lugares({ lugares, yo }) {
   const [nuevo, setNuevo] = useState(null) // { tipo, n }
@@ -266,7 +292,7 @@ function Lugares({ lugares, yo }) {
     <section aria-labelledby="t-lugares" className="rounded-[22px] border border-linea px-4 py-3.5">
       <div className="flex items-baseline justify-between">
         <h3 id="t-lugares" className="rotulo">
-          Lugares seguros · {lugares.length}/8
+          Lugares de la familia
         </h3>
         {!nuevo && lugares.length < 8 && (
           <button type="button" onClick={() => setNuevo({ tipo: 'casa', n: 'Casa' })} className="text-[14px] font-semibold text-telemetria">
@@ -274,7 +300,7 @@ function Lugares({ lugares, yo }) {
           </button>
         )}
       </div>
-      {lugares.length === 0 && !nuevo && <p className="mt-1.5 text-[14px] text-texto-2">Agrega la casa, el colegio o el trabajo, y te aviso cuando alguien llegue o salga.</p>}
+      {!nuevo && <p className="mt-1.5 text-[14px] text-texto-2">{lugares.length ? 'Te avisamos cuando alguien llega o sale de estos lugares.' : 'Agrega la casa, el colegio o el trabajo, y te aviso cuando alguien llegue o salga.'}</p>}
       {lugares.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {lugares.map((l) => (
@@ -349,7 +375,7 @@ function AvisosFamilia() {
   if (permiso === 'no' || permiso === 'granted') return null
   return (
     <button type="button" onClick={() => Notification.requestPermission().then(setPermiso)} className="flex min-h-14 w-full items-center gap-3 rounded-[22px] border border-amber-300/40 bg-amber-300/10 px-4 text-left text-[15px] font-semibold text-amber-200">
-      <span className="mono text-[11px] tracking-[0.1em]">AVISOS</span>
+      <span aria-hidden="true">🔔</span>
       Activa los avisos: llegadas, salidas, batería baja y alertas de tu familia
     </button>
   )
@@ -361,7 +387,7 @@ function Ajustes({ g }) {
   return (
     <section className="rounded-[22px] border border-linea">
       <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} className="flex min-h-14 w-full items-center justify-between px-4 text-left">
-        <span className="rotulo !text-texto">Ajustes de mi familia</span>
+        <span className="text-[15.5px] font-semibold">Ajustes de mi familia</span>
         <span className="text-texto-2" aria-hidden="true">
           {abierto ? '▾' : '▸'}
         </span>
@@ -478,13 +504,17 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
 
   return (
     <div className="space-y-3">
-      {/* Estado del sistema, como el tablero de un auto */}
-      <div className="flex items-center justify-between px-0.5">
-        <p className="rotulo flex items-center gap-2">
+      {/* Solo tú todavía: una sola cosa que hacer, explicada como a un abuelo */}
+      {!otros.length && <Empezar enlace={enlace} invitar={invitar} copiado={copiado} />}
+
+      {otros.length > 0 && (
+      <>
+      <div className="flex items-center justify-between px-0.5 text-[13.5px] text-texto-2">
+        <p className="flex items-center gap-2">
           <span className={enVivo ? 'punto-vivo' : 'size-1.5 rounded-full bg-texto-2'} aria-hidden="true" />
-          {enVivo} de {miembros.length || 1} en vivo
+          {miembros.length} en tu familia
         </p>
-        <p className="rotulo">{error ? 'Reconectando…' : leido ? `Sincronizado ${haceCuanto(leido, ahora)}` : 'Conectando…'}</p>
+        <p>{error ? 'Reconectando…' : leido ? `Actualizado ${haceCuanto(leido, ahora)}` : 'Conectando…'}</p>
       </div>
 
       <Suspense fallback={<div className="h-[19rem] animate-pulse rounded-[26px] bg-superficie" />}>
@@ -497,29 +527,20 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
         ))}
       </ul>
 
-      {!otros.length && (
-        <p className="rounded-[22px] border border-dashed border-linea px-4 py-3 text-[15px]">
-          Todavía no hay nadie más. <strong>Invita a tu familia</strong>: cuando abran el enlace en su teléfono y acepten, aparecerán aquí.
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={invitar} className="boton-primario text-[16px]">
-          {copiado ? '¡Enlace copiado!' : '+ Invitar'}
-        </button>
-        <a href={`https://wa.me/?text=${encodeURIComponent(`Únete a nuestra familia en AlertaClima: ${enlace}`)}`} target="_blank" rel="noopener" className="boton-linea text-[16px] !text-texto">
-          Por WhatsApp
-        </a>
-      </div>
-
       <EstoyBien />
       <Actividad eventos={eventos} ahora={ahora} />
       <Lugares lugares={lugares} yo={yo} />
       <AvisosFamilia />
+      <button type="button" onClick={invitar} className="boton-linea w-full text-[16px] !text-texto">
+        {copiado ? '¡Enlace copiado!' : '+ Invitar a alguien más'}
+      </button>
+      </>
+      )}
+
       <Ajustes g={g} />
 
-      <p className="mono px-1 text-[10.5px] leading-relaxed tracking-[0.04em] text-texto-2">
-        AES-256-GCM · CLAVE SOLO EN SUS TELÉFONOS · EL SERVIDOR NO VE NADA · SE BORRA A LAS 48 H · ACTUALIZA CADA 1 MIN CON LA APP ABIERTA
+      <p className="px-1 text-[13px] leading-relaxed text-texto-2">
+        🔒 Privado: solo tu familia ve dónde está cada uno. Ni nosotros podemos verlo.
       </p>
     </div>
   )

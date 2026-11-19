@@ -125,7 +125,7 @@ function Buscador({ origen, onElegir, onCerrar }) {
   )
 }
 
-export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {} }) {
+export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}, destinoInicial = null }) {
   const [destino, setDestino] = useState(null)
   const [estado, setEstado] = useState('buscar') // buscar → calculando → lista | error
   const [error, setError] = useState(null)
@@ -136,6 +136,14 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
   const [abierto, setAbierto] = useState(false)
   const [navegando, setNavegando] = useState(null) // null | 'real' | 'simulada'
   const ac = useRef(null)
+
+  // Abierto con un destino (por ejemplo «Llegar» donde un familiar): calcula la ruta de inmediato.
+  const inicialHecho = useRef(false)
+  useEffect(() => {
+    if (!destinoInicial || inicialHecho.current) return
+    inicialHecho.current = true
+    elegir(destinoInicial)
+  }, [destinoInicial]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const elegir = async (d0) => {
     setDestino(d0)

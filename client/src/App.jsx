@@ -165,10 +165,19 @@ export default function App() {
     window.addEventListener('ac:zumi', z)
     const c = (e) => e.detail && setCalle(e.detail)
     window.addEventListener('ac:calle', c)
+    // «Llegar» a un familiar u otro punto: la ruta la guía ZUMI dentro de la app (nunca Google Maps)
+    const ru = (e) => {
+      if (!e.detail) return
+      setViaje(null)
+      setVista('radar')
+      setRutaAbierta(e.detail)
+    }
+    window.addEventListener('ac:ruta', ru)
     return () => {
       window.removeEventListener('ac:paseo', f)
       window.removeEventListener('ac:zumi', z)
       window.removeEventListener('ac:calle', c)
+      window.removeEventListener('ac:ruta', ru)
     }
   }, [])
   const [rutaAbierta, setRutaAbierta] = useState(false)
@@ -484,10 +493,15 @@ export default function App() {
                         setEnfocarMapa({ lat: m.lat, lng: m.lng, zoom: 16, t: Date.now() })
                       }}
                     />
-                    <h3 className="rotulo pt-4">Las comunas donde viven · aunque no compartan ubicación</h3>
-                    <Suspense fallback={null}>
-                      <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
-                    </Suspense>
+                    {/* Opción aparte y escondida: no compite con lo principal (invitar a la familia) */}
+                    <details className="mt-3 rounded-[22px] border border-linea px-4 py-3">
+                      <summary className="cursor-pointer text-[15.5px] font-semibold">¿Algún familiar no usa la app? Te aviso de alertas donde vive</summary>
+                      <div className="pt-3">
+                        <Suspense fallback={null}>
+                          <MiFamilia limite={plan.limites.familiares} onLimite={() => setPlanes('familia')} />
+                        </Suspense>
+                      </div>
+                    </details>
                   </>
                 }
                 reportes={rep.disponible ? <ListaReportes datos={rep} onVer={verReporte} onReportar={abrirFormulario} /> : null}
@@ -574,6 +588,7 @@ export default function App() {
           {rutaAbierta && vista === 'radar' && (
             <Suspense fallback={null}>
               <RutaZumi
+                destinoInicial={typeof rutaAbierta === 'object' ? rutaAbierta : null}
                 origen={ubicacion ? { lat: ubicacion.lat, lng: ubicacion.lng, nombre: 'Tu ubicación' } : { lat: clima.datos?.punto?.lat ?? comuna?.centro?.[0], lng: clima.datos?.punto?.lng ?? comuna?.centro?.[1], nombre: comuna?.nombre }}
                 onRuta={setRutaMapa}
                 onSeguir={setNavPos}

@@ -16,7 +16,7 @@ function EstoyBien({ compacto = false }) {
   }
   return (
     <div className={`rounded-[22px] border border-linea ${compacto ? 'px-3.5 py-3' : 'px-4 py-3.5'}`}>
-      <p className="rotulo">Avisa a tu familia · cifrado</p>
+      <p className="text-[16px] font-semibold">¿Pasó algo? Avísale a tu familia con un toque</p>
       {estado && (
         <p className="mt-1 text-[14px] text-texto-2">
           Último aviso: <strong className={estado.v === 'ayuda' ? 'text-peligro' : 'text-[#3ddc84]'}>{estado.v === 'ayuda' ? 'necesito ayuda' : 'estoy bien'}</strong> · {haceCuanto(estado.t)}
