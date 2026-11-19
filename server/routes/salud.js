@@ -18,7 +18,11 @@ saludRouter.get('/', async (req, res) => {
       try {
         return new URL(urlBase() ?? '').hostname.replace(/^[^.]+/, (x) => x.slice(0, 6) + '…') || null
       } catch {
-        return process.env.DATABASE_URL ? 'formato no reconocido' : 'sin configurar'
+        const v = String(process.env.DATABASE_URL ?? '').trim()
+        if (!v) return 'sin configurar'
+        // pista sin revelar secretos: solo si empieza con algo conocido que no es una clave
+        const pista = ['psql', 'postgres', 'http', 'DATABASE_URL', 'export', 'neon', '"', "'", '<', '{'].find((x) => v.startsWith(x))
+        return `formato no reconocido (largo ${v.length}${pista ? `, empieza con «${pista}»` : ''}${/\*{4,}/.test(v) ? ', trae ****: se copió con la contraseña oculta' : ''})`
       }
     })(),
     hora: new Date().toISOString(),
