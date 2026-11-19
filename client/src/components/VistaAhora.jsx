@@ -50,6 +50,7 @@ export function InformesClima({ clima, obs, sismos, reportesLista, enLinea, onVe
   const { horas, dias } = datos
   const ahora = condicionesActuales(datos.ahora, obs)
   const prox12 = horas.slice(0, 12)
+  const hayLluvia = prox12.some((h) => h.lluvia > 0)
   const urgenteAluvion = riesgoAluvion(horas)?.nivel !== 'bajo'
   return (
     <div className="space-y-3">
