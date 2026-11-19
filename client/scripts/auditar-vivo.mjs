@@ -14,7 +14,7 @@ async function sesion(nombre, prep) {
   if (prep) await ctx.addInitScript(prep)
   const p = await ctx.newPage()
   p.on('pageerror', (e) => informe.errores.push(`[${nombre}] pageerror ${e.message.slice(0, 200)}`))
-  p.on('console', (m) => m.type() === 'error' && informe.errores.push(`[${nombre}] console ${m.text().slice(0, 200)}`))
+  p.on('console', (m) => (m.type() === 'error' || m.text().startsWith('paseo:')) && informe.errores.push(`[${nombre}] console ${m.text().slice(0, 200)}`))
   p.on('requestfailed', (r) => informe.fallidas.push(`[${nombre}] ${r.failure()?.errorText} ${r.url().slice(0, 140)}`))
   p.on('response', (r) => r.status() >= 400 && informe.fallidas.push(`[${nombre}] HTTP ${r.status()} ${r.url().slice(0, 140)}`))
   return { ctx, p }

@@ -11,11 +11,13 @@ import { PASEOS, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, na
 import { buscarLugares } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
+import { registrarEsri } from '../services/satelite'
 
 maplibregl.setWorkerUrl(urlTrabajador)
+registrarEsri(maplibregl)
 
 const ESTILO = 'https://tiles.openfreemap.org/styles/liberty'
-const SATELITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+const SATELITE = 'esri://{z}/{y}/{x}' // con respaldo: donde falta la foto de cerca, se amplía la de más arriba
 const VEL = { caminar: 2.2, trotar: 7 } // metros por segundo (un poco más rápido que la vida real, para que no aburra)
 const GIRO = 70 // grados por segundo
 const RADIO_CONTAR = 70 // metros: ZUMI cuenta un lugar al acercarse a esta distancia
@@ -76,8 +78,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     m.on('load', () => {
       const capas = m.getStyle().layers
       const primeraEtiqueta = capas.find((l) => l.type === 'symbol')?.id
-      // maxzoom 17: más allá, Esri no tiene foto en muchas ciudades de Chile (sale gris); se amplía la de 17
-      m.addSource('paseo-sat', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 17, attribution: 'Foto: Esri, Maxar, Earthstar Geographics' })
+      m.addSource('paseo-sat', { type: 'raster', tiles: [SATELITE], tileSize: 256, maxzoom: 19, attribution: 'Foto: Esri, Maxar, Earthstar Geographics' })
       m.addLayer({ id: 'paseo-sat', type: 'raster', source: 'paseo-sat', paint: { 'raster-fade-duration': 0 } }, primeraEtiqueta)
       // edificios reales en 3D (si el estilo no los trae ya)
       if (!capas.some((l) => l.type === 'fill-extrusion')) {

@@ -32,7 +32,7 @@ export async function puntoDeComuna(comuna, { signal } = {}) {
     url.searchParams.set('countryCode', 'CL')
     url.searchParams.set('count', '10')
     url.searchParams.set('language', 'es')
-    const r = await fetch(url, { signal })
+    const r = await conPlazo(url, 6000, signal)
     if (!r.ok) return respaldo
     const { results = [] } = await r.json()
     const nombre = normalizar(comuna.nombre)
@@ -78,10 +78,37 @@ export async function obtenerPronostico({ lat, lng }, { signal } = {}) {
   p.set('forecast_days', '7')
   p.set('wind_speed_unit', 'kmh')
 
-  const r = await fetch(url, { signal })
-  if (!r.ok) throw new Error(`El servicio del clima respondió ${r.status}`)
-  const d = await r.json()
-  return transformar(d)
+  // Open-Meteo a veces se queda colgado: cada intento tiene 9 s de plazo y se reintenta una vez.
+  // Así la pantalla nunca queda en blanco esperando: o llegan los datos, o se muestra el error con «Reintentar».
+  let ultimo
+  for (let intento = 0; intento < 2; intento++) {
+    try {
+      const r = await conPlazo(url, 9000, signal)
+      if (!r.ok) throw new Error(`El servicio del clima respondió ${r.status}`)
+      return transformar(await r.json())
+    } catch (e) {
+      if (signal?.aborted) throw e
+      ultimo = e
+    }
+  }
+  throw ultimo
+}
+
+/** fetch con plazo máximo (y que respeta la cancelación de quien llama). */
+async function conPlazo(url, ms, signal) {
+  const ctl = new AbortController()
+  const cortar = () => ctl.abort()
+  signal?.addEventListener('abort', cortar, { once: true })
+  const t = setTimeout(cortar, ms)
+  try {
+    return await fetch(url, { signal: ctl.signal })
+  } catch (e) {
+    if (!signal?.aborted && e.name === 'AbortError') throw new TypeError('El servicio del clima no respondió a tiempo')
+    throw e
+  } finally {
+    clearTimeout(t)
+    signal?.removeEventListener('abort', cortar)
+  }
 }
 
 function transformar(d) {
