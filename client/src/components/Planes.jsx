@@ -16,6 +16,17 @@ const MOTIVOS = {
   'pago-error': 'Hubo un problema con el pago. No se te cobró nada; inténtalo de nuevo en un momento.',
 }
 
+// Comparación honesta, con los mismos límites que aplica el servidor (server/services/planes.js).
+const TABLA = [
+  ['Alertas oficiales, sismos, tsunamis y SOS', '✓', '✓', '✓'],
+  ['GPS familiar cifrado y «Estoy bien»', '✓', '✓', '✓'],
+  ['Viajes guiados por ZUMI con clima en ruta', '✓', '✓', '✓'],
+  ['Preguntas a ZUMI con inteligencia artificial', '5 al día', '150 al día', '300 al día'],
+  ['Comunas con avisos', '1', '5', '10'],
+  ['Personas con ZUMI+', '—', '1', '5'],
+  ['Historial', '7 días', '1 año', '1 año'],
+]
+
 // Lo que trae cada nivel (lo que protege la vida es gratis en todos)
 const NIVELES = {
   zumi: {
@@ -125,8 +136,13 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
           <TuPlan plan={plan} onCerrar={onCerrar} />
         ) : (
           <>
-            <h2 id="t-planes" className="text-[28px] leading-tight font-bold">Elige tu plan</h2>
-            <p className="mt-1 text-[17px] text-texto-2">{MOTIVOS[motivo] ?? 'Alertas, SOS y clima siguen gratis siempre. Con un plan, ZUMI está contigo cuando quieras.'}</p>
+            <p className="rotulo">Planes AlertaClima</p>
+            <h2 id="t-planes" className="titulo-x mt-1.5 text-[30px]">
+              Lo que protege tu vida
+              <br />
+              es gratis. Siempre.
+            </h2>
+            <p className="mt-2 text-[16px] leading-snug text-texto-2">{MOTIVOS[motivo] ?? 'Alertas, SOS, GPS familiar y viajes guiados no se cobran nunca. Con ZUMI+, ZUMI conversa contigo sin apuro y te avisa de todos tus lugares.'}</p>
 
             <div role="radiogroup" aria-label="Plan" className="mt-4 grid grid-cols-2 gap-2">
               {['zumi', 'familia'].map((n) => {
@@ -145,12 +161,42 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
                     <span className="block text-[19px] font-black">{NIVELES[n].nombre}</span>
                     <span className="block text-[13px] leading-tight text-texto-2">{NIVELES[n].lema}</span>
                     <span className="mt-1.5 block text-[16px] font-bold">{mes}/mes</span>
+                    <span className="mono block text-[11px] text-texto-2">
+                      {n === 'familia' ? `≈ ${clp(pr.mensual / 30 / 5)} por persona al día` : `≈ ${clp(pr.mensual / 30)} al día`}
+                    </span>
                   </button>
                 )
               })}
             </div>
 
-            <ul className="mt-4 space-y-3">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-linea" role="table" aria-label="Comparación de planes">
+              <div role="row" className="grid grid-cols-[1fr_3.6rem_4.4rem_4.4rem] items-end gap-1 border-b border-linea bg-superficie-2 px-3 py-2">
+                <span role="columnheader" className="rotulo !text-[10px]">Incluye</span>
+                {['Gratis', 'ZUMI+', 'Familia'].map((h, i) => (
+                  <span key={h} role="columnheader" className={`text-center text-[12.5px] font-semibold ${(i === 1 && nivel === 'zumi') || (i === 2 && nivel === 'familia') ? 'text-texto' : 'text-texto-2'}`}>
+                    {h}
+                  </span>
+                ))}
+              </div>
+              {TABLA.map(([t, ...v]) => (
+                <div key={t} role="row" className="grid grid-cols-[1fr_3.6rem_4.4rem_4.4rem] items-center gap-1 border-b border-linea px-3 py-2 last:border-0">
+                  <span role="cell" className="text-[13.5px] leading-snug">
+                    {t}
+                  </span>
+                  {v.map((x, i) => (
+                    <span
+                      key={i}
+                      role="cell"
+                      className={`text-center text-[12.5px] ${x === '✓' ? 'text-[#3ddc84]' : ''} ${(i === 1 && nivel === 'zumi') || (i === 2 && nivel === 'familia') ? 'font-semibold' : 'text-texto-2'}`}
+                    >
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <ul className="mt-4 hidden space-y-3">
               {NIVELES[nivel].beneficios.map(([i, t, d]) => (
                 <li key={t} className="flex items-start gap-3">
                   <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-senal/15 text-[22px]" aria-hidden="true">
@@ -166,7 +212,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
 
             <div role="radiogroup" aria-label="Forma de pago" className="mt-5 grid grid-cols-2 gap-2">
               {[
-                ['anual', 'Anual', `${precioAnio} al año`, ahorro > 0 ? `Ahorras ${ahorro} %` : null],
+                ['anual', 'Anual', `${precioAnio} al año · ≈ ${clp(p.anual / 12)}/mes`, ahorro > 0 ? `Ahorras ${ahorro} %` : null],
                 ['mensual', 'Mensual', `${precioMes} al mes`, null],
               ].map(([k, t, precio, etiqueta]) => (
                 <button
@@ -279,7 +325,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
 
 // Sin cobro en la web: el plan se compra en la app del teléfono (Apple o Google cobran) y vale
 // también aquí, con la misma cuenta. VITE_URL_APP_STORE se define cuando la app esté publicada.
-const URL_PLAY = import.meta.env.VITE_URL_GOOGLE_PLAY || 'https://play.google.com/store/apps/details?id=cl.alertaclima.app'
+const URL_PLAY = import.meta.env.VITE_URL_GOOGLE_PLAY || '' // se define cuando la app esté publicada en Google Play
 const URL_APPLE = import.meta.env.VITE_URL_APP_STORE || ''
 
 function SuscribirEnApp() {
@@ -293,9 +339,12 @@ function SuscribirEnApp() {
             Descargar en App Store
           </a>
         )}
-        <a href={URL_PLAY} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center rounded-xl bg-texto text-[16px] font-bold text-superficie">
-          Descargar en Google Play
-        </a>
+        {URL_PLAY && (
+          <a href={URL_PLAY} target="_blank" rel="noopener" className="flex min-h-12 items-center justify-center rounded-xl bg-texto text-[16px] font-bold text-superficie">
+            Descargar en Google Play
+          </a>
+        )}
+        {!URL_PLAY && !URL_APPLE && <p className="mono rounded-xl border border-linea px-3 py-2.5 text-center text-[12px] tracking-[0.08em] text-texto-2">MUY PRONTO EN APP STORE Y GOOGLE PLAY</p>}
       </div>
     </div>
   )

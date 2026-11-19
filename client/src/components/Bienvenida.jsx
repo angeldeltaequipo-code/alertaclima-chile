@@ -19,6 +19,105 @@ const FUNCIONES = [
   ['🆘', 'Botón SOS', 'Llama al 133, 132 o 131 y comparte tu ubicación con tu familia.'],
   ['👥', 'Tus vecinos', 'Reportes y chat de tu comuna, con filtros de seguridad.'],
 ]
+// Las historias del primer paso: cada una muestra (no explica) lo que ZUMI hace por ti.
+const HISTORIAS = [
+  {
+    rotulo: 'Alertas · en tiempo real',
+    titulo: 'Te aviso antes\nque nadie.',
+    sub: 'Alertas oficiales de SENAPRED, sismos y tsunamis al instante. Y la lluvia, minutos antes de que caiga.',
+    gesto: 'saludo',
+    demo: 'alerta',
+  },
+  {
+    rotulo: 'Familia · cifrado de punta a punta',
+    titulo: '¿Dónde está\nmi hijo?',
+    sub: 'Tu familia en un mapa vivo. Te aviso cuando llegan al colegio o a la casa. Ni nosotros podemos ver dónde están.',
+    gesto: 'senalar',
+    demo: 'familia',
+  },
+  {
+    rotulo: 'Viajes · ZUMI te guía',
+    titulo: 'Viaja seguro\npor Chile.',
+    sub: 'Te guío por voz todo el camino y te aviso del clima en cada tramo, antes de llegar a él.',
+    gesto: 'celebrar',
+    demo: 'ruta',
+  },
+  {
+    rotulo: 'ZUMI · tu amigo',
+    titulo: 'Pregúntame\nlo que quieras.',
+    sub: 'Clima, emergencias, primeros auxilios o tu comuna. Te respondo con mi voz, al tiro.',
+    gesto: 'curioso',
+    demo: 'chat',
+  },
+]
+
+function Demo({ tipo }) {
+  if (tipo === 'alerta')
+    return (
+      <div className="demo-card space-y-2">
+        <div className="demo-noti">
+          <span className="demo-app">AlertaClima · ahora</span>
+          <p>
+            <b>⚠ Alerta Amarilla · Calor extremo</b>
+            <br />
+            34° en tu comuna desde las 14:00. Hidrátate.
+          </p>
+        </div>
+        <div className="demo-noti">
+          <span className="demo-app">ZUMI · hace 2 min</span>
+          <p>
+            <b>☂ Empieza a llover en 12 minutos</b>
+          </p>
+        </div>
+      </div>
+    )
+  if (tipo === 'familia')
+    return (
+      <div className="demo-card demo-panel space-y-2.5">
+        {[
+          ['S', 'Sofía', '🏫 Llegó al colegio · 08:02', '#ff6fb1'],
+          ['T', 'Tomás', '🚗 Camino a casa · llega 18:40', '#7cc4ff'],
+          ['A', 'Abuela', '🏠 En la casa · 21°', '#3ddc84'],
+        ].map(([i, n, t, c]) => (
+          <div key={n} className="flex items-center gap-2.5">
+            <span className="demo-avatar" style={{ '--c': c }}>
+              {i}
+            </span>
+            <span className="min-w-0">
+              <b className="block text-[14px]">{n}</b>
+              <span className="block truncate text-[12.5px] text-white/70">{t}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  if (tipo === 'ruta')
+    return (
+      <div className="demo-card demo-panel">
+        <p className="mono text-[10.5px] tracking-[0.08em] text-white/55">SANTIAGO → PUCÓN · 8 H 36</p>
+        <div className="mt-2 flex h-2 overflow-hidden rounded-full">
+          <span className="flex-[5] bg-[#3ddc84]" />
+          <span className="flex-[2] bg-[#ffc53d]" />
+          <span className="flex-[1] bg-[#ff5a5f]" />
+          <span className="flex-[2] bg-[#3ddc84]" />
+        </div>
+        <p className="mt-2.5 flex items-center gap-2 text-[14px]">
+          <span className="grid size-9 place-items-center rounded-xl bg-[#3ddc84] text-[20px] text-black">↱</span>
+          <span>
+            <b className="block">En 400 m, gira a la derecha</b>
+            <span className="text-[12.5px] text-white/70">⚠ Lluvia intensa en Curacautín a las 15:00</span>
+          </span>
+        </p>
+      </div>
+    )
+  return (
+    <div className="demo-card space-y-2">
+      <p className="ml-auto w-fit rounded-2xl rounded-br-md bg-white/90 px-3 py-2 text-[14px] font-medium text-black">¿Va a llover mañana?</p>
+      <p className="w-fit max-w-[88%] rounded-2xl rounded-bl-md bg-black/70 px-3 py-2 text-[14px] ring-1 ring-white/15 backdrop-blur">Sí, desde las 15:00 y unos 8 milímetros. ¡Lleva paraguas!</p>
+    </div>
+  )
+}
+
 const PREGUNTAS = [
   ['¿De dónde salen los datos?', 'SENAPRED, Servicio Geológico de EE.UU. (sismos), NOAA (tsunamis), Open-Meteo (pronóstico), RainViewer (radar), NASA y ESO. Cada dato muestra su fuente y hora.'],
   ['¿Reemplaza a SENAPRED?', 'No. Te ayuda a enterarte a tiempo, pero ante una emergencia sigue siempre las instrucciones oficiales.'],
@@ -35,7 +134,14 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   const [mensaje, setMensaje] = useState(null)
   const [conocer, setConocer] = useState(false)
   const [hablando, setHablando] = useState(false)
-  const gesto = `${['saludo', 'senalar', 'celebrar'][paso]}:${paso}`
+  const [historia, setHistoria] = useState(0)
+  const gesto = paso === 0 ? `${HISTORIAS[historia].gesto}:h${historia}` : `${['saludo', 'senalar', 'celebrar'][paso]}:${paso}`
+  // Las historias avanzan solas (y se pueden tocar a la izquierda o a la derecha)
+  useEffect(() => {
+    if (paso !== 0) return
+    const t = setTimeout(() => setHistoria((h) => (h + 1) % HISTORIAS.length), 5200)
+    return () => clearTimeout(t)
+  }, [paso, historia])
   const campo = useRef(null)
   const [escena] = useState(() => (new Date().getHours() >= 20 || new Date().getHours() < 7 ? 'noche' : 'sala'))
   const resultados = useMemo(() => buscarComunas(texto, 6), [texto])
@@ -98,7 +204,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
   }
 
   const globo = [
-    '¡Hola! Soy ZUMI 👋',
+    null,
     '¿Dónde vives? Así te cuido en tu comuna.',
     comuna ? `¡${comuna.nombre}! Me encanta. ¿Cómo te llamo?` : '¿Cómo te llamo?',
   ][paso]
@@ -124,14 +230,33 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
             </button>
           )}
         </div>
-        <p key={globo} className="globo-escenario globo-texto absolute right-4 bottom-6 left-[42%] rounded-3xl rounded-bl-md px-4 py-2.5 text-[16px] leading-snug font-bold" aria-live="polite">
-          {globo}
-        </p>
+        {paso === 0 ? (
+          <>
+            {/* barras de las historias */}
+            <div className="safe-top absolute inset-x-3 top-14 flex gap-1" aria-hidden="true">
+              {HISTORIAS.map((_, i) => (
+                <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+                  <span key={`${i}-${historia}`} className={`block h-full bg-white ${i < historia ? 'w-full' : i === historia ? 'barra-historia' : 'w-0'}`} />
+                </span>
+              ))}
+            </div>
+            <button type="button" aria-label="Historia anterior" onClick={() => setHistoria((h) => Math.max(0, h - 1))} className="absolute top-20 bottom-24 left-0 w-1/3" />
+            <button type="button" aria-label="Historia siguiente" onClick={() => setHistoria((h) => (h + 1) % HISTORIAS.length)} className="absolute top-20 right-0 bottom-24 w-1/3" />
+            <div key={historia} className="pointer-events-none absolute inset-x-4 bottom-5 paso-entra">
+              <p className="mono mx-auto mb-1.5 w-fit rounded-full bg-black/50 px-2 py-0.5 text-[9.5px] tracking-[0.12em] text-white/60">EJEMPLO</p>
+              <Demo tipo={HISTORIAS[historia].demo} />
+            </div>
+          </>
+        ) : (
+          <p key={globo} className="globo-escenario globo-texto absolute right-4 bottom-6 left-[42%] rounded-3xl rounded-bl-md px-4 py-2.5 text-[16px] leading-snug font-bold" aria-live="polite">
+            {globo}
+          </p>
+        )}
       </div>
 
       {/* Tarjeta del paso */}
       <div className="safe-bottom relative rounded-t-[28px] border-t border-white/10 bg-black px-5 pt-4 pb-5">
-        <div className="mb-3 flex justify-center gap-1.5" aria-label={`Paso ${paso + 1} de 3`}>
+        <div className={`mb-3 flex justify-center gap-1.5 ${paso === 0 ? 'hidden' : ''}`} aria-label={`Paso ${paso + 1} de 3`}>
           {[0, 1, 2].map((i) => (
             <span key={i} className={`h-1.5 rounded-full transition-all ${i === paso ? 'w-6 bg-white' : 'w-1.5 bg-white/25'}`} />
           ))}
@@ -140,15 +265,17 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
         <div key={paso} className="paso-entra">
           {paso === 0 && (
             <>
-              <h1 id="t-bienvenida" className="text-[28px] leading-tight font-black tracking-tight">
-                Tu amigo del clima,
-                <br />
-                <span className="text-white/55">siempre atento por ti</span>
-              </h1>
-              <p className="mt-2 text-[16px] leading-snug text-white/75">Alertas oficiales, lluvia, sismos y un SOS, contados por ZUMI en simple. Gratis y sin crear cuenta.</p>
-              <button type="button" onClick={() => setPaso(1)} className="mt-5 min-h-14 w-full rounded-full bg-white text-[18px] font-semibold text-black active:scale-[0.98]">
-                Empezar
+              <div key={historia} className="paso-entra" aria-live="polite">
+                <p className="rotulo !text-white/55">{HISTORIAS[historia].rotulo}</p>
+                <h1 id="t-bienvenida" className="titulo-x mt-2 text-[32px] whitespace-pre-line">
+                  {HISTORIAS[historia].titulo}
+                </h1>
+                <p className="mt-2 min-h-[4.2em] text-[16px] leading-snug text-white/70">{HISTORIAS[historia].sub}</p>
+              </div>
+              <button type="button" onClick={() => setPaso(1)} className="boton-primario mt-4 w-full text-[18px]">
+                Empezar gratis
               </button>
+              <p className="mono mt-2.5 text-center text-[10.5px] tracking-[0.1em] text-white/45">SIN TARJETA · SIN CREAR CUENTA · 30 SEGUNDOS</p>
               <div className="mt-3 flex items-center justify-between text-[14px] font-bold text-white/65">
                 <button type="button" onClick={() => setConocer(true)} className="min-h-11 underline underline-offset-2">
                   ¿Qué hace AlertaClima?
@@ -246,7 +373,8 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
               </button>
               {googleDisponible && (
                 <div className="mt-4 border-t border-white/10 pt-4">
-                  <p className="mb-2 text-[14px] font-bold text-white/70">Opcional: entra con Google para chatear con tus vecinos y reportar.</p>
+                  <p className="mb-1 text-[15px] font-semibold">Crea tu cuenta gratis con Google</p>
+                  <p className="mb-2.5 text-[13.5px] leading-snug text-white/60">Conversa con ZUMI con inteligencia artificial, guarda tu familia y tus lugares en todos tus teléfonos y habla con tus vecinos. Es opcional.</p>
                   <BotonGoogle clientId={cuenta.clientId} />
                 </div>
               )}

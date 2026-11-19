@@ -1506,3 +1506,14 @@ body {
 :root.navegando .panel-mapa-inferior,
 :root.navegando .maplibregl-ctrl-top-right,
 :root.navegando .maplibregl-ctrl-bottom-right { visibility: hidden; }
+
+/* ---- Bienvenida: historias ---- */
+.barra-historia { width: 100%; transform-origin: left; animation: barra-historia 5.2s linear both; }
+@keyframes barra-historia { from { transform: scaleX(0); } }
+.demo-card { max-width: 21rem; margin-inline: auto; }
+.demo-panel { padding: 12px 14px; border-radius: 20px; background: rgb(0 0 0 / 0.62); border: 1px solid rgb(255 255 255 / 0.14); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); color: #fff; }
+.demo-noti { padding: 10px 13px; border-radius: 18px; background: rgb(245 245 247 / 0.92); color: #000; box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); font-size: 14px; line-height: 1.3; }
+.demo-noti + .demo-noti { animation: entrar 0.5s 0.6s both; }
+.demo-app { display: block; font: 600 10.5px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; color: rgb(0 0 0 / 0.5); margin-bottom: 3px; }
+.demo-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 9999px; background: color-mix(in srgb, var(--c) 25%, #000); color: var(--c); box-shadow: inset 0 0 0 1.5px var(--c); font-weight: 700; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .barra-historia { animation: none; } }
