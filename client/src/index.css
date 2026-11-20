@@ -1568,7 +1568,7 @@ body {
 .paseo-flecha:active { background: rgba(61, 220, 132, 0.35); transform: scale(0.96); }
 .paseo-cuenta { animation: paseo-entra 0.35s ease-out; }
 @keyframes paseo-entra { from { opacity: 0; transform: translateY(-8px); } }
-.paseo-lluvia {
+.paseo-lluvia { opacity: 0.32;
   background-image: repeating-linear-gradient(105deg, rgba(200, 220, 255, 0.0) 0 9px, rgba(200, 220, 255, 0.28) 9px 10px, rgba(200, 220, 255, 0) 10px 23px);
   background-size: 120px 120px;
   animation: paseo-llueve 0.45s linear infinite;
@@ -1713,4 +1713,42 @@ body {
 @media (max-height: 700px) {
   .charm { gap: 0.45rem; padding-top: 3.3rem; }
   .charm-globo { -webkit-line-clamp: 2; font-size: 14.5px; }
+}
+
+/* ---- Paseo como juego ---- */
+.paseo-velocidad {
+  background: repeating-conic-gradient(from 0deg at 50% 66%, rgba(255,255,255,0) 0deg 5deg, rgba(255,255,255,0.16) 5deg 5.6deg);
+  -webkit-mask: radial-gradient(circle at 50% 66%, transparent 32%, #000 75%);
+  mask: radial-gradient(circle at 50% 66%, transparent 32%, #000 75%);
+  transition: opacity 0.25s;
+}
+.paseo-avatar {
+  position: absolute; left: 50%; top: 66%; z-index: 2; pointer-events: none;
+  transform: translate(-50%, -50%) rotate(calc(var(--inclina) * 9deg));
+  transition: transform 0.35s cubic-bezier(.3,1.4,.5,1);
+  filter: drop-shadow(0 10px 14px rgba(0,0,0,.45));
+}
+.paseo-vehiculo { width: 96px; display: block; }
+.modo-dron .paseo-vehiculo { width: 120px; }
+.modo-dron { top: 60%; animation: paseo-flota 2.4s ease-in-out infinite; }
+@keyframes paseo-flota { 50% { margin-top: -6px; } }
+.paseo-helice { animation: paseo-helice 0.12s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes paseo-helice { 50% { transform: scaleX(0.35); } }
+.paseo-sombra-dron { position: absolute; left: 50%; top: 5.5rem; width: 64px; height: 10px; margin-left: -32px; border-radius: 50%; background: rgba(0,0,0,.35); filter: blur(3px); }
+.paseo-paso { animation: paseo-paso 0.42s ease-in-out infinite; }
+@keyframes paseo-paso { 50% { transform: translateY(-4px); } }
+.paseo-turbo {
+  min-height: 3rem; padding: 0 1.1rem; border-radius: 999px; font-weight: 800; font-size: 15px;
+  background: linear-gradient(135deg, #ffd23f, #ff8a3d); color: #1a1205; touch-action: none; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 8px 22px rgba(255,138,61,.45);
+}
+.paseo-turbo:active { transform: scale(0.95); filter: brightness(1.15); }
+.paseo-logro { animation: paseo-logro 2.6s ease-out forwards; z-index: 5; }
+@keyframes paseo-logro { 0% { transform: translate(-50%, 20px) scale(0.6); opacity: 0; } 12% { transform: translate(-50%, 0) scale(1.08); opacity: 1; } 20% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { transform: translate(-50%, -30px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .paseo-avatar, .modo-dron, .paseo-helice, .paseo-paso, .paseo-logro { animation: none !important; transition: none; } }
+
+.paseo-icono {
+  display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border-radius: 999px; font-size: 19px;
+  background: rgba(10, 12, 16, 0.78); border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }

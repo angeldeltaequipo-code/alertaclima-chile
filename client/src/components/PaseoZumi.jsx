@@ -2,7 +2,7 @@
 // Foto satelital real + edificios reales de OpenStreetMap + cielo y clima reales de ese lugar ahora.
 // ZUMI va contando lo que hay cerca (Wikipedia) y muestra fotos reales tomadas ahí (Wikimedia Commons).
 // No es Street View: es una maqueta 3D del lugar real, y lo dice.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import * as maplibregl from 'maplibre-gl'
 import urlTrabajador from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
@@ -12,6 +12,8 @@ import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
 import { registrarEsri } from '../services/satelite'
+import { registrarTexturas, PATRON_EDIFICIO } from '../services/paseoTexturas'
+import { ALCANCE, objetivos as armarObjetivos, farosGeoJSON, progreso, guardarProgreso, sonidoLogro, sonidoTurbo } from '../services/paseoJuego'
 import { abrirCalle } from '../services/calle'
 
 maplibregl.setWorkerUrl(urlTrabajador)
@@ -56,6 +58,17 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   const [modo, setModo] = useState('pie')
   const [tablero, setTablero] = useState({ kmh: 0, alt: null })
   const vel = useRef(0) // velocidad actual (m/s), con aceleración y freno suaves
+  const [juego, setJuego] = useState(() => {
+    const p = progreso()
+    return { puntos: p.puntos, recogidos: new Set(p.recogidos) }
+  })
+  const juegoRef = useRef(juego)
+  juegoRef.current = juego
+  // Mirar moviendo el teléfono (giroscopio): el primer paso hacia lentes de realidad virtual.
+  const [mirarConTelefono, setMirarConTelefono] = useState(false)
+  const hayGiroscopio = typeof window !== 'undefined' && 'DeviceOrientationEvent' in window
+  const [logro, setLogro] = useState(null) // aviso «+150 ¡Descubriste…!»
+  const [inclina, setInclina] = useState(0) // -1 izquierda, 1 derecha (el vehículo se ladea al girar)
   const modoElegido = useRef(false) // si la persona eligió un modo, no se cambia solo
   const [buscar, setBuscar] = useState(false)
   const [q, setQ] = useState('')
@@ -118,6 +131,39 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         /* sin relieve */
       }
       aplicarBase(m, true)
+      // Texturas reales: fachadas con ventanas, casas de colores, bosques con follaje (no cajas blancas).
+      try {
+        registrarTexturas(m)
+        for (const l of m.getStyle().layers) {
+          if (l.type === 'fill-extrusion') {
+            m.setPaintProperty(l.id, 'fill-extrusion-pattern', PATRON_EDIFICIO)
+            m.setPaintProperty(l.id, 'fill-extrusion-opacity', 1)
+          }
+          // menos letreros: fuera números de ruta, de casa y POI (parecía un plano, no un lugar)
+          if (l.type === 'symbol' && /shield|highway|road|housenumber|poi|transport|oneway|aerialway|ferry/.test(l.id)) m.setLayoutProperty(l.id, 'visibility', 'none')
+        }
+        if (m.getSource('openmaptiles'))
+          m.addLayer(
+            { id: 'paseo-bosque', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'landcover', minzoom: 12, filter: ['==', ['get', 'class'], 'wood'], paint: { 'fill-extrusion-pattern': 'follaje', 'fill-extrusion-height': 11, 'fill-extrusion-opacity': 0.92 } },
+            primeraEtiqueta,
+          )
+      } catch (e) {
+        console.warn('paseo: texturas', e?.message)
+      }
+      // Faros de los objetivos del juego (se llenan después)
+      m.addSource('paseo-faros', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      m.addLayer({
+        id: 'paseo-faros',
+        type: 'fill-extrusion',
+        source: 'paseo-faros',
+        paint: {
+          'fill-extrusion-color': ['case', ['==', ['get', 'hecho'], 1], '#3ddc84', ['==', ['get', 'tipo'], 'lugar'], '#ffc23d', '#7cc4ff'],
+          'fill-extrusion-height': ['get', 'h'],
+          'fill-extrusion-opacity': 0.72,
+        },
+      })
+      // La cámara mira hacia adelante: tú vas en el tercio de abajo, como en un juego
+      m.setPadding({ top: Math.round(m.getContainer().clientHeight * 0.32), bottom: 0, left: 0, right: 0 })
       // En la naturaleza (sin edificios cerca) se parte en Dron: a pie solo se vería el suelo de cerca.
       m.once('idle', () => {
         if (modoElegido.current) return
@@ -154,6 +200,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   useEffect(() => {
     let raf = 0
     let ultimoTablero = 0
+    let ultimoLado = 0
     let antes = performance.now()
     const paso = (ahora) => {
       const dt = Math.min(0.25, (ahora - antes) / 1000) // hasta 0,25 s: en celulares lentos se camina igual de rápido
@@ -162,7 +209,8 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       const k = teclas.current
       const md = MODOS[modoRef.current]
       // aceleración y freno suaves (inercia), como un vehículo de verdad
-      const meta = (k.adelante - k.atras) * md.vmax * (k.adelante ? 1 : 0.4)
+      const turbo = k.turbo && modoRef.current !== 'pie' ? 1.7 : 1
+      const meta = (k.adelante - k.atras) * md.vmax * turbo * (k.adelante ? 1 : 0.4)
       const cambio = md.acel * dt * (meta === 0 ? 1.6 : 1)
       vel.current += Math.max(-cambio, Math.min(cambio, meta - vel.current))
       if (Math.abs(vel.current) < 0.05 && meta === 0) vel.current = 0
@@ -173,16 +221,22 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         const n = vel.current ? avanzar({ lat: c.lat, lng: c.lng }, rumbo, vel.current * dt) : { lat: c.lat, lng: c.lng }
         m.jumpTo({ center: [n.lng, n.lat], bearing: rumbo })
       }
+      const lado = k.der - k.izq
+      if (lado !== ultimoLado) {
+        ultimoLado = lado
+        setInclina(lado)
+      }
       if (ahora - ultimoTablero > 200) {
         ultimoTablero = ahora
         const c = m?.getCenter()
+        if (c) revisarObjetivos.current?.(c)
         const alt = c && m.queryTerrainElevation ? m.queryTerrainElevation(c) : null
         setTablero({ kmh: Math.round(Math.abs(vel.current) * 3.6), alt: alt == null ? null : Math.round(alt / 1.15) })
       }
       raf = requestAnimationFrame(paso)
     }
     raf = requestAnimationFrame(paso)
-    const MAPA = { ArrowUp: 'adelante', KeyW: 'adelante', ArrowDown: 'atras', KeyS: 'atras', ArrowLeft: 'izq', KeyA: 'izq', ArrowRight: 'der', KeyD: 'der' }
+    const MAPA = { ArrowUp: 'adelante', KeyW: 'adelante', ArrowDown: 'atras', KeyS: 'atras', ArrowLeft: 'izq', KeyA: 'izq', ArrowRight: 'der', KeyD: 'der', ShiftLeft: 'turbo', ShiftRight: 'turbo', Space: 'turbo' }
     const abajo = (e) => {
       if (e.target?.tagName === 'INPUT') return
       if (e.key === 'Escape') return onCerrar?.()
@@ -222,6 +276,72 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   // Distancias en vivo
   const cerca = lugares.map((l) => ({ ...l, m: Math.round(distanciaKm(yo, l) * 1000) })).sort((a, b) => a.m - b.m)
   const fotosVivas = fotos.map((f) => ({ ...f, m: Math.round(distanciaKm(yo, f) * 1000) })).sort((a, b) => a.m - b.m)
+
+  useEffect(() => {
+    if (!mirarConTelefono) return
+    let suave = null
+    const f = (e) => {
+      const m = mapa.current
+      if (!m || e.beta == null) return
+      // rumbo: brújula del teléfono (iOS la da directo; Android vía alpha)
+      const rumbo = e.webkitCompassHeading ?? (e.absolute || e.alpha != null ? (360 - e.alpha) % 360 : null)
+      // inclinación: teléfono vertical (beta≈90) = mirar al horizonte
+      const pitch = Math.max(35, Math.min(85, e.beta - 5))
+      suave = suave ? { r: suave.r + (((rumbo - suave.r + 540) % 360) - 180) * 0.25, p: suave.p + (pitch - suave.p) * 0.25 } : { r: rumbo ?? m.getBearing(), p: pitch }
+      m.jumpTo({ bearing: rumbo == null ? m.getBearing() : suave.r, pitch: suave.p })
+    }
+    window.addEventListener('deviceorientation', f, true)
+    return () => window.removeEventListener('deviceorientation', f, true)
+  }, [mirarConTelefono])
+  const alternarMirar = async () => {
+    if (mirarConTelefono) return setMirarConTelefono(false)
+    try {
+      // iPhone pide permiso para usar el giroscopio (debe ser al tocar un botón)
+      if (typeof DeviceOrientationEvent?.requestPermission === 'function' && (await DeviceOrientationEvent.requestPermission()) !== 'granted') return
+      setMirarConTelefono(true)
+    } catch {
+      /* sin permiso */
+    }
+  }
+
+  // ---- El juego: faros en lugares y fotos reales; al alcanzarlos sumas puntos y ZUMI cuenta ----
+  const objs = useMemo(() => armarObjetivos(cerca, fotosVivas), [lugares, fotos]) // eslint-disable-line react-hooks/exhaustive-deps
+  const objsRef = useRef(objs)
+  objsRef.current = objs
+  useEffect(() => {
+    const src = mapa.current?.getSource('paseo-faros')
+    if (src && listo) src.setData(farosGeoJSON(objs, juego.recogidos, modo))
+  }, [objs, juego, modo, listo])
+  const revisarObjetivos = useRef(null)
+  revisarObjetivos.current = (c) => {
+    const alcance = ALCANCE[modoRef.current] ?? 30
+    const o = objsRef.current.find((x) => !juegoRef.current.recogidos.has(x.id) && distanciaKm({ lat: c.lat, lng: c.lng }, x) * 1000 <= alcance)
+    if (!o) return
+    const recogidos = new Set(juegoRef.current.recogidos).add(o.id)
+    const bono = Math.round(Math.abs(vel.current) * 3.6) > 60 ? 50 : 0
+    const nuevo = { puntos: juegoRef.current.puntos + o.valor + bono, recogidos }
+    juegoRef.current = nuevo
+    setJuego(nuevo)
+    guardarProgreso({ puntos: nuevo.puntos, recogidos: [...recogidos] })
+    const todos = objsRef.current.every((x) => recogidos.has(x.id))
+    setLogro({ id: o.id, puntos: o.valor + bono, nombre: o.nombre, foto: o.tipo === 'foto' ? o.dato.url : null, autor: o.tipo === 'foto' ? o.dato.autor : null, licencia: o.dato.licencia, todos })
+    if (vozRef.current) sonidoLogro(todos)
+    navigator.vibrate?.(todos ? [30, 60, 30, 60, 60] : 25)
+    if (o.tipo === 'lugar' && !dichos.current.has(o.dato.id)) {
+      dichos.current.add(o.dato.id)
+      const texto = `¡Lo descubriste! ${narracion({ ...o.dato, m: 10 }, yo.rumbo, yo)}`
+      setCuenta({ ...o.dato, texto })
+      if (vozRef.current) hablar([texto]).catch(() => {})
+    }
+  }
+  useEffect(() => {
+    if (!logro) return
+    const t = setTimeout(() => setLogro(null), logro.todos ? 5000 : 2600)
+    return () => clearTimeout(t)
+  }, [logro])
+  const pendientes = objs.filter((o) => !juego.recogidos.has(o.id)).map((o) => ({ ...o, m: Math.round(distanciaKm(yo, o) * 1000), rumbo: rumboHacia(yo, o) })).sort((a, b) => a.m - b.m)
+  const siguiente = pendientes[0]
+  const hechosAqui = objs.length - pendientes.length
 
   // ZUMI cuenta el lugar más cercano que aún no contó (de a uno; el siguiente cuando termina)
   const ocupado = useRef(false)
@@ -362,7 +482,6 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   })
 
   const resultados = q.trim().length >= 2 ? buscarLugares(q, 6) : PASEOS
-  const proximo = cerca.find((x) => !dichos.current.has(x.id) && x.m > RADIO_CONTAR)
 
   return createPortal(
     <div className="paseo fixed inset-0 z-[1200] bg-black text-white" role="dialog" aria-label={`Pasea con ZUMI: ${inicio.nombre}`}>
@@ -417,18 +536,84 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         </div>
       )}
 
-      {/* Fotos reales de aquí */}
-      {fotosVivas.length > 0 && (
-        <div className="absolute right-0 bottom-[14.4rem] left-0 px-3">
-          <p className="rotulo mb-1 !text-[9.5px] [text-shadow:0_1px_4px_#000]">Fotos reales tomadas aquí</p>
-          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {fotosVivas.slice(0, 10).map((f) => (
-              <button key={f.id} type="button" onClick={() => setFoto(f)} className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-white/30">
-                <img src={f.url} alt={f.titulo} loading="lazy" className="size-full object-cover" />
-                <span className="mono absolute right-1 bottom-0.5 text-[10px] [text-shadow:0_1px_3px_#000]">{f.m} m</span>
-              </button>
-            ))}
+      {/* ---- Capa de juego ---- */}
+      {/* líneas de velocidad */}
+      <div className="paseo-velocidad pointer-events-none absolute inset-0" style={{ opacity: Math.min(0.85, Math.max(0, (tablero.kmh / 3.6 / MODOS[modo].vmax - 0.35) * 1.3)) }} aria-hidden="true" />
+      {/* tú (el vehículo), en el tercio de abajo, se ladea al girar */}
+      <div className={`paseo-avatar modo-${modo}`} style={{ '--inclina': inclina }} aria-hidden="true">
+        {modo === 'auto' ? (
+          <svg viewBox="0 0 120 80" className="paseo-vehiculo">
+            <ellipse cx="60" cy="72" rx="52" ry="7" fill="rgba(0,0,0,.45)" />
+            <rect x="12" y="22" width="96" height="44" rx="16" fill="#e2312c" />
+            <rect x="26" y="8" width="68" height="28" rx="10" fill="#b81f1b" />
+            <rect x="32" y="12" width="56" height="18" rx="6" fill="#1b2633" />
+            <rect x="16" y="40" width="18" height="8" rx="3" fill="#ff5a4f" />
+            <rect x="86" y="40" width="18" height="8" rx="3" fill="#ff5a4f" />
+            <rect x="46" y="48" width="28" height="9" rx="2" fill="#f2f2f2" />
+            <rect x="8" y="56" width="20" height="14" rx="4" fill="#151515" />
+            <rect x="92" y="56" width="20" height="14" rx="4" fill="#151515" />
+          </svg>
+        ) : modo === 'dron' ? (
+          <div className="relative">
+            <svg viewBox="0 0 140 60" className="paseo-vehiculo">
+              <g fill="#20242c">
+                <rect x="18" y="26" width="104" height="7" rx="3" />
+                <rect x="56" y="18" width="28" height="22" rx="8" fill="#e8e8ea" />
+              </g>
+              {[18, 122].map((x) => (
+                <ellipse key={x} className="paseo-helice" cx={x} cy="24" rx="20" ry="4" fill="rgba(220,230,255,.55)" />
+              ))}
+            </svg>
+            <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className="absolute top-[-1.4rem] left-1/2 size-9 -translate-x-1/2 rounded-full ring-2 ring-white" />
+            <span className="paseo-sombra-dron" />
           </div>
+        ) : (
+          <div className="relative">
+            <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className={`size-14 rounded-full ring-[3px] ring-white shadow-[0_8px_20px_rgba(0,0,0,.5)] ${tablero.kmh > 0 ? 'paseo-paso' : ''}`} />
+            {modo === 'bici' && <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[28px]">🚲</span>}
+          </div>
+        )}
+      </div>
+
+      {/* puntaje */}
+      <div className="paseo-puntaje pointer-events-none absolute top-[max(8.2rem,calc(env(safe-area-inset-top)+7.7rem))] right-3 text-right">
+        <p className="cifra text-[26px] leading-none font-bold text-[#ffc23d] [text-shadow:0_2px_8px_rgba(0,0,0,.6)]">★ {juego.puntos.toLocaleString('es-CL')}</p>
+        {objs.length > 0 && <p className="mt-0.5 text-[11.5px] font-semibold text-white [text-shadow:0_1px_4px_#000]">{hechosAqui} de {objs.length} lugares</p>}
+      </div>
+
+      {/* hacia el siguiente faro */}
+      {siguiente && (
+        <button type="button" onClick={() => mirarA(siguiente)} className="paseo-siguiente vidrio-solido absolute top-[max(7.6rem,calc(env(safe-area-inset-top)+7.1rem))] left-3 flex max-w-[60%] items-center gap-2 rounded-full py-1.5 pr-3 pl-1.5 text-left">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#ffc23d] text-[16px] font-black text-black" style={{ transform: `rotate(${siguiente.rumbo - yo.rumbo}deg)` }} aria-hidden="true">
+            ↑
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[13px] leading-tight font-semibold">{siguiente.nombre}</span>
+            <span className="mono block text-[11px] text-white/75">{siguiente.m >= 1000 ? `${(siguiente.m / 1000).toFixed(1).replace('.', ',')} km` : `${siguiente.m} m`} · {siguiente.tipo === 'lugar' ? '+150' : '+75'}</span>
+          </span>
+        </button>
+      )}
+
+      {/* minimapa (arriba es hacia donde miras) */}
+      <svg viewBox="-60 -60 120 120" className="paseo-radar pointer-events-none absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-[4.2rem] size-[104px]" aria-hidden="true">
+        <circle r="58" fill="rgba(8,10,14,.62)" stroke="rgba(255,255,255,.25)" />
+        <circle r="29" fill="none" stroke="rgba(255,255,255,.12)" />
+        {objs.map((o) => {
+          const d = Math.min(54, (distanciaKm(yo, o) * 1000 * 54) / ({ pie: 400, bici: 700, auto: 1500, dron: 4000 }[modo] ?? 600))
+          const a = ((rumboHacia(yo, o) - yo.rumbo) * Math.PI) / 180
+          const hecho = juego.recogidos.has(o.id)
+          return <circle key={o.id} cx={Math.sin(a) * d} cy={-Math.cos(a) * d} r={hecho ? 2.5 : 4} fill={hecho ? '#3ddc84' : o.tipo === 'lugar' ? '#ffc23d' : '#7cc4ff'} />
+        })}
+        <path d="M0 -7 L5 5 L0 2 L-5 5 Z" fill="#fff" />
+      </svg>
+
+      {/* ¡logro! */}
+      {logro && (
+        <div key={logro.id} className="paseo-logro pointer-events-none absolute top-[38%] left-1/2 -translate-x-1/2 text-center" role="status">
+          {logro.foto && <img src={logro.foto} alt="" className="mx-auto mb-2 h-20 w-28 rounded-xl object-cover ring-2 ring-white" />}
+          <p className="cifra text-[44px] leading-none font-black text-[#ffc23d] [text-shadow:0_3px_14px_rgba(0,0,0,.7)]">+{logro.puntos}</p>
+          <p className="mt-1 text-[16px] font-bold [text-shadow:0_2px_8px_#000]">{logro.todos ? '¡Descubriste todo este lugar!' : `¡Descubriste ${logro.nombre}!`}</p>
+          {logro.autor && <p className="mt-0.5 text-[11px] text-white/80 [text-shadow:0_1px_4px_#000]">Foto real: {logro.autor} · {logro.licencia}</p>}
         </div>
       )}
 
@@ -451,16 +636,27 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       {/* Controles para caminar */}
       <div className="absolute right-0 bottom-0 left-0 flex items-end justify-between gap-3 p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="flex flex-col gap-2">
-          <button type="button" onClick={cambiarVoz} aria-pressed={voz} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
-            {voz ? '🔊 ZUMI habla' : '🔇 En silencio'}
+          <button type="button" onClick={cambiarVoz} aria-pressed={voz} aria-label={voz ? 'ZUMI habla (toca para silenciar)' : 'En silencio (toca para que ZUMI hable)'} className="paseo-icono">
+            {voz ? '🔊' : '🔇'}
           </button>
-          <button type="button" onClick={() => setSatelite(!satelite)} aria-pressed={satelite} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
-            {satelite ? '🛰️ Foto real' : '🗺️ Mapa'}
+          <button type="button" onClick={() => setSatelite(!satelite)} aria-pressed={satelite} aria-label={satelite ? 'Foto satelital (toca para ver mapa)' : 'Mapa (toca para ver foto satelital)'} className="paseo-icono">
+            {satelite ? '🛰️' : '🗺️'}
           </button>
-          <button type="button" onClick={() => abrirCalle({ lat: yo.lat, lng: yo.lng, nombre: inicio.nombre })} className="vidrio-solido rounded-full px-3 py-2 text-[13px] font-semibold">
-            📷 Calle real
+          {hayGiroscopio && (
+            <button type="button" onClick={alternarMirar} aria-pressed={mirarConTelefono} aria-label={mirarConTelefono ? 'Dejar de mirar con el teléfono' : 'Mirar moviendo el teléfono'} className={`paseo-icono ${mirarConTelefono ? '!bg-white' : ''}`}>
+              📱
+            </button>
+          )}
+          <button type="button" onClick={() => abrirCalle({ lat: yo.lat, lng: yo.lng, nombre: inicio.nombre })} aria-label="Ver la calle real (fotos)" className="paseo-icono">
+            📷
           </button>
         </div>
+        <div className="flex flex-col items-end gap-2">
+        {modo !== 'pie' && (
+          <button type="button" aria-label="Turbo (mantener)" className="paseo-turbo" {...sostener('turbo')} onPointerDown={(e) => (sostener('turbo').onPointerDown(e), vozRef.current && sonidoTurbo())}>
+            ⚡ Turbo
+          </button>
+        )}
         <div className="paseo-cruz grid grid-cols-3 grid-rows-2 gap-1.5" aria-label="Flechas para caminar">
           <span />
           <button type="button" aria-label="Caminar hacia adelante" className="paseo-flecha" {...sostener('adelante')}>
@@ -477,12 +673,8 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
             ▶
           </button>
         </div>
+        </div>
       </div>
-      {proximo && (
-        <button type="button" onClick={() => mirarA(proximo)} className="vidrio-solido absolute right-28 bottom-[11.2rem] left-3 max-w-md truncate rounded-full px-3 py-2 text-left text-[13px]">
-          Cerca: <b>{proximo.titulo}</b> · {proximo.m} m {ladoDe(yo.rumbo, rumboHacia(yo, proximo))}
-        </button>
-      )}
       <p className="pointer-events-none absolute right-2 bottom-[max(0.3rem,calc(env(safe-area-inset-bottom)-0.9rem))] left-2 truncate text-center text-[9.5px] text-white/65 [text-shadow:0_1px_3px_#000]">
         Maqueta 3D del lugar real, no es Street View · Foto: Esri, Maxar · Mapa: OpenFreeMap © OpenStreetMap
       </p>
