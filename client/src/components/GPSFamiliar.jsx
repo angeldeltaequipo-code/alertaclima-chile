@@ -86,9 +86,10 @@ function Formulario({ titulo, boton, onListo, invitacion }) {
 function Bienvenida({ onCrear }) {
   return (
     <div className="space-y-4">
-      <div className="gps-hero overflow-hidden rounded-[26px] p-5 text-white">
+      <div className="gps-hero relative overflow-hidden rounded-[26px] p-5 text-white">
+        <img src={`${import.meta.env.BASE_URL}zumi/poses/corazon.webp`} alt="" width="84" height="110" className="pointer-events-none absolute top-2 right-2 h-[110px] w-auto drop-shadow-[0_8px_16px_rgba(0,0,0,.45)]" />
         <p className="rotulo !text-[#ff6fb1]">GPS familiar · cifrado E2E</p>
-        <h3 className="titulo-x mt-2 text-[28px]">¿Dónde está mi hijo?</h3>
+        <h3 className="titulo-x mt-2 pr-20 text-[28px]">¿Dónde está mi hijo?</h3>
         <p className="mt-2 text-[16px] text-white/70">Tu familia en un mapa vivo. Te avisa cuando llegan al colegio o a la casa, si se les acaba la batería o si hay una emergencia donde están.</p>
         <ul className="mt-4 divide-y divide-white/10 border-y border-white/10 text-[15px]">
           {[
