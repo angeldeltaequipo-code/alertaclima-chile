@@ -1,0 +1,40 @@
+# Diagnóstico: qué se escucha en cada video de client/zumi-doblaje (idioma, frases con tiempos y
+# probabilidad de que no haya voz). Solo muestra el resultado en el registro; no cambia nada.
+name: Escuchar videos de ZUMI
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: 'Ids (separados por espacio); vacío = todos'
+        required: false
+        default: ''
+jobs:
+  escuchar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null && pip install -q openai-whisper
+      - env:
+          IDS: ${{ github.event.inputs.ids }}
+        run: |
+          cd client/zumi-doblaje
+          python - <<'PY'
+          import os, glob, whisper, subprocess
+          ids = os.environ.get('IDS', '').split() or [os.path.basename(f)[:-4] for f in sorted(glob.glob('*.mp4'))]
+          m = whisper.load_model('large-v3')
+          for i in ids:
+              subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', f'{i}.mp4', '-ac', '1', '-ar', '16000', f'/tmp/{i}.wav'], check=True)
+              a = whisper.pad_or_trim(whisper.load_audio(f'/tmp/{i}.wav'))
+              _, p = m.detect_language(whisper.log_mel_spectrogram(a, n_mels=m.dims.n_mels).to(m.device))
+              top = sorted(p.items(), key=lambda x: -x[1])[:3]
+              print(f'=== {i} idiomas: {top}')
+              for lang in ['es', None]:
+                  r = m.transcribe(f'/tmp/{i}.wav', language=lang, temperature=0)
+                  print(f'  [{lang or "auto"}]', r['language'])
+                  for s in r['segments']:
+                      print(f"    {s['start']:.1f}-{s['end']:.1f} nohabla={s['no_speech_prob']:.2f} lp={s['avg_logprob']:.2f}: {s['text']}")
+          PY
