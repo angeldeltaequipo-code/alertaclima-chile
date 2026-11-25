@@ -83,7 +83,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       .then((r) => r.json())
       .then((c) => {
         tokenFoto.current = c.cesium
-        return c.fotorreal && m.activarFotorreal(c.cesium).then((ok) => ok && setFotorreal(true))
+        return c.fotorreal && m.activarFotorreal(c.cesium)
       })
       .catch(() => {})
     m.alFotorreal = setFotorreal
@@ -353,7 +353,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     setInicio(nuevo)
     m?.jumpTo({ center: [p.lng, p.lat], bearing: nuevo.rumbo })
     // en otra ciudad puede haber maqueta 3D real aunque aquí no hubiera
-    if (m && !m.foto && tokenFoto.current) m.activarFotorreal(tokenFoto.current).then((ok) => ok && setFotorreal(true))
+    if (m && !m.foto && tokenFoto.current) m.activarFotorreal(tokenFoto.current)
   }
   const cambiarVoz = () => {
     const v = !voz
