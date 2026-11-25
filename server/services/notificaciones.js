@@ -149,7 +149,7 @@ export async function notificarAlerta(pool, alerta, tipo, { enviar = enviarUnive
      WHERE c.comuna_cut = ANY($1::char(5)[])`,
     [alerta.comunas],
   )
-  const app = urlApp ?? process.env.APP_URL ?? 'https://zumichile.com/'
+  const app = urlApp ?? process.env.APP_URL ?? 'https://zumichile.com/app/'
   const mensaje = JSON.stringify(mensajeAlerta(alerta, tipo, app))
   const resumen = { enviadas: 0, vencidas: 0, fallidas: 0 }
   // Lotes de 20 para no saturar el servidor ni el servicio de notificaciones.
@@ -201,7 +201,7 @@ export async function enviarPrueba(pool, endpoint, { enviar = enviarUniversal, u
   }
   ultimaPrueba.set(endpoint, Date.now())
   if (ultimaPrueba.size > 5000) ultimaPrueba.delete(ultimaPrueba.keys().next().value)
-  const app = urlApp ?? process.env.APP_URL ?? 'https://zumichile.com/'
+  const app = urlApp ?? process.env.APP_URL ?? 'https://zumichile.com/app/'
   const mensaje = JSON.stringify({
     titulo: 'Prueba de ZUMI',
     cuerpo: '¡Funciona! Así te llegarán las alertas oficiales de tus comunas.',

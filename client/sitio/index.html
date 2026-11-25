@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZUMI · Clima, alertas y tu familia en Chile</title>
+<meta name="description" content="ZUMI te avisa antes de que llueva, tiemble o se queme el cerro. Alertas oficiales de SENAPRED, clima de tu comuna, tu familia en un mapa cifrado y viajes guiados, contados por un panda rojo. Gratis, en las 346 comunas de Chile.">
+<meta name="theme-color" content="#0f1d2e">
+<link rel="canonical" href="https://zumichile.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZUMI · Clima, alertas y tu familia en Chile">
+<meta property="og:description" content="Alertas oficiales, clima de tu comuna y tu familia en un mapa, contados por un panda rojo. Gratis.">
+<meta property="og:url" content="https://zumichile.com/">
+<meta property="og:image" content="https://zumichile.com/img/compartir.png">
+<meta property="og:locale" content="es_CL">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/app/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/app/apple-touch-icon.png">
+<script>
+  // Quien abre ZUMI instalada, o llega con una invitación o un pago, va directo a la app.
+  (function () {
+    var l = location, standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone
+    var conDatos = /=/.test(l.search + l.hash)
+    if (standalone || conDatos) l.replace('/app/' + l.search + l.hash)
+  })()
+</script>
+<link rel="preload" href="fuentes/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"ZUMI","operatingSystem":"iOS, Android, Web","applicationCategory":"WeatherApplication","inLanguage":"es-CL","url":"https://zumichile.com/","offers":{"@type":"Offer","price":"0","priceCurrency":"CLP"}}
+</script>
+<style>
+@font-face{font-family:'Archivo';font-style:normal;font-display:swap;font-weight:100 900;font-stretch:62% 125%;src:url(fuentes/archivo.woff2) format('woff2-variations'),url(fuentes/archivo.woff2) format('woff2')}
+:root{
+  --noche:#0f1d2e; --noche-2:#16283d; --glaciar:#eef3f6; --blanco:#ffffff;
+  --tinta:#14202c; --pizarra:#536577; --linea:#d5dfe6;
+  --panda:#c8501f; --panda-hondo:#a63f14; --crema-panda:#f6dcc9;
+  --verde:#1e7a4c; --ambar:#e3a020; --roja:#c9302c;
+  --r-tel:34px; --ancho:1180px;
+  --f:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--glaciar);color:var(--tinta);font-family:var(--f);font-size:18px;line-height:1.55;font-variation-settings:'wdth' 100;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--panda);outline-offset:3px;border-radius:6px}
+.envoltura{max-width:var(--ancho);margin:0 auto;padding:0 24px}
+h1,h2,h3{font-variation-settings:'wdth' 66;font-weight:850;line-height:.98;letter-spacing:-.01em;margin:0}
+h1{font-size:clamp(46px,7.4vw,98px)}
+h2{font-size:clamp(38px,5.2vw,68px)}
+h3{font-size:clamp(24px,2.4vw,30px);line-height:1.08}
+p{margin:0}
+.lead{font-size:clamp(19px,1.7vw,22px);color:var(--pizarra);max-width:34em}
+.oscuro .lead{color:#b7c5d3}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:54px;padding:0 26px;border-radius:999px;font:inherit;font-weight:750;font-size:18px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s ease,background .15s ease}
+.btn:active{transform:scale(.97)}
+.btn-panda{background:var(--panda);color:#fff}
+.btn-panda:hover{background:var(--panda-hondo)}
+.btn-borde{background:transparent;color:inherit;box-shadow:inset 0 0 0 2px currentColor}
+.btn-borde:hover{background:rgba(127,127,127,.12)}
+
+/* Navegación */
+.nav{position:sticky;top:0;z-index:50;background:rgba(238,243,246,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nav.con-borde{border-color:var(--linea)}
+.nav .envoltura{display:flex;align-items:center;gap:28px;height:68px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:900;font-size:26px;font-variation-settings:'wdth' 72;letter-spacing:.01em}
+.marca img{width:38px;height:38px;border-radius:11px}
+.nav-links{display:flex;gap:24px;margin-left:auto}
+.nav-links a{text-decoration:none;font-weight:600;font-size:16px;color:var(--pizarra)}
+.nav-links a:hover{color:var(--tinta)}
+.nav .btn{min-height:44px;padding:0 20px;font-size:16px}
+@media (max-width:860px){.nav-links{display:none}.nav .btn{margin-left:auto}}
+
+/* Portada */
+.portada{padding:56px 0 40px;overflow:hidden}
+.portada .envoltura{display:grid;grid-template-columns:1.08fr .92fr;gap:40px;align-items:center}
+.portada h1{max-width:9.6em}
+.portada .lead{margin-top:24px}
+.acciones{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.nota-gratis{margin-top:18px;font-size:15px;color:var(--pizarra)}
+.escena{position:relative;justify-self:center;width:min(100%,430px);aspect-ratio:.86}
+.escena .tel{position:absolute;right:4%;top:0;width:66%}
+.escena .zumi-hola{position:absolute;left:-4%;bottom:-2%;width:48%;filter:drop-shadow(0 18px 24px rgba(15,29,46,.28));z-index:2}
+.globo-zumi{position:absolute;left:-6%;top:16%;z-index:3;background:#fff;border-radius:20px 20px 20px 6px;padding:12px 16px;font-size:15px;line-height:1.35;max-width:210px;box-shadow:0 10px 30px rgba(15,29,46,.16)}
+.globo-zumi b{display:block;font-size:13px;color:var(--panda);margin-bottom:2px}
+@media (max-width:860px){
+  .portada{padding-top:28px}
+  .portada .envoltura{grid-template-columns:1fr}
+  .escena{width:min(100%,360px);margin-top:48px}
+}
+
+/* Teléfono */
+.tel{border-radius:var(--r-tel);background:#05080c;padding:9px;box-shadow:0 0 0 1px #2a3542,0 30px 60px -18px rgba(15,29,46,.55)}
+.tel img{width:100%;height:auto;aspect-ratio:9/19.4;object-fit:cover;object-position:top;border-radius:calc(var(--r-tel) - 8px);background:#000}
+
+/* Banda de Chile */
+.chile{background:var(--noche);color:#fff;padding:72px 0 64px;overflow:hidden}
+.chile-cab{display:flex;flex-wrap:wrap;gap:20px 48px;align-items:end;justify-content:space-between}
+.chile-cab h2{max-width:11em}
+.chile-cab p{max-width:26em;color:#b7c5d3}
+.mapa-chile{margin-top:40px;position:relative}
+.mapa-chile svg{width:100%;height:auto;overflow:visible}
+.mapa-chile circle{fill:#f3a578;opacity:.9}
+.mapa-chile .ciudad{fill:#8ea3b8;font-size:13px;font-family:var(--f);font-weight:600}
+.mapa-chile .marcador{fill:var(--panda)}
+.mapa-chile .halo{fill:none;stroke:#f3a578;stroke-width:2}
+.cifras{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:48px;border-top:1px solid #2b3f55}
+.cifras div{padding:22px 20px 0 0}
+.cifras b{display:block;font-size:clamp(40px,4.6vw,60px);font-weight:850;font-variation-settings:'wdth' 66;line-height:1;color:#fff}
+.cifras span{color:#b7c5d3;font-size:16px}
+@media (max-width:760px){.cifras{grid-template-columns:repeat(2,1fr)}.mapa-chile{margin-left:-24px!important;margin-right:-24px;overflow-x:auto;padding:0 24px 8px;scrollbar-width:none}.mapa-chile svg{min-width:860px}}
+@media (prefers-reduced-motion:no-preference){
+  .chile.ver circle.p{animation:encender .5s ease-out both;animation-delay:var(--d)}
+  @keyframes encender{from{opacity:0;transform:scale(.2)}to{opacity:.9;transform:none}}
+  .mapa-chile circle.p{transform-box:fill-box;transform-origin:center}
+  .chile:not(.ver) circle.p{opacity:0}
+  .halo{animation:latido 2.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes latido{from{transform:scale(.6);opacity:1}to{transform:scale(2.4);opacity:0}}
+}
+
+/* Cómo llega un aviso */
+.seccion{padding:104px 0}
+.cab{max-width:44em}
+.cab .lead{margin-top:18px}
+.flujo{margin-top:56px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;counter-reset:paso;position:relative}
+.paso{position:relative;padding:0 24px 0 0}
+.paso .num{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--noche);color:#fff;font-weight:850;font-size:22px;position:relative;z-index:1}
+.paso::before{content:"";position:absolute;top:26px;left:52px;right:0;height:2px;background:repeating-linear-gradient(90deg,var(--pizarra) 0 6px,transparent 6px 12px);opacity:.5}
+.paso:last-child::before{display:none}
+.paso h3{margin-top:22px;font-size:26px}
+.paso p{margin-top:10px;color:var(--pizarra);font-size:16.5px}
+.paso .fuentes{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;padding:4px 10px;border-radius:8px;background:#fff;border:1px solid var(--linea);font-size:13.5px;font-weight:650;color:var(--tinta)}
+.niveles{margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:14.5px}
+.niveles span{display:flex;align-items:center;gap:8px}
+.niveles i{width:14px;height:14px;border-radius:4px;display:inline-block}
+@media (max-width:900px){
+  .flujo{grid-template-columns:1fr;gap:34px}
+  .paso{padding:0 0 0 72px}
+  .paso .num{position:absolute;left:0;top:0}
+  .paso h3{margin-top:10px}
+  .paso::before{top:52px;bottom:-34px;left:25px;right:auto;width:2px;height:auto;background:repeating-linear-gradient(180deg,var(--pizarra) 0 6px,transparent 6px 12px)}
+}
+
+/* Capítulos de funciones */
+.capitulo{padding:96px 0;border-top:1px solid var(--linea)}
+.capitulo .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.capitulo.inverso .texto{order:2}
+.capitulo .texto .lead{margin-top:18px}
+.detalles{margin:30px 0 0;padding:0;list-style:none;display:grid;gap:16px}
+.detalles li{display:grid;grid-template-columns:28px 1fr;gap:12px;font-size:17px}
+.detalles li::before{content:"";width:12px;height:12px;margin-top:8px;border-radius:50%;background:var(--panda);box-shadow:0 0 0 5px var(--crema-panda)}
+.detalles b{font-weight:750}
+.pantallas{position:relative;display:flex;justify-content:center;gap:20px}
+.pantallas .tel{width:min(46%,280px)}
+.pantallas .tel:nth-child(2){margin-top:64px}
+.pantallas.una .tel{width:min(62%,320px)}
+.pantallas .pose{position:absolute;width:120px;bottom:-24px;left:2%;filter:drop-shadow(0 12px 16px rgba(15,29,46,.25))}
+.oscuro{background:var(--noche);color:#fff;border-top:0}
+.oscuro .detalles li::before{box-shadow:0 0 0 5px rgba(200,80,31,.25)}
+.oscuro .chip{background:var(--noche-2);border-color:#2b3f55;color:#dbe5ee}
+.mini{margin-top:26px;font-size:14.5px;color:var(--pizarra)}
+.oscuro .mini{color:#8ea3b8}
+@media (max-width:900px){
+  .capitulo{padding:72px 0}
+  .capitulo .envoltura{grid-template-columns:1fr;gap:44px}
+  .capitulo.inverso .texto{order:0}
+  .pantallas .tel{width:min(46%,230px)}
+}
+
+/* Un día con ZUMI */
+.dia{margin-top:52px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.momento{background:#fff;border-radius:18px;padding:20px 18px 22px;border:1px solid var(--linea);position:relative}
+.momento time{font-weight:850;font-size:30px;font-variation-settings:'wdth' 66;display:block;line-height:1}
+.momento p{margin-top:10px;font-size:15.5px;color:var(--pizarra)}
+.momento .q{margin-top:12px;font-size:14.5px;background:var(--glaciar);border-radius:12px 12px 12px 4px;padding:9px 11px;color:var(--tinta)}
+.momento.aviso{background:#fff7e3;border-color:#f0d58e}
+@media (max-width:1000px){.dia{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.dia{grid-template-columns:1fr}}
+
+/* Gráfico de ruta */
+.grafico-ruta{margin-top:34px;background:var(--noche-2);border-radius:20px;padding:20px 20px 14px;border:1px solid #2b3f55}
+.grafico-ruta svg{width:100%;height:auto}
+.grafico-ruta figcaption{font-size:13.5px;color:#8ea3b8;margin-top:6px}
+
+/* Planes */
+.planes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:52px;align-items:start}
+.plan{background:#fff;border:1px solid var(--linea);border-radius:24px;padding:28px 26px}
+.plan.destacado{background:var(--noche);color:#fff;border-color:var(--noche);transform:translateY(-12px)}
+.plan h3{font-size:34px}
+.plan .lema{color:var(--pizarra);font-size:16px;margin-top:6px}
+.plan.destacado .lema{color:#b7c5d3}
+.precio{margin-top:22px;font-weight:850;font-variation-settings:'wdth' 66;font-size:50px;line-height:1}
+.precio small{font-size:17px;font-weight:600;font-variation-settings:'wdth' 100;color:var(--pizarra)}
+.plan.destacado .precio small{color:#b7c5d3}
+.anual{font-size:15px;color:var(--pizarra);margin-top:6px}
+.plan.destacado .anual{color:#b7c5d3}
+.plan ul{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:10px;font-size:16px}
+.plan li{padding-left:28px;position:relative}
+.plan li::before{content:"";position:absolute;left:2px;top:7px;width:14px;height:8px;border-left:3px solid var(--verde);border-bottom:3px solid var(--verde);transform:rotate(-45deg)}
+.plan.destacado li::before{border-color:#7fd3a5}
+.plan .btn{margin-top:26px;width:100%;justify-content:center}
+.aviso-lanzamiento{margin-top:34px;display:flex;gap:18px;align-items:center;background:#e4f3ea;border:1px solid #b9dfc8;border-radius:18px;padding:18px 22px;font-size:16.5px}
+.aviso-lanzamiento img{width:64px;flex:none}
+@media (max-width:900px){.planes{grid-template-columns:1fr}.plan.destacado{transform:none}}
+
+/* Tabla comparativa */
+.tabla-env{margin-top:40px;overflow-x:auto;background:#fff;border:1px solid var(--linea);border-radius:20px}
+table{width:100%;border-collapse:collapse;font-size:16px;min-width:620px}
+th,td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--linea)}
+th{font-weight:750;background:#f6f9fb}
+td:not(:first-child),th:not(:first-child){text-align:center;width:16%}
+tr:last-child td{border-bottom:0}
+.si{color:var(--verde);font-weight:800}
+
+/* Privacidad */
+.privacidad .envoltura{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:center}
+.candado svg{width:100%;height:auto}
+@media (max-width:900px){.privacidad .envoltura{grid-template-columns:1fr}}
+
+/* Instalar */
+.instalar{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:44px}
+.sistema{background:#fff;border:1px solid var(--linea);border-radius:22px;padding:26px}
+.sistema h3{font-size:28px}
+.sistema ol{margin:16px 0 0;padding-left:22px;display:grid;gap:8px;font-size:16.5px}
+@media (max-width:760px){.instalar{grid-template-columns:1fr}}
+
+/* Preguntas */
+.preguntas{margin-top:40px;border-top:1px solid var(--linea)}
+details{border-bottom:1px solid var(--linea)}
+summary{cursor:pointer;list-style:none;padding:22px 44px 22px 0;font-weight:750;font-size:20px;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";position:absolute;right:8px;top:30px;width:12px;height:12px;border-right:2.5px solid var(--tinta);border-bottom:2.5px solid var(--tinta);transform:rotate(45deg);transition:transform .2s}
+details[open] summary::after{transform:rotate(225deg);top:36px}
+details p{padding:0 0 24px;color:var(--pizarra);max-width:46em}
+
+/* Cierre */
+.cierre{background:var(--panda);color:#fff;padding:96px 0 0;overflow:hidden}
+.cierre .envoltura{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:end}
+.cierre h2{max-width:10em}
+.cierre p{margin-top:18px;font-size:20px;color:#ffe6d8;max-width:28em}
+.cierre .btn-panda{background:#fff;color:var(--panda-hondo)}
+.cierre .btn-panda:hover{background:#ffe6d8}
+.cierre .acciones{padding-bottom:96px}
+.cierre img{width:min(100%,360px);justify-self:center}
+@media (max-width:860px){.cierre .envoltura{grid-template-columns:1fr}.cierre .acciones{padding-bottom:20px}.cierre img{width:220px}}
+
+footer{background:var(--noche);color:#b7c5d3;padding:48px 0;font-size:15px}
+footer .envoltura{display:flex;flex-wrap:wrap;gap:24px 40px;justify-content:space-between}
+footer a{color:#fff}
+.emergencias{display:flex;flex-wrap:wrap;gap:10px}
+.emergencias a{text-decoration:none;background:var(--noche-2);border:1px solid #2b3f55;border-radius:12px;padding:8px 14px;color:#fff}
+.emergencias b{font-size:20px;margin-right:6px}
+
+.solo-lector{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="envoltura">
+    <a class="marca" href="#inicio" aria-label="ZUMI, inicio"><img src="/app/icono-192.png" alt="" width="38" height="38">ZUMI</a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#funciones">Qué hace</a>
+      <a href="#familia">Familia</a>
+      <a href="#planes">Planes</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="btn btn-panda" href="/app/">Abrir ZUMI</a>
+  </div>
+</header>
+
+<main id="inicio">
+
+<section class="portada">
+  <div class="envoltura">
+    <div>
+      <h1>ZUMI te avisa antes de que llueva, tiemble o se queme el cerro.</h1>
+      <p class="lead">Alertas oficiales, el clima de tu comuna y tu familia en un mapa, contados por un panda rojo que habla claro. Funciona en el navegador de tu teléfono, sin descargar nada.</p>
+      <div class="acciones">
+        <a class="btn btn-panda" href="/app/">Abrir ZUMI gratis</a>
+        <a class="btn btn-borde" href="#instalar">Dejarla en mi pantalla</a>
+      </div>
+      <p class="nota-gratis">Sin cuenta para empezar. Lo que protege la vida es gratis, siempre.</p>
+    </div>
+    <div class="escena" aria-hidden="true">
+      <div class="tel"><img src="img/ahora.webp" alt="" width="390" height="844"></div>
+      <div class="globo-zumi"><b>ZUMI</b>Viene lluvia a las 15:00. Lleva paraguas y chaqueta.</div>
+      <img class="zumi-hola" src="img/zumi-paraguas.webp" alt="" width="482" height="560">
+    </div>
+  </div>
+</section>
+
+<section class="chile" id="chile" aria-labelledby="t-chile">
+  <div class="envoltura">
+    <div class="chile-cab">
+      <h2 id="t-chile">De Arica a Puerto Williams, comuna por comuna.</h2>
+      <p>Cada punto es una comuna que ZUMI vigila. Elige la tuya y recibes los avisos que te tocan a ti, no los de todo el país.</p>
+    </div>
+    <figure class="mapa-chile" style="margin:40px 0 0">
+      <svg viewBox="0 0 992 199" role="img" aria-label="Mapa de Chile con un punto por cada comuna, de norte a sur">
+        <g id="puntos"><circle cx="33.9" cy="62.0" r="3.2"/><circle cx="46.7" cy="56.3" r="3.2"/><circle cx="17.3" cy="52.9" r="3.2"/><circle cx="34.4" cy="48.4" r="3.2"/><circle cx="78.3" cy="62.5" r="3.2"/><circle cx="57.5" cy="51.5" r="3.2"/><circle cx="56.7" cy="36.0" r="3.2"/><circle cx="62.3" cy="46.9" r="3.2"/><circle cx="93.0" cy="64.6" r="3.2"/><circle cx="84.4" cy="43.5" r="3.2"/><circle cx="93.8" cy="51.5" r="3.2"/><circle cx="183.4" cy="48.1" r="3.2"/><circle cx="128.2" cy="31.2" r="3.2"/><circle cx="128.0" cy="50.3" r="3.2"/><circle cx="148.9" cy="65.0" r="3.2"/><circle cx="112.0" cy="27.5" r="3.2"/><circle cx="161.0" cy="18.2" r="3.2"/><circle cx="157.9" cy="48.0" r="3.2"/><circle cx="211.8" cy="57.8" r="3.2"/><circle cx="126.4" cy="61.6" r="3.2"/><circle cx="309.0" cy="65.8" r="3.2"/><circle cx="261.9" cy="79.3" r="3.2"/><circle cx="240.5" cy="71.7" r="3.2"/><circle cx="266.7" cy="59.3" r="3.2"/><circle cx="232.2" cy="45.2" r="3.2"/><circle cx="300.7" cy="87.7" r="3.2"/><circle cx="289.2" cy="85.2" r="3.2"/><circle cx="278.9" cy="55.2" r="3.2"/><circle cx="299.4" cy="80.2" r="3.2"/><circle cx="340.3" cy="85.5" r="3.2"/><circle cx="371.7" cy="92.6" r="3.2"/><circle cx="363.1" cy="83.0" r="3.2"/><circle cx="339.3" cy="90.3" r="3.2"/><circle cx="375.0" cy="82.2" r="3.2"/><circle cx="317.5" cy="81.8" r="3.2"/><circle cx="329.3" cy="85.3" r="3.2"/><circle cx="384.0" cy="88.6" r="3.2"/><circle cx="357.1" cy="76.9" r="3.2"/><circle cx="353.5" cy="94.8" r="3.2"/><circle cx="339.5" cy="70.4" r="3.2"/><circle cx="358.1" cy="91.2" r="3.2"/><circle cx="345.5" cy="76.6" r="3.2"/><circle cx="383.3" cy="75.9" r="3.2"/><circle cx="330.4" cy="71.5" r="3.2"/><circle cx="420.2" cy="95.7" r="3.2"/><circle cx="396.7" cy="80.5" r="3.2"/><circle cx="410.5" cy="73.4" r="3.2"/><circle cx="425.4" cy="93.0" r="3.2"/><circle cx="420.1" cy="91.0" r="3.2"/><circle cx="404.3" cy="82.3" r="3.2"/><circle cx="410.5" cy="93.0" r="3.2"/><circle cx="422.4" cy="96.9" r="3.2"/><circle cx="424.2" cy="95.2" r="3.2"/><circle cx="408.0" cy="85.2" r="3.2"/><circle cx="406.7" cy="87.2" r="3.2"/><circle cx="407.0" cy="88.7" r="3.2"/><circle cx="395.4" cy="88.8" r="3.2"/><circle cx="412.5" cy="88.3" r="3.2"/><circle cx="408.8" cy="80.9" r="3.2"/><circle cx="410.5" cy="67.3" r="3.2"/><circle cx="403.8" cy="86.7" r="3.2"/><circle cx="412.7" cy="85.4" r="3.2"/><circle cx="405.9" cy="79.4" r="3.2"/><circle cx="398.1" cy="91.1" r="3.2"/><circle cx="390.9" cy="79.4" r="3.2"/><circle cx="405.0" cy="91.8" r="3.2"/><circle cx="398.1" cy="74.2" r="3.2"/><circle cx="409.0" cy="89.5" r="3.2"/><circle cx="414.8" cy="91.1" r="3.2"/><circle cx="407.5" cy="93.2" r="3.2"/><circle cx="408.2" cy="77.3" r="3.2"/><circle cx="429.1" cy="93.9" r="3.2"/><circle cx="403.0" cy="69.8" r="3.2"/><circle cx="404.8" cy="77.4" r="3.2"/><circle cx="403.6" cy="75.3" r="3.2"/><circle cx="432.1" cy="97.5" r="3.2"/><circle cx="414.5" cy="96.2" r="3.2"/><circle cx="413.2" cy="90.5" r="3.2"/><circle cx="412.3" cy="94.4" r="3.2"/><circle cx="400.9" cy="90.2" r="3.2"/><circle cx="438.6" cy="85.2" r="3.2"/><circle cx="430.9" cy="77.4" r="3.2"/><circle cx="427.7" cy="79.0" r="3.2"/><circle cx="424.6" cy="77.3" r="3.2"/><circle cx="422.7" cy="77.8" r="3.2"/><circle cx="415.3" cy="74.8" r="3.2"/><circle cx="421.7" cy="76.4" r="3.2"/><circle cx="421.4" cy="85.4" r="3.2"/><circle cx="426.2" cy="76.5" r="3.2"/><circle cx="429.1" cy="84.0" r="3.2"/><circle cx="423.6" cy="77.1" r="3.2"/><circle cx="421.2" cy="75.7" r="3.2"/><circle cx="422.3" cy="76.3" r="3.2"/><circle cx="431.1" cy="82.4" r="3.2"/><circle cx="425.3" cy="76.2" r="3.2"/><circle cx="425.4" cy="73.7" r="3.2"/><circle cx="425.6" cy="75.4" r="3.2"/><circle cx="426.7" cy="75.6" r="3.2"/><circle cx="423.3" cy="73.5" r="3.2"/><circle cx="418.8" cy="80.3" r="3.2"/><circle cx="422.6" cy="73.2" r="3.2"/><circle cx="419.4" cy="70.5" r="3.2"/><circle cx="425.1" cy="76.8" r="3.2"/><circle cx="423.2" cy="77.5" r="3.2"/><circle cx="424.4" cy="74.9" r="3.2"/><circle cx="425.1" cy="79.3" r="3.2"/><circle cx="424.5" cy="87.6" r="3.2"/><circle cx="431.1" cy="88.0" r="3.2"/><circle cx="423.4" cy="74.9" r="3.2"/><circle cx="426.0" cy="80.6" r="3.2"/><circle cx="434.0" cy="77.7" r="3.2"/><circle cx="424.3" cy="76.5" r="3.2"/><circle cx="427.5" cy="81.0" r="3.2"/><circle cx="424.1" cy="73.2" r="3.2"/><circle cx="430.2" cy="73.0" r="3.2"/><circle cx="422.7" cy="75.2" r="3.2"/><circle cx="422.5" cy="80.4" r="3.2"/><circle cx="426.8" cy="73.9" r="3.2"/><circle cx="420.9" cy="77.9" r="3.2"/><circle cx="422.7" cy="77.0" r="3.2"/><circle cx="422.3" cy="75.7" r="3.2"/><circle cx="422.0" cy="77.7" r="3.2"/><circle cx="428.2" cy="76.7" r="3.2"/><circle cx="424.5" cy="75.5" r="3.2"/><circle cx="429.0" cy="65.6" r="3.2"/><circle cx="424.4" cy="76.0" r="3.2"/><circle cx="435.6" cy="93.2" r="3.2"/><circle cx="425.6" cy="75.8" r="3.2"/><circle cx="423.5" cy="76.0" r="3.2"/><circle cx="429.3" cy="80.9" r="3.2"/><circle cx="413.6" cy="80.9" r="3.2"/><circle cx="421.4" cy="74.1" r="3.2"/><circle cx="458.2" cy="90.3" r="3.2"/><circle cx="456.8" cy="83.5" r="3.2"/><circle cx="438.5" cy="71.6" r="3.2"/><circle cx="444.8" cy="82.4" r="3.2"/><circle cx="445.3" cy="85.7" r="3.2"/><circle cx="442.8" cy="81.4" r="3.2"/><circle cx="439.3" cy="77.8" r="3.2"/><circle cx="442.9" cy="95.7" r="3.2"/><circle cx="442.0" cy="89.5" r="3.2"/><circle cx="440.4" cy="98.1" r="3.2"/><circle cx="457.9" cy="96.9" r="3.2"/><circle cx="446.9" cy="67.3" r="3.2"/><circle cx="450.2" cy="80.1" r="3.2"/><circle cx="447.1" cy="96.7" r="3.2"/><circle cx="436.2" cy="74.9" r="3.2"/><circle cx="455.1" cy="87.7" r="3.2"/><circle cx="437.9" cy="100.4" r="3.2"/><circle cx="443.2" cy="79.8" r="3.2"/><circle cx="451.2" cy="91.0" r="3.2"/><circle cx="455.2" cy="103.1" r="3.2"/><circle cx="449.7" cy="93.4" r="3.2"/><circle cx="446.2" cy="88.3" r="3.2"/><circle cx="447.1" cy="90.4" r="3.2"/><circle cx="447.2" cy="102.2" r="3.2"/><circle cx="453.5" cy="85.1" r="3.2"/><circle cx="453.0" cy="97.7" r="3.2"/><circle cx="446.9" cy="83.3" r="3.2"/><circle cx="440.9" cy="79.5" r="3.2"/><circle cx="449.2" cy="78.2" r="3.2"/><circle cx="446.9" cy="75.2" r="3.2"/><circle cx="457.0" cy="74.6" r="3.2"/><circle cx="449.5" cy="85.5" r="3.2"/><circle cx="454.2" cy="91.7" r="3.2"/><circle cx="488.9" cy="111.6" r="3.2"/><circle cx="482.2" cy="114.0" r="3.2"/><circle cx="491.0" cy="79.6" r="3.2"/><circle cx="472.7" cy="108.5" r="3.2"/><circle cx="467.7" cy="103.4" r="3.2"/><circle cx="469.5" cy="81.3" r="3.2"/><circle cx="479.5" cy="110.9" r="3.2"/><circle cx="462.6" cy="97.3" r="3.2"/><circle cx="462.8" cy="103.0" r="3.2"/><circle cx="488.7" cy="89.5" r="3.2"/><circle cx="491.6" cy="94.7" r="3.2"/><circle cx="476.9" cy="98.4" r="3.2"/><circle cx="472.1" cy="78.9" r="3.2"/><circle cx="495.6" cy="99.4" r="3.2"/><circle cx="473.6" cy="91.7" r="3.2"/><circle cx="486.9" cy="116.2" r="3.2"/><circle cx="471.6" cy="100.5" r="3.2"/><circle cx="462.1" cy="92.0" r="3.2"/><circle cx="489.9" cy="100.1" r="3.2"/><circle cx="471.3" cy="88.7" r="3.2"/><circle cx="465.6" cy="76.7" r="3.2"/><circle cx="466.6" cy="94.9" r="3.2"/><circle cx="483.8" cy="77.1" r="3.2"/><circle cx="480.2" cy="103.3" r="3.2"/><circle cx="471.3" cy="94.0" r="3.2"/><circle cx="474.6" cy="96.0" r="3.2"/><circle cx="460.9" cy="82.6" r="3.2"/><circle cx="459.3" cy="104.6" r="3.2"/><circle cx="481.8" cy="98.0" r="3.2"/><circle cx="481.5" cy="94.4" r="3.2"/><circle cx="513.5" cy="101.9" r="3.2"/><circle cx="506.0" cy="111.8" r="3.2"/><circle cx="510.2" cy="110.4" r="3.2"/><circle cx="494.4" cy="119.9" r="3.2"/><circle cx="503.7" cy="114.6" r="3.2"/><circle cx="496.9" cy="103.4" r="3.2"/><circle cx="512.8" cy="93.5" r="3.2"/><circle cx="502.7" cy="119.8" r="3.2"/><circle cx="508.7" cy="94.8" r="3.2"/><circle cx="510.8" cy="104.6" r="3.2"/><circle cx="510.6" cy="115.0" r="3.2"/><circle cx="506.0" cy="117.1" r="3.2"/><circle cx="507.4" cy="108.9" r="3.2"/><circle cx="496.0" cy="115.8" r="3.2"/><circle cx="500.8" cy="117.3" r="3.2"/><circle cx="499.3" cy="104.9" r="3.2"/><circle cx="506.6" cy="87.7" r="3.2"/><circle cx="514.7" cy="108.3" r="3.2"/><circle cx="502.4" cy="108.7" r="3.2"/><circle cx="498.7" cy="112.6" r="3.2"/><circle cx="518.1" cy="102.4" r="3.2"/><circle cx="537.3" cy="91.9" r="3.2"/><circle cx="524.2" cy="94.4" r="3.2"/><circle cx="523.3" cy="133.4" r="3.2"/><circle cx="517.0" cy="111.9" r="3.2"/><circle cx="538.9" cy="134.2" r="3.2"/><circle cx="513.3" cy="125.2" r="3.2"/><circle cx="511.6" cy="124.4" r="3.2"/><circle cx="543.3" cy="129.9" r="3.2"/><circle cx="515.8" cy="127.1" r="3.2"/><circle cx="528.9" cy="130.1" r="3.2"/><circle cx="510.5" cy="119.5" r="3.2"/><circle cx="509.9" cy="128.3" r="3.2"/><circle cx="516.9" cy="122.4" r="3.2"/><circle cx="523.5" cy="116.7" r="3.2"/><circle cx="531.7" cy="137.9" r="3.2"/><circle cx="534.0" cy="130.2" r="3.2"/><circle cx="526.6" cy="112.2" r="3.2"/><circle cx="518.9" cy="127.7" r="3.2"/><circle cx="538.1" cy="106.5" r="3.2"/><circle cx="527.4" cy="121.8" r="3.2"/><circle cx="531.0" cy="116.1" r="3.2"/><circle cx="508.9" cy="124.2" r="3.2"/><circle cx="541.2" cy="95.9" r="3.2"/><circle cx="525.9" cy="101.5" r="3.2"/><circle cx="512.6" cy="127.6" r="3.2"/><circle cx="521.4" cy="119.0" r="3.2"/><circle cx="532.1" cy="100.3" r="3.2"/><circle cx="522.3" cy="123.5" r="3.2"/><circle cx="507.8" cy="128.1" r="3.2"/><circle cx="549.4" cy="133.7" r="3.2"/><circle cx="505.1" cy="123.0" r="3.2"/><circle cx="520.9" cy="99.7" r="3.2"/><circle cx="517.9" cy="117.9" r="3.2"/><circle cx="536.5" cy="121.0" r="3.2"/><circle cx="558.4" cy="131.5" r="3.2"/><circle cx="556.3" cy="123.5" r="3.2"/><circle cx="541.2" cy="110.0" r="3.2"/><circle cx="566.6" cy="105.0" r="3.2"/><circle cx="552.7" cy="99.7" r="3.2"/><circle cx="575.6" cy="94.1" r="3.2"/><circle cx="543.2" cy="113.5" r="3.2"/><circle cx="567.0" cy="114.5" r="3.2"/><circle cx="553.4" cy="121.2" r="3.2"/><circle cx="571.9" cy="118.8" r="3.2"/><circle cx="555.8" cy="109.9" r="3.2"/><circle cx="577.1" cy="118.0" r="3.2"/><circle cx="554.6" cy="87.2" r="3.2"/><circle cx="541.2" cy="120.9" r="3.2"/><circle cx="548.7" cy="126.2" r="3.2"/><circle cx="562.5" cy="96.0" r="3.2"/><circle cx="559.7" cy="124.7" r="3.2"/><circle cx="562.4" cy="117.6" r="3.2"/><circle cx="553.0" cy="113.6" r="3.2"/><circle cx="570.4" cy="123.3" r="3.2"/><circle cx="574.9" cy="101.2" r="3.2"/><circle cx="541.5" cy="126.8" r="3.2"/><circle cx="534.5" cy="116.4" r="3.2"/><circle cx="563.2" cy="131.4" r="3.2"/><circle cx="559.0" cy="117.7" r="3.2"/><circle cx="569.2" cy="129.8" r="3.2"/><circle cx="573.2" cy="126.4" r="3.2"/><circle cx="548.0" cy="118.5" r="3.2"/><circle cx="549.4" cy="109.2" r="3.2"/><circle cx="560.0" cy="106.3" r="3.2"/><circle cx="575.0" cy="109.0" r="3.2"/><circle cx="593.2" cy="133.6" r="3.2"/><circle cx="597.0" cy="108.1" r="3.2"/><circle cx="598.1" cy="131.8" r="3.2"/><circle cx="603.8" cy="106.2" r="3.2"/><circle cx="581.3" cy="116.3" r="3.2"/><circle cx="589.7" cy="117.4" r="3.2"/><circle cx="586.0" cy="122.3" r="3.2"/><circle cx="580.5" cy="126.3" r="3.2"/><circle cx="595.3" cy="122.6" r="3.2"/><circle cx="587.5" cy="105.9" r="3.2"/><circle cx="605.8" cy="117.1" r="3.2"/><circle cx="590.0" cy="127.7" r="3.2"/><circle cx="645.9" cy="142.5" r="3.2"/><circle cx="637.7" cy="129.5" r="3.2"/><circle cx="657.6" cy="144.8" r="3.2"/><circle cx="671.4" cy="115.1" r="3.2"/><circle cx="663.3" cy="144.3" r="3.2"/><circle cx="639.3" cy="108.4" r="3.2"/><circle cx="656.8" cy="137.3" r="3.2"/><circle cx="653.8" cy="141.1" r="3.2"/><circle cx="623.7" cy="138.0" r="3.2"/><circle cx="621.9" cy="127.3" r="3.2"/><circle cx="675.7" cy="103.9" r="3.2"/><circle cx="651.0" cy="110.8" r="3.2"/><circle cx="625.5" cy="127.7" r="3.2"/><circle cx="629.7" cy="137.4" r="3.2"/><circle cx="636.2" cy="134.5" r="3.2"/><circle cx="609.3" cy="128.0" r="3.2"/><circle cx="688.6" cy="102.6" r="3.2"/><circle cx="633.0" cy="116.6" r="3.2"/><circle cx="617.5" cy="115.0" r="3.2"/><circle cx="622.9" cy="111.6" r="3.2"/><circle cx="662.1" cy="139.2" r="3.2"/><circle cx="617.8" cy="134.2" r="3.2"/><circle cx="612.0" cy="112.6" r="3.2"/><circle cx="667.0" cy="136.8" r="3.2"/><circle cx="674.9" cy="147.0" r="3.2"/><circle cx="649.3" cy="134.0" r="3.2"/><circle cx="657.8" cy="132.6" r="3.2"/><circle cx="613.5" cy="134.3" r="3.2"/><circle cx="606.4" cy="136.7" r="3.2"/><circle cx="604.6" cy="127.8" r="3.2"/><circle cx="750.5" cy="128.5" r="3.2"/><circle cx="769.4" cy="116.4" r="3.2"/><circle cx="714.5" cy="128.8" r="3.2"/><circle cx="786.0" cy="121.5" r="3.2"/><circle cx="736.3" cy="100.3" r="3.2"/><circle cx="694.0" cy="147.4" r="3.2"/><circle cx="708.1" cy="106.4" r="3.2"/><circle cx="813.2" cy="121.6" r="3.2"/><circle cx="757.4" cy="112.4" r="3.2"/><circle cx="801.0" cy="132.5" r="3.2"/><circle cx="986.4" cy="12.0" r="3.2"/><circle cx="914.8" cy="89.1" r="3.2"/><circle cx="914.7" cy="128.1" r="3.2"/><circle cx="941.7" cy="40.7" r="3.2"/><circle cx="925.2" cy="44.5" r="3.2"/><circle cx="939.4" cy="90.7" r="3.2"/><circle cx="934.0" cy="118.8" r="3.2"/><circle cx="915.5" cy="66.4" r="3.2"/><circle cx="962.9" cy="44.8" r="3.2"/><circle cx="881.8" cy="124.6" r="3.2"/></g>
+        <circle class="halo" cx="485.6" cy="95.8" r="9"/>
+        <circle class="marcador" cx="485.6" cy="95.8" r="6.5"/>
+        <g class="ciudad">
+          <text x="30" y="20">Arica</text>
+          <text x="420" y="22">Santiago</text>
+          <text x="470" y="140">Linares</text>
+          <text x="610" y="168">Puerto Montt</text>
+          <text x="880" y="20">Punta Arenas</text>
+        </g>
+      </svg>
+      <figcaption class="solo-lector">El norte está a la izquierda y el sur a la derecha.</figcaption>
+    </figure>
+    <div class="cifras">
+      <div><b>346</b><span>comunas, también Rapa Nui y Juan Fernández</span></div>
+      <div><b>16</b><span>regiones, con los límites de cada comuna</span></div>
+      <div><b>5</b><span>riesgos en una app: lluvia, incendios, sismos, tsunamis y volcanes</span></div>
+      <div><b>$0</b><span>por las alertas, el SOS y la familia</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion" aria-labelledby="t-flujo">
+  <div class="envoltura">
+    <div class="cab">
+      <h2 id="t-flujo">Cómo te llega un aviso.</h2>
+      <p class="lead">ZUMI no inventa alertas. Lee las fuentes oficiales y científicas, se queda con lo que afecta a tu comuna y te lo dice en palabras simples.</p>
+    </div>
+    <ol class="flujo" style="list-style:none;padding:0">
+      <li class="paso">
+        <span class="num">1</span>
+        <h3>La fuente avisa</h3>
+        <p>Una alerta de SENAPRED, un sismo, un boletín de tsunami o el pronóstico de lluvia por hora.</p>
+        <div class="fuentes"><span class="chip">SENAPRED</span><span class="chip">SHOA</span><span class="chip">USGS</span><span class="chip">PTWC</span><span class="chip">SERNAGEOMIN</span><span class="chip">Open-Meteo</span></div>
+      </li>
+      <li class="paso">
+        <span class="num">2</span>
+        <h3>ZUMI filtra</h3>
+        <p>Cruza la alerta con los límites de tu comuna. Si no te afecta, no te molesta.</p>
+      </li>
+      <li class="paso">
+        <span class="num">3</span>
+        <h3>Te lo explica</h3>
+        <p>Qué pasa, qué tan grave es y qué hacer ahora. Si es grave, ocupa toda la pantalla.</p>
+        <div class="niveles"><span><i style="background:var(--verde)"></i>Preventiva</span><span><i style="background:var(--ambar)"></i>Amarilla</span><span><i style="background:var(--roja)"></i>Roja</span></div>
+      </li>
+      <li class="paso">
+        <span class="num">4</span>
+        <h3>Tu familia sabe</h3>
+        <p>Con un toque mandas «Estoy bien» o «Necesito ayuda» a los tuyos, con tu ubicación.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<div id="funciones"></div>
+
+<section class="capitulo" aria-labelledby="t-ahora">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-ahora">Tu comuna, hoy, en una mirada.</h2>
+      <p class="lead">Abres ZUMI y ya sabes si sales con paraguas, con chaqueta o con bloqueador. ZUMI se viste según el clima y te cuenta lo importante.</p>
+      <ul class="detalles">
+        <li><span><b>Lluvia hora a hora.</b> Cuándo empieza, cuánto cae y cuándo para, para tu comuna.</span></li>
+        <li><span><b>Qué llevar.</b> Paraguas, abrigo, agua o bloqueador según temperatura, viento y radiación UV.</span></li>
+        <li><span><b>Pronóstico de 7 días</b> con máximas, mínimas, amanecer y atardecer.</span></li>
+        <li><span><b>Una misión al día.</b> Pequeñas cosas que te dejan más preparado, como revisar tu mochila de emergencia.</span></li>
+        <li><span><b>Calidad del aire</b> y avisos cuando el humo o el polvo suben.</span></li>
+      </ul>
+    </div>
+    <div class="pantallas">
+      <div class="tel"><img src="img/ahora.webp" alt="Pantalla Ahora de ZUMI en Linares: 11 grados, lluvia moderada y ZUMI con paraguas" loading="lazy" width="390" height="844"></div>
+      <div class="tel"><img src="img/alerta.webp" alt="ZUMI con una alerta amarilla por incendio forestal y el botón Estoy bien" loading="lazy" width="390" height="844"></div>
+    </div>
+  </div>
+</section>
+
+<section class="capitulo oscuro inverso" aria-labelledby="t-alertas">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-alertas">Alertas que se entienden a la primera.</h2>
+      <p class="lead">Incendios, tormentas, sismos, tsunamis y volcanes en un solo lugar, con la fuente y la hora de cada aviso.</p>
+      <ul class="detalles">
+        <li><span><b>Alertas de SENAPRED</b> de tu comuna, con su nivel y lo que tienes que hacer.</span></li>
+        <li><span><b>Sismos cerca</b> al minuto, con magnitud, profundidad y distancia a ti.</span></li>
+        <li><span><b>Tsunamis</b> desde los boletines del Pacífico, recordando siempre que en Chile manda el SHOA.</span></li>
+        <li><span><b>Volcanes activos</b> cerca de tu comuna.</span></li>
+        <li><span><b>Botón SOS</b> para llamar al 131, 132 o 133 y compartir tu ubicación.</span></li>
+        <li><span><b>Notificaciones</b> en tu teléfono aunque tengas la app cerrada.</span></li>
+      </ul>
+      <p class="mini">Si una fuente no responde, ZUMI te lo dice. Nunca muestra «todo tranquilo» sin datos.</p>
+    </div>
+    <div class="pantallas una">
+      <div class="tel"><img src="img/riesgos.webp" alt="Pantalla Riesgos para Linares: tsunami, sismos, volcanes y comentarios de vecinos" loading="lazy" width="720" height="1465"></div>
+      <img class="pose" src="img/zumi-alerta.webp" alt="" loading="lazy" width="482" height="560">
+    </div>
+  </div>
+</section>
+
+<section class="capitulo" id="familia" aria-labelledby="t-familia">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-familia">Tu familia en un mapa, y nadie más mirando.</h2>
+      <p class="lead">Sabes dónde está cada uno y si está bien, en tres pasos: invitas por WhatsApp, aceptan, y listo. Hecho para que un abuelo lo use sin ayuda.</p>
+      <ul class="detalles">
+        <li><span><b>Ubicación cifrada en el teléfono.</b> Viaja con una clave que solo tiene tu familia; el servidor no puede leerla.</span></li>
+        <li><span><b>Llegó al colegio.</b> Guarda lugares como la casa o el colegio y te avisamos cuando alguien llega o sale.</span></li>
+        <li><span><b>«Estoy bien» con un toque</b>, o «Necesito ayuda» con tu ubicación exacta.</span></li>
+        <li><span><b>Batería y última actualización</b> de cada familiar, para no preocuparte de más.</span></li>
+        <li><span><b>Ir donde está:</b> ZUMI te lleva con una ruta guiada, sin salir de la app.</span></li>
+      </ul>
+    </div>
+    <div class="pantallas">
+      <div class="tel"><img src="img/familia.webp" alt="Mi familia: Carla y Tomás en el colegio, con batería y hora" loading="lazy" width="390" height="844"></div>
+      <div class="tel"><img src="img/estoybien.webp" alt="Botones Estoy bien y Necesito ayuda, y el aviso Tomás llegó al colegio" loading="lazy" width="390" height="844"></div>
+    </div>
+  </div>
+</section>
+
+<section class="capitulo oscuro inverso" aria-labelledby="t-viaja">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-viaja">Viaja con ZUMI: el clima de todo el camino.</h2>
+      <p class="lead">Escribe a dónde vas y ZUMI revisa la ruta tramo a tramo: lluvia, viento, niebla y alertas por donde vas a pasar, no solo donde llegas.</p>
+      <ul class="detalles">
+        <li><span><b>Cuándo conviene salir:</b> ahora, en 1, 2 o 4 horas, o mañana temprano.</span></li>
+        <li><span><b>Te guía por voz</b> mientras manejas, con los avisos del camino.</span></li>
+        <li><span><b>Avisa que llegaste:</b> comparte tu hora de llegada con tu familia.</span></li>
+      </ul>
+      <figure class="grafico-ruta" style="margin-left:0;margin-right:0">
+        <svg viewBox="0 0 520 170" role="img" aria-label="Ejemplo de lluvia a lo largo de una ruta según la hora de salida">
+          <g font-family="Archivo,sans-serif" font-size="12" fill="#8ea3b8">
+            <text x="0" y="14">Lluvia en el camino (mm), ejemplo de un viaje de 2 horas</text>
+            <text x="34" y="164">Salida</text><text x="236" y="164">Mitad</text><text x="452" y="164">Llegada</text>
+          </g>
+          <line x1="30" y1="140" x2="510" y2="140" stroke="#2b3f55"/>
+          <path d="M30 140 C90 140 110 70 170 60 S260 110 300 120 S420 136 510 138" fill="rgba(227,160,32,.18)" stroke="#e3a020" stroke-width="2.5"/>
+          <path d="M30 140 C120 140 200 132 260 128 S420 112 510 100" fill="none" stroke="#7fd3a5" stroke-width="2.5" stroke-dasharray="6 5"/>
+          <g font-family="Archivo,sans-serif" font-size="13" font-weight="700">
+            <circle cx="178" cy="44" r="5" fill="#e3a020"/><text x="188" y="48" fill="#f6dcc9">Salir ahora: chubasco a mitad de camino</text>
+            <circle cx="300" cy="96" r="5" fill="#7fd3a5"/><text x="310" y="100" fill="#cdeedb">Salir en 2 horas: camino seco</text>
+          </g>
+        </svg>
+        <figcaption>Gráfico ilustrativo. En la app ves los datos reales de tu ruta.</figcaption>
+      </figure>
+    </div>
+    <div class="pantallas una">
+      <div class="tel"><img src="img/ruta.webp" alt="Ruta ZUMI a Talca: 54 km, 41 minutos, camino tranquilo, con opciones de hora de salida" loading="lazy" width="720" height="1465"></div>
+    </div>
+  </div>
+</section>
+
+<section class="capitulo" aria-labelledby="t-mapa">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-mapa">El mapa vivo de Chile.</h2>
+      <p class="lead">Gira el planeta, baja a tu barrio y mira cómo se mueve la lluvia. Todo lo que pasa, en capas que prendes y apagas.</p>
+      <ul class="detalles">
+        <li><span><b>Radar de lluvia animado</b> de las últimas horas.</span></li>
+        <li><span><b>Vista satelital</b> hasta el nivel de la calle, y nubes reales.</span></li>
+        <li><span><b>Sismos, alertas y reportes de vecinos</b> sobre el mapa.</span></li>
+        <li><span><b>Avisar:</b> reporta una calle inundada o un corte de luz para que otros lo sepan.</span></li>
+      </ul>
+    </div>
+    <div class="pantallas una">
+      <div class="tel"><img src="img/mapa.webp" alt="Mapa de ZUMI con el globo terráqueo, lugares de Chile y el radar de lluvia" loading="lazy" width="720" height="1465"></div>
+      <img class="pose" src="img/zumi-explicando.webp" alt="" loading="lazy" width="482" height="560">
+    </div>
+  </div>
+</section>
+
+<section class="capitulo oscuro inverso" aria-labelledby="t-explora">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-explora">Pasea por tu ciudad en 3D, como en un videojuego.</h2>
+      <p class="lead">Camina, pedalea, maneja o vuela en dron sobre calles reales. Alcanza faros en lugares con historia y ZUMI te cuenta qué pasó ahí.</p>
+      <ul class="detalles">
+        <li><span><b>Cuatro formas de moverte:</b> a pie, en bici, en auto o en dron, con turbo.</span></li>
+        <li><span><b>Lugares y fotos reales</b> de Wikipedia y Wikimedia Commons que se transforman en puntos.</span></li>
+        <li><span><b>La calle real en 360°</b> con fotos de Mapillary, para conocer un lugar antes de ir.</span></li>
+        <li><span><b>Mira moviendo el teléfono:</b> el primer paso hacia la realidad virtual.</span></li>
+      </ul>
+    </div>
+    <div class="pantallas">
+      <div class="tel"><img src="img/paseo.webp" alt="Paseo 3D por la Plaza de Armas de Linares con ZUMI contando su historia" loading="lazy" width="720" height="1465"></div>
+      <div class="tel"><img src="img/juego.webp" alt="Modo juego: ZUMI a pie junto a un faro de luz, con puntaje y controles" loading="lazy" width="390" height="844"></div>
+    </div>
+  </div>
+</section>
+
+<section class="capitulo" aria-labelledby="t-habla">
+  <div class="envoltura">
+    <div class="texto">
+      <h2 id="t-habla">Llama a ZUMI y pregúntale lo que quieras.</h2>
+      <p class="lead">ZUMI contesta por voz, como una llamada. Sabe del clima de tu comuna, de sismos, de qué hacer en una emergencia, y lo explica sin palabras difíciles.</p>
+      <ul class="detalles">
+        <li><span><b>«¿Va a llover mañana?»</b> Respuesta con el pronóstico de tu comuna, no uno genérico.</span></li>
+        <li><span><b>«¿Qué hago si tiembla?»</b> Pasos claros, siempre en línea con SENAPRED.</span></li>
+        <li><span><b>Escrito o hablado:</b> tú eliges, y ZUMI también te lee los avisos en voz alta.</span></li>
+        <li><span><b>Pequeñas películas</b> donde ZUMI te muestra qué hacer con calor, lluvia o un sismo.</span></li>
+      </ul>
+      <p class="mini">Las respuestas las genera inteligencia artificial con datos de fuentes públicas. Ante una emergencia, sigue siempre las instrucciones de la autoridad.</p>
+    </div>
+    <div class="pantallas una">
+      <div class="tel"><img src="img/llamada.webp" alt="Llamada en vivo con ZUMI: «¡Hola! ¡Aquí ZUMI, listo y con las orejas paradas!»" loading="lazy" width="390" height="844"></div>
+      <img class="pose" src="img/zumi-telefono.webp" alt="" loading="lazy" width="482" height="560">
+    </div>
+  </div>
+</section>
+
+<section class="seccion" style="background:#fff;border-top:1px solid var(--linea)" aria-labelledby="t-dia">
+  <div class="envoltura">
+    <div class="cab">
+      <h2 id="t-dia">Un martes cualquiera con ZUMI.</h2>
+      <p class="lead">Así acompaña ZUMI a una familia de Linares desde que se levanta hasta que se acuesta. Un ejemplo de lo que hace por ti sin que se lo pidas.</p>
+    </div>
+    <div class="dia">
+      <div class="momento"><time>07:10</time><p>Antes de salir, ZUMI dice qué llevar.</p><div class="q">Hoy llueve desde las 15:00. Paraguas y chaqueta.</div></div>
+      <div class="momento"><time>08:05</time><p>Tomás llega al colegio. Su mamá recibe el aviso.</p><div class="q">Tomás llegó al colegio.</div></div>
+      <div class="momento"><time>13:30</time><p>Viaje a Talca: ZUMI propone salir más tarde.</p><div class="q">Si sales a las 15:30 evitas el chubasco.</div></div>
+      <div class="momento aviso"><time>17:54</time><p>SENAPRED emite una alerta preventiva para la comuna.</p><div class="q">Tormentas eléctricas. Tócame y te explico qué hacer.</div></div>
+      <div class="momento"><time>22:40</time><p>Todos marcaron «Estoy bien». ZUMI se va a dormir.</p><div class="q">Buenas noches. Mañana amanece despejado.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion oscuro privacidad" aria-labelledby="t-priv">
+  <div class="envoltura">
+    <div class="candado" aria-hidden="true">
+      <svg viewBox="0 0 420 300">
+        <g font-family="Archivo,sans-serif" font-size="14" font-weight="700">
+          <rect x="10" y="110" width="110" height="80" rx="18" fill="#16283d" stroke="#2b3f55"/>
+          <text x="65" y="146" text-anchor="middle" fill="#fff">Tu teléfono</text>
+          <text x="65" y="168" text-anchor="middle" fill="#7fd3a5" font-size="12">cifra aquí</text>
+          <rect x="155" y="110" width="110" height="80" rx="18" fill="#16283d" stroke="#2b3f55"/>
+          <text x="210" y="146" text-anchor="middle" fill="#fff">Servidor</text>
+          <text x="210" y="168" text-anchor="middle" fill="#8ea3b8" font-size="12">solo ve candados</text>
+          <rect x="300" y="110" width="110" height="80" rx="18" fill="#16283d" stroke="#2b3f55"/>
+          <text x="355" y="146" text-anchor="middle" fill="#fff">Tu familia</text>
+          <text x="355" y="168" text-anchor="middle" fill="#7fd3a5" font-size="12">descifra aquí</text>
+          <path d="M122 150 H153 M267 150 H298" stroke="#c8501f" stroke-width="3" stroke-dasharray="5 5"/>
+          <g transform="translate(193 40)"><rect x="0" y="22" width="34" height="28" rx="6" fill="#c8501f"/><path d="M7 22 V14 a10 10 0 0 1 20 0 V22" fill="none" stroke="#c8501f" stroke-width="5"/></g>
+          <text x="210" y="240" text-anchor="middle" fill="#b7c5d3" font-weight="600">La clave viaja en el enlace de invitación,</text>
+          <text x="210" y="260" text-anchor="middle" fill="#b7c5d3" font-weight="600">nunca pasa por nuestros servidores.</text>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <h2 id="t-priv">Tus datos son tuyos.</h2>
+      <p class="lead" style="margin-top:18px">ZUMI está hecha en Chile para cuidar a las personas, no para vender información sobre ellas.</p>
+      <ul class="detalles">
+        <li><span><b>Sin cuenta para usarla.</b> Eliges tu comuna y listo.</span></li>
+        <li><span><b>Ubicación familiar cifrada</b> de extremo a extremo con AES-GCM.</span></li>
+        <li><span><b>Sin publicidad</b> y sin vender tus datos.</span></li>
+        <li><span><b>En el chat de vecinos</b> solo se ve tu nombre, la inicial de tu apellido y tu foto.</span></li>
+      </ul>
+      <p class="mini"><a href="/privacidad.html">Lee la política de privacidad</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="seccion" id="planes" aria-labelledby="t-planes">
+  <div class="envoltura">
+    <div class="cab">
+      <h2 id="t-planes">Gratis para cuidarte. ZUMI+ para conversar más.</h2>
+      <p class="lead">Las alertas, el SOS, la familia y los viajes guiados son gratis en todos los planes. Los planes pagados suman preguntas a ZUMI, más comunas y más historial.</p>
+    </div>
+    <div class="aviso-lanzamiento">
+      <img src="img/zumi-celebrando.webp" alt="" width="482" height="560" loading="lazy">
+      <p><b>Durante el lanzamiento, todo está abierto.</b> Hoy no cobramos nada. Estos son los precios que tendrán los planes cuando se activen, con 7 días de prueba gratis.</p>
+    </div>
+    <div class="planes">
+      <article class="plan">
+        <h3>Gratis</h3>
+        <p class="lema">Lo esencial para estar a salvo.</p>
+        <p class="precio">$0</p>
+        <p class="anual">Para siempre</p>
+        <ul>
+          <li>Alertas oficiales, sismos, tsunamis y SOS</li>
+          <li>GPS familiar cifrado y «Estoy bien»</li>
+          <li>Viajes guiados con clima en ruta</li>
+          <li>5 preguntas al día a ZUMI</li>
+          <li>Avisos de 1 comuna</li>
+        </ul>
+        <a class="btn btn-borde" href="/app/">Abrir ZUMI gratis</a>
+      </article>
+      <article class="plan destacado">
+        <h3>ZUMI+</h3>
+        <p class="lema">Tu amigo del clima, cuando quieras.</p>
+        <p class="precio">$3.990 <small>al mes</small></p>
+        <p class="anual">o $34.990 al año</p>
+        <ul>
+          <li>Todo lo del plan Gratis</li>
+          <li>Llama a ZUMI cuando quieras: 150 preguntas al día</li>
+          <li>Avisos de 5 comunas: casa, trabajo y familia</li>
+          <li>Un año de historial</li>
+        </ul>
+        <a class="btn btn-panda" href="/app/">Probar ZUMI</a>
+      </article>
+      <article class="plan">
+        <h3>Familia</h3>
+        <p class="lema">ZUMI+ para hasta 5 personas.</p>
+        <p class="precio">$5.990 <small>al mes</small></p>
+        <p class="anual">o $49.990 al año</p>
+        <ul>
+          <li>Todo lo de ZUMI+ para 5 personas</li>
+          <li>300 preguntas al día a ZUMI</li>
+          <li>Avisos de 10 comunas</li>
+          <li>Un año de historial</li>
+        </ul>
+        <a class="btn btn-borde" href="/app/">Probar ZUMI</a>
+      </article>
+    </div>
+    <div class="tabla-env">
+      <table>
+        <caption class="solo-lector">Comparación de planes</caption>
+        <thead><tr><th scope="col">Qué incluye</th><th scope="col">Gratis</th><th scope="col">ZUMI+</th><th scope="col">Familia</th></tr></thead>
+        <tbody>
+          <tr><td>Alertas oficiales, sismos, tsunamis y SOS</td><td class="si">Sí</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+          <tr><td>GPS familiar cifrado y «Estoy bien»</td><td class="si">Sí</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+          <tr><td>Viajes guiados con clima en ruta</td><td class="si">Sí</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+          <tr><td>Preguntas a ZUMI al día</td><td>5</td><td>150</td><td>300</td></tr>
+          <tr><td>Comunas con avisos</td><td>1</td><td>5</td><td>10</td></tr>
+          <tr><td>Personas con ZUMI+</td><td>—</td><td>1</td><td>5</td></tr>
+          <tr><td>Historial</td><td>7 días</td><td>1 año</td><td>1 año</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="seccion" id="instalar" style="background:#fff;border-top:1px solid var(--linea)" aria-labelledby="t-inst">
+  <div class="envoltura">
+    <div class="cab">
+      <h2 id="t-inst">Déjala en tu pantalla en 20 segundos.</h2>
+      <p class="lead">ZUMI funciona en el navegador. Si la agregas a tu pantalla de inicio se abre como cualquier app y te puede mandar avisos.</p>
+    </div>
+    <div class="instalar">
+      <div class="sistema">
+        <h3>iPhone</h3>
+        <ol>
+          <li>Abre <a href="/app/">zumichile.com/app</a> en Safari.</li>
+          <li>Toca el botón Compartir, el cuadrado con la flecha hacia arriba.</li>
+          <li>Elige «Agregar a pantalla de inicio».</li>
+          <li>Abre ZUMI desde el ícono y acepta las notificaciones.</li>
+        </ol>
+      </div>
+      <div class="sistema">
+        <h3>Android</h3>
+        <ol>
+          <li>Abre <a href="/app/">zumichile.com/app</a> en Chrome.</li>
+          <li>Toca «Instalar» en el aviso de abajo, o el menú de los tres puntos.</li>
+          <li>Elige «Instalar app» o «Agregar a pantalla principal».</li>
+          <li>Abre ZUMI y acepta las notificaciones.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="seccion" id="preguntas" aria-labelledby="t-preg">
+  <div class="envoltura">
+    <div class="cab"><h2 id="t-preg">Preguntas frecuentes.</h2></div>
+    <div class="preguntas">
+      <details><summary>¿Cuánto cuesta ZUMI?</summary><p>Usarla es gratis. Las alertas, el botón SOS, el GPS familiar y los viajes guiados son gratis siempre. Durante el lanzamiento todo lo demás también está abierto. Más adelante habrá planes ZUMI+ y Familia para quien quiera conversar más con ZUMI o seguir más comunas.</p></details>
+      <details><summary>¿ZUMI reemplaza a SENAPRED?</summary><p>No. ZUMI toma las alertas oficiales y te las explica, pero la autoridad es SENAPRED, y para tsunamis, el SHOA. En una emergencia, sigue siempre sus instrucciones y llama al 131, 132 o 133 si lo necesitas.</p></details>
+      <details><summary>¿De dónde salen los datos?</summary><p>Alertas de SENAPRED; sismos del Servicio Geológico de Estados Unidos (USGS); tsunamis del Centro de Alerta de Tsunamis del Pacífico; volcanes del Programa Global de Volcanismo, que cita a SERNAGEOMIN; clima de Open-Meteo; mapas de OpenStreetMap y Esri; fotos de la calle de Mapillary; y lugares de Wikipedia.</p></details>
+      <details><summary>¿Quién puede ver dónde estoy?</summary><p>Solo las personas de tu familia que invitaste. La ubicación se cifra en tu teléfono antes de enviarse y la clave viaja en el enlace de invitación, así que ni siquiera nosotros podemos verla. Puedes dejar de compartir cuando quieras.</p></details>
+      <details><summary>¿Me llegan avisos con la app cerrada?</summary><p>Sí, si aceptas las notificaciones. En iPhone primero tienes que agregar ZUMI a tu pantalla de inicio desde Safari; en Android funciona desde Chrome.</p></details>
+      <details><summary>¿Funciona en mi comuna?</summary><p>ZUMI cubre las 346 comunas de Chile, desde Arica hasta la Antártica, incluyendo Rapa Nui y Juan Fernández.</p></details>
+      <details><summary>¿Necesito crear una cuenta?</summary><p>No. Eliges tu comuna y empiezas. Solo el chat de vecinos te pide entrar con Google, para que cada mensaje tenga un nombre detrás.</p></details>
+      <details><summary>¿Quién es ZUMI?</summary><p>Un panda rojo animado que vive en la app. Cambia según el clima, te habla, te cuenta datos de tu ciudad y se pone serio cuando hay una alerta. Lo creó un equipo chileno.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="cierre" aria-labelledby="t-cierre">
+  <div class="envoltura">
+    <div>
+      <h2 id="t-cierre">La próxima alerta, que te pille preparado.</h2>
+      <p>Abre ZUMI, elige tu comuna e invita a tu familia. Toma menos de un minuto.</p>
+      <div class="acciones">
+        <a class="btn btn-panda" href="/app/">Abrir ZUMI gratis</a>
+        <a class="btn btn-borde" href="#instalar">Cómo instalarla</a>
+      </div>
+    </div>
+    <img src="img/zumi-saludo.webp" alt="ZUMI saludando" width="482" height="560" loading="lazy">
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="envoltura">
+    <div>
+      <p style="color:#fff;font-weight:800;font-size:20px">ZUMI</p>
+      <p>Clima, alertas y familia para Chile.</p>
+      <p style="margin-top:10px"><a href="/privacidad.html">Privacidad</a> &nbsp; <a href="/terminos.html">Términos</a> &nbsp; <a href="/app/">Abrir la app</a></p>
+    </div>
+    <div>
+      <p style="color:#fff;font-weight:700;margin-bottom:10px">En una emergencia</p>
+      <div class="emergencias">
+        <a href="tel:131"><b>131</b>SAMU</a>
+        <a href="tel:132"><b>132</b>Bomberos</a>
+        <a href="tel:133"><b>133</b>Carabineros</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Borra la versión antigua de la app que vivía en la raíz (ahora está en /app/).
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) {
+    rs.forEach(function (r) { if (new URL(r.scope).pathname === '/') r.unregister() })
+  }).catch(function () {})
+  // Borde de la barra al bajar
+  var nav = document.getElementById('nav')
+  addEventListener('scroll', function () { nav.classList.toggle('con-borde', scrollY > 8) }, { passive: true })
+  // Chile se enciende de norte a sur una sola vez, cuando aparece
+  var chile = document.getElementById('chile')
+  document.querySelectorAll('#puntos circle').forEach(function (c) {
+    c.classList.add('p'); c.style.setProperty('--d', (c.getAttribute('cx') / 992 * 1.6).toFixed(2) + 's')
+  })
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) { chile.classList.add('ver'); io.disconnect() } }, { threshold: .3 })
+    io.observe(chile)
+  } else chile.classList.add('ver')
+</script>
+</body>
+</html>

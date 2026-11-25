@@ -1,4 +1,4 @@
-# Publica la app ciudadana en GitHub Pages cada vez que se sube un cambio a "main".
+# Publica el sitio de ZUMI y la app en GitHub Pages cada vez que se sube un cambio a "main".
 name: Publicar app
 
 on:
@@ -41,9 +41,17 @@ jobs:
           # Claves públicas del SDK de RevenueCat (compras dentro de la app de iPhone y Android).
           VITE_RC_IOS: ${{ vars.REVENUECAT_IOS }}
           VITE_RC_ANDROID: ${{ vars.REVENUECAT_ANDROID }}
+      # Sitio: la página de ZUMI en la raíz (zumichile.com) y la app en zumichile.com/app/
+      - name: Armar el sitio (página de ZUMI + app en /app/)
+        run: |
+          mkdir -p _sitio
+          cp -r client/sitio/. _sitio/
+          cp -r client/dist _sitio/app
+          cp client/dist/privacidad.html client/dist/terminos.html _sitio/
+          test -f _sitio/index.html && test -f _sitio/app/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: client/dist
+          path: _sitio
 
   publicar:
     needs: construir

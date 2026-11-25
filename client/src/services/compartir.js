@@ -84,7 +84,7 @@ export async function tarjetaClima({ escena = 'sala', comuna, temperatura, texto
   return new Promise((ok) => c.toBlob((b) => ok(b), 'image/jpeg', 0.9))
 }
 
-export const URL_APP = 'https://zumichile.com/'
+export const URL_APP = 'https://zumichile.com/app/'
 
 /** Comparte la tarjeta (con imagen si el teléfono puede); si no, la descarga. */
 export async function compartirClima(datos) {

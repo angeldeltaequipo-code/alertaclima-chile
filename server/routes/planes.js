@@ -69,7 +69,7 @@ export function pagosRouter() {
       destino = await tarjetaRegistrada(pool, { token: req.body?.token, periodo: req.query.p, plan: req.query.plan })
     } catch (e) {
       console.error('Registro de tarjeta Flow:', e.message)
-      destino = `${process.env.APP_URL ?? 'https://zumichile.com/'}?plan=error`
+      destino = `${process.env.APP_URL ?? 'https://zumichile.com/app/'}?plan=error`
     }
     res.redirect(303, destino)
   })

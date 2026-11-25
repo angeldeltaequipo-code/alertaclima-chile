@@ -4,7 +4,7 @@
 import { chromium, devices } from 'playwright'
 import fs from 'fs'
 
-const [url = 'https://zumichile.com/', dir = 'auditoria'] = process.argv.slice(2)
+const [url = 'https://zumichile.com/app/', dir = 'auditoria'] = process.argv.slice(2)
 fs.mkdirSync(dir, { recursive: true })
 const informe = { url, pasos: [], errores: [], fallidas: [], tiempos: {} }
 const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
