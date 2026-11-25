@@ -1,5 +1,7 @@
 import { calleRouter } from './routes/calle.js'
 import { soporteRouter } from './routes/soporte.js'
+import { metricasRouter } from './routes/metricas.js'
+import { metricasMemoria, metricasPg } from './services/metricas.js'
 import { almacenMemoria, almacenPg } from './services/soporte.js'
 import { pool } from './db/pool.js'
 import { familiaRouter } from './routes/familia.js'
@@ -40,6 +42,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
   app.use('/api/salud', saludRouter)
   app.use('/api/calle', calleRouter())
   app.use('/api/soporte', soporteRouter({ almacen: soporte ?? (process.env.DATABASE_URL ? almacenPg(pool) : almacenMemoria()) }))
+  app.use('/api/metricas', metricasRouter({ almacen: process.env.DATABASE_URL ? metricasPg(pool) : metricasMemoria() }))
   app.use('/api/reportes', reportesRouter({ emitir: emitirReporte }))
   app.use('/api/fotos', fotosRouter({ emitir: emitirReporte }))
   app.use('/api/alertas', alertasRouter())

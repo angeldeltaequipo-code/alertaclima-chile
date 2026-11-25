@@ -97,6 +97,7 @@ function conSaber(ctx, saber) {
 }
 
 export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
+  import('./metricas').then((m) => m.evento('pregunta')).catch(() => {})
   anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
   const S = (memoria ??= await cargarSaber())
   // 1. El clima de cualquier otra comuna de Chile, al momento.

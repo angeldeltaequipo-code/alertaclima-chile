@@ -112,6 +112,10 @@ export default function App() {
     const t = setInterval(() => document.visibilityState === 'visible' && import('./services/reportes').then(({ API_URL }) => API_URL && fetch(`${API_URL}/api/salud`, { cache: 'no-store' }).catch(() => {})), 10 * 60e3)
     return () => clearInterval(t)
   }, [])
+  // Panel de métricas (sin datos personales): un latido al día por instalación
+  useEffect(() => {
+    if (cut) import('./services/metricas').then((m) => m.latido(cut)).catch(() => {})
+  }, [cut])
   // Widget de la pantalla de inicio (app nativa): se actualiza con lo último que se cargó.
   useEffect(() => {
     import('./services/widget').then((w) => w.actualizarWidget({ comuna, clima: clima.datos, alertas: alertas.estado })).catch(() => {})
@@ -159,7 +163,10 @@ export default function App() {
   const [paseo, setPaseo] = useState(null)
   const [calle, setCalle] = useState(null)
   useEffect(() => {
-    const f = (e) => setPaseo(e.detail ?? true)
+    const f = (e) => {
+      setPaseo(e.detail ?? true)
+      import('./services/metricas').then((m) => m.evento('paseo')).catch(() => {})
+    }
     window.addEventListener('ac:paseo', f)
     const z = (e) => setZumi(e.detail ?? true)
     window.addEventListener('ac:zumi', z)
@@ -476,7 +483,10 @@ export default function App() {
                       datos={{ ...datosZumi, nombre: cuenta.usuario?.nombre }}
                       hoy={hoy}
                       puedeLlamar={puedeLlamarZumi}
-                      onLlamar={() => setZumi({ modo: 'llamada' })}
+                      onLlamar={() => {
+                        setZumi({ modo: 'llamada' })
+                        import('./services/metricas').then((m) => m.evento('llamada')).catch(() => {})
+                      }}
                       onEscuchar={() => setZumi(true)}
                       onPreguntar={(pregunta) => setZumi({ pregunta })}
                       onPelicula={(id) => setZumi(id)}

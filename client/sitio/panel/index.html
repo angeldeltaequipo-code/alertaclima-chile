@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel ZUMI</title>
+<link rel="icon" href="/img/zumi-icono.png">
+<style>
+@font-face{font-family:'Archivo';font-style:normal;font-display:swap;font-weight:100 900;font-stretch:62% 125%;src:url(/fuentes/archivo.woff2) format('woff2')}
+:root{--noche:#0f1d2e;--noche-2:#16283d;--glaciar:#eef3f6;--tinta:#14202c;--pizarra:#536577;--linea:#d5dfe6;--panda:#c8501f;--verde:#1e7a4c;--azul:#2f6db3}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Archivo',system-ui,sans-serif;background:var(--glaciar);color:var(--tinta);font-size:16px}
+header{background:var(--noche);color:#fff;padding:18px 20px;display:flex;align-items:center;gap:12px}
+header img{width:40px;height:40px;border-radius:12px}
+header h1{margin:0;font-size:20px;font-weight:800}
+header small{display:block;color:#a9bccd;font-weight:400;font-size:13px}
+header button{margin-left:auto;background:#ffffff1a;color:#fff;border:0;border-radius:999px;padding:9px 14px;font:inherit;font-size:14px;cursor:pointer}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:16px}
+.kpi b{display:block;font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi span{color:var(--pizarra);font-size:14px}
+section{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:18px;margin-top:14px}
+section h2{margin:0 0 12px;font-size:17px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dos section{margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td{padding:7px 0;border-bottom:1px solid var(--linea)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.barra{height:8px;border-radius:4px;background:var(--azul);opacity:.8}
+.vacio{color:var(--pizarra)}
+.leyenda{display:flex;gap:16px;font-size:13px;color:var(--pizarra);margin-top:6px}
+.leyenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.entrar{max-width:380px;margin:60px auto;background:#fff;border:1px solid var(--linea);border-radius:22px;padding:24px;text-align:center}
+.entrar img{width:120px}
+.entrar input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--linea);font:inherit;margin-top:14px}
+.entrar button{width:100%;margin-top:10px;padding:14px;border-radius:999px;border:0;background:var(--noche);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.error{color:#b3261e;margin-top:10px;min-height:1em}
+footer{color:var(--pizarra);font-size:13px;margin-top:14px}
+@media (max-width:720px){.dos{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  var API = (function () { try { return localStorage.getItem('zumi:api') } catch (e) { return null } })() || 'https://alertaclima-api.onrender.com'
+  var clave = ''; try { clave = localStorage.getItem('zumi:admin') || '' } catch (e) {}
+  var app = document.getElementById('app')
+  var fmt = function (n) { return Number(n || 0).toLocaleString('es-CL') }
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
+  var NOMBRES = { pregunta: 'Preguntas a ZUMI', llamada: 'Llamadas con ZUMI', paseo: 'Paseos en 3D', viaje: 'Viajes con ZUMI', sos: 'Botón SOS', reporte: 'Reportes de vecinos', alerta_abierta: 'Alertas abiertas', familia: 'Uso de Mi familia', compartir: 'Compartidos' }
+
+  function entrar(msg) {
+    app.innerHTML = '<div class="entrar"><img src="/img/poses/saludo.webp" alt=""><h1 style="margin:8px 0 0;font-size:22px">Panel de ZUMI</h1>' +
+      '<p style="color:var(--pizarra);margin:6px 0 0">Escribe tu clave de administración (la misma del chat de soporte).</p>' +
+      '<form><input type="password" autocomplete="current-password" placeholder="Clave" aria-label="Clave de administración"><button>Entrar</button></form><p class="error">' + esc(msg || '') + '</p></div>'
+    app.querySelector('form').onsubmit = function (e) { e.preventDefault(); clave = app.querySelector('input').value.trim(); cargar() }
+  }
+
+  function grafico(dias) {
+    if (!dias.length) return '<p class="vacio">Aún no hay días con datos.</p>'
+    var W = 1000, H = 220, pad = 28, max = Math.max(1, Math.max.apply(null, dias.map(function (d) { return d.activos })))
+    var bw = (W - pad * 2) / dias.length
+    var barras = dias.map(function (d, i) {
+      var x = pad + i * bw, ha = (d.activos / max) * (H - 50), hn = (d.nuevos / max) * (H - 50)
+      var dia = String(d.dia).slice(5, 10).split('-').reverse().join('/')
+      return '<g><title>' + dia + ': ' + d.activos + ' activos, ' + d.nuevos + ' nuevos</title>' +
+        '<rect x="' + (x + 2) + '" y="' + (H - 24 - ha) + '" width="' + (bw - 4) + '" height="' + ha + '" rx="3" fill="#2f6db3" opacity=".85"/>' +
+        '<rect x="' + (x + 2) + '" y="' + (H - 24 - hn) + '" width="' + (bw - 4) + '" height="' + hn + '" rx="3" fill="#c8501f"/>' +
+        (i % 5 === 0 || i === dias.length - 1 ? '<text x="' + (x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="12" fill="#536577">' + dia + '</text>' : '') + '</g>'
+    }).join('')
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Usuarios activos y nuevos por día">' +
+      '<line x1="' + pad + '" x2="' + (W - pad) + '" y1="' + (H - 24) + '" y2="' + (H - 24) + '" stroke="#d5dfe6"/>' + barras +
+      '<text x="' + pad + '" y="14" font-size="12" fill="#536577">máx. ' + fmt(max) + '</text></svg>' +
+      '<div class="leyenda"><span><i style="background:#2f6db3"></i>Activos ese día</span><span><i style="background:#c8501f"></i>Nuevos ese día</span></div>'
+  }
+
+  function lista(filas, nombre, valor) {
+    if (!filas.length) return '<p class="vacio">Sin datos todavía.</p>'
+    var max = Math.max.apply(null, filas.map(valor))
+    return '<table>' + filas.map(function (f) {
+      return '<tr><td>' + esc(nombre(f)) + '<div class="barra" style="width:' + Math.max(4, (valor(f) / max) * 100) + '%"></div></td><td class="n">' + fmt(valor(f)) + '</td></tr>'
+    }).join('') + '</table>'
+  }
+
+  function mostrar(d) {
+    var a = d.activos || {}
+    var plata = (d.suscripciones || []).reduce(function (s, x) { return s + x.mensual_clp }, 0)
+    var subs = (d.suscripciones || []).reduce(function (s, x) { return s + x.n }, 0)
+    var pct = d.instalaciones ? Math.round((d.con_avisos / d.instalaciones) * 100) : 0
+    app.innerHTML = '<header><img src="/img/zumi-icono.png" alt=""><h1>Panel de ZUMI<small>Actualizado ' + new Date(d.generado).toLocaleString('es-CL') + '</small></h1><button id="salir">Salir</button></header><main>' +
+      '<div class="kpis">' +
+      '<div class="kpi"><b>' + fmt(a.hoy) + '</b><span>Usuarios activos hoy</span></div>' +
+      '<div class="kpi"><b>' + fmt(a.semana) + '</b><span>Activos últimos 7 días</span></div>' +
+      '<div class="kpi"><b>' + fmt(a.mes) + '</b><span>Activos últimos 30 días</span></div>' +
+      '<div class="kpi"><b>' + fmt(d.instalaciones) + '</b><span>Instalaciones en total</span></div>' +
+      '<div class="kpi"><b>' + pct + '%</b><span>Con avisos activados (' + fmt(d.notificaciones) + ' teléfonos)</span></div>' +
+      '<div class="kpi"><b>$' + fmt(plata) + '</b><span>Ingreso mensual (' + fmt(subs) + ' suscripciones)</span></div>' +
+      '</div>' +
+      '<section><h2>Usuarios por día (últimos 30 días)</h2>' + grafico(d.dias || []) + '</section>' +
+      '<div class="dos"><section><h2>Comunas con más usuarios</h2>' + lista(d.comunas || [], function (f) { return f.nombre || f.cut }, function (f) { return f.n }) + '</section>' +
+      '<section><h2>Qué usan (últimos 30 días)</h2>' + lista(d.eventos || [], function (f) { return NOMBRES[f.tipo] || f.tipo }, function (f) { return f.n }) + '</section></div>' +
+      '<div class="dos"><section><h2>Dónde la usan</h2>' + lista(d.plataformas || [], function (f) { return { web: 'Navegador', pwa: 'Instalada en el teléfono (web)', android: 'App Android', ios: 'App iPhone' }[f.plataforma] || f.plataforma }, function (f) { return f.n }) + '</section>' +
+      '<section><h2>Suscripciones activas</h2>' + lista(d.suscripciones || [], function (f) { return f.plan === 'zumi' ? 'ZUMI+' : 'Familia' }, function (f) { return f.n }) + '</section></div>' +
+      '<footer>Todo se cuenta sin datos personales: cada instalación es un número al azar, sin nombre, teléfono ni ubicación exacta.</footer></main>'
+    document.getElementById('salir').onclick = function () { try { localStorage.removeItem('zumi:admin') } catch (e) {} ; clave = ''; entrar() }
+  }
+
+  function cargar() {
+    if (!clave) return entrar()
+    app.innerHTML = '<p style="text-align:center;margin-top:80px;color:var(--pizarra)">Cargando el panel…</p>'
+    fetch(API + '/api/metricas/resumen', { headers: { authorization: 'Bearer ' + clave }, cache: 'no-store' })
+      .then(function (r) { if (r.status === 401) throw { estado: 401 }; if (!r.ok) throw { estado: r.status }; return r.json() })
+      .then(function (d) { try { localStorage.setItem('zumi:admin', clave) } catch (e) {} ; mostrar(d) })
+      .catch(function (e) {
+        if (e && e.estado === 401) { try { localStorage.removeItem('zumi:admin') } catch (x) {} ; clave = ''; return entrar('Esa clave no es correcta.') }
+        entrar('No pude conectar con el servidor. Puede estar despertando: intenta de nuevo en 30 segundos.')
+      })
+  }
+  cargar()
+  setInterval(function () { if (clave && document.visibilityState === 'visible' && document.querySelector('.kpis')) cargar() }, 120000)
+})()
+</script>
+</body>
+</html>
