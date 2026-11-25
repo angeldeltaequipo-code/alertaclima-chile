@@ -752,6 +752,15 @@ export default function Mapa({
       mapa.jumpTo({ center: [-72, -36], zoom: 1.4, pitch: 0, bearing: 0 })
       mapa.flyTo({ ...fin, zoom: Math.min(fin.zoom ?? 10, 13), pitch: 42, bearing: -12, duration: 2800, curve: 1.5, essential: true })
       mapa.once('moveend', () => !props.current.relieve3d && !props.current.viaje && mapa.easeTo({ pitch: 0, bearing: 0, duration: 1600 }))
+      // Si la animación no alcanzó a terminar (pestaña en segundo plano, teléfono lento o algo la cortó),
+      // el mapa igual queda en tu comuna y no perdido en el globo.
+      let tocado = false
+      mapa.once('dragstart', () => (tocado = true))
+      mapa.once('wheel', () => (tocado = true))
+      mapa.once('touchstart', () => (tocado = true))
+      setTimeout(() => {
+        if (!tocado && !props.current.viaje && mapa.getZoom() < (fin.zoom ?? 10) - 2) mapa.jumpTo({ ...fin, zoom: Math.min(fin.zoom ?? 10, 13), pitch: 0, bearing: 0 })
+      }, 4500)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
