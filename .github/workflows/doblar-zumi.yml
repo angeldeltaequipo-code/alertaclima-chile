@@ -1,0 +1,91 @@
+# Dobla las películas nuevas de ZUMI con su única voz.
+# Los videos de Google Flow traen otra voz: aquí se escucha qué dice cada uno (Whisper), se le pide
+# esa misma frase a la voz de ZUMI (la del servidor, la misma de la app) y se alinea a la boca del
+# video con scripts/zumi-redoblar.py. Deja el resultado en client/public/zumi/cine/.
+#
+# Para agregar una película: sube client/zumi-doblaje/<id>.mp4 (y si quieres, <id>.txt con la frase
+# exacta). Si no hay .txt, Whisper la transcribe y la guarda para que puedas corregirla.
+name: Doblar películas de ZUMI
+
+on:
+  workflow_dispatch:
+    inputs:
+      rehacer:
+        description: 'Ids a rehacer aunque ya existan (separados por espacio)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths: ['client/zumi-doblaje/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: doblar-zumi
+  cancel-in-progress: false
+
+jobs:
+  doblar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Herramientas
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg rubberband-cli >/dev/null
+          pip install -q openai-whisper librosa pyrubberband soundfile scipy numpy
+      - name: Despertar el servidor de ZUMI
+        run: |
+          for i in $(seq 1 18); do
+            curl -sf -m 20 https://alertaclima-api.onrender.com/api/voz/estado && break
+            sleep 10
+          done
+      - name: Transcribir, doblar y armar
+        env:
+          REHACER: ${{ github.event.inputs.rehacer }}
+        run: |
+          set -e
+          cd client
+          mkdir -p /tmp/d/out
+          hechos=""
+          for v in zumi-doblaje/*.mp4; do
+            id=$(basename "$v" .mp4)
+            dest=public/zumi/cine/$id.mp4
+            if [ -f "$dest" ] && ! echo " $REHACER " | grep -q " $id "; then echo "· $id ya está"; continue; fi
+            ffmpeg -v error -y -i "$v" -ac 1 -ar 24000 /tmp/d/orig-$id.wav
+            if [ ! -f zumi-doblaje/$id.txt ]; then
+              python - "$id" <<'PY'
+          import sys, whisper
+          i = sys.argv[1]
+          m = whisper.load_model('medium')
+          r = m.transcribe(f'/tmp/d/orig-{i}.wav', language='es', initial_prompt='ZUMI, el panda rojo de Chile, habla del clima y de emergencias.')
+          open(f'zumi-doblaje/{i}.txt', 'w').write(r['text'].strip() + '\n')
+          PY
+            fi
+            texto=$(tr '\n' ' ' < zumi-doblaje/$id.txt | sed 's/  */ /g;s/ $//')
+            echo "▶ $id: $texto"
+            ok=""
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -m 60 -o /tmp/d/$id.wav -w '%{http_code}' -G https://alertaclima-api.onrender.com/api/voz --data-urlencode "t=$texto" --data-urlencode "v=zephyr")
+              if [ "$code" = 200 ]; then ok=1; break; fi
+              echo "  voz respondió $code; reintento"; sleep 20
+            done
+            [ -n "$ok" ] || { echo "::warning::Sin voz de ZUMI para $id (cupo diario). Se intentará en la próxima ejecución."; continue; }
+            python scripts/zumi-redoblar.py /tmp/d "$id"
+            ffmpeg -v error -y -i "$v" -i /tmp/d/out/$id.wav -map 0:v -map 1:a -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -vf scale=720:-2 -c:a aac -b:a 96k -shortest -movflags +faststart "$dest"
+            ffmpeg -v error -y -i "$v" -vf "select=eq(n\,0),scale=360:-2" -frames:v 1 public/zumi/cine/$id.webp
+            hechos="$hechos $id"
+          done
+          echo "HECHOS=$hechos" >> $GITHUB_ENV
+      - name: Guardar
+        run: |
+          git config user.name "ZUMI doblaje"
+          git config user.email "actions@github.com"
+          git add client/public/zumi/cine client/zumi-doblaje/*.txt
+          git diff --cached --quiet && { echo "Nada nuevo"; exit 0; }
+          git commit -m "Películas de ZUMI dobladas con su voz:${HECHOS:- transcripciones}"
+          git pull --rebase -q origin main && git push
