@@ -206,6 +206,21 @@ function geoPoste() {
   ])
 }
 
+function halo() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const g = c.getContext('2d')
+  const r = g.createRadialGradient(64, 64, 2, 64, 64, 64)
+  r.addColorStop(0, 'rgba(255,255,255,1)')
+  r.addColorStop(0.35, 'rgba(255,255,255,.45)')
+  r.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = r
+  g.fillRect(0, 0, 128, 128)
+  const t = new THREE.CanvasTexture(c)
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
 export function crearMateriales() {
   const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, ...o })
   const fachadaBaja = fachada(false)
@@ -229,6 +244,10 @@ export function crearMateriales() {
     autoGeo: geoAuto(),
     poste: std({ vertexColors: true, roughness: 0.95 }),
     posteGeo: geoPoste(),
+    foco: new THREE.MeshBasicMaterial({ color: '#d9d6cc' }),
+    focoGeo: new THREE.BoxGeometry(0.3, 0.06, 0.5).translate(0, 6.43, -1.5),
+    brillo: new THREE.MeshBasicMaterial({ map: halo(), color: '#ffcf8a', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8 }),
+    brilloGeo: new THREE.PlaneGeometry(16, 16).rotateX(-Math.PI / 2).translate(0, 0.2, -2.6),
     cable: new THREE.LineBasicMaterial({ color: '#1b1b1b', transparent: true, opacity: 0.85 }),
     troncoGeo: new THREE.CylinderGeometry(0.16, 0.24, 2.6, 6).translate(0, 1.3, 0),
     copaGeo: (() => {
@@ -243,6 +262,8 @@ export function crearMateriales() {
 
 /** De noche se encienden las ventanas. */
 export function nocheMateriales(m, noche) {
+  m.foco.color.set(noche ? '#fff1c9' : '#d9d6cc')
+  m.brillo.opacity = noche ? 0.75 : 0
   for (const k of ['muro', 'muroAlto']) {
     m[k].emissive.set(noche ? '#ffb25a' : '#000000')
     m[k].emissiveIntensity = noche ? 1.1 : 0

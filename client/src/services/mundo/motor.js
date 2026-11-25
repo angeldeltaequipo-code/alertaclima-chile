@@ -222,11 +222,11 @@ export class Mundo {
       this.cielo.visible = false
       this.escena.background = new THREE.Color('#0b1630')
       this.niebla.color.set('#13213d')
-      this.hemi.intensity = 0.35
+      this.hemi.intensity = 0.6
       this.hemi.color.set('#8fa6d6')
-      this.sol.intensity = 0.35
+      this.sol.intensity = 0.55
       this.sol.color.set('#a9c0ff')
-      this.renderer.toneMappingExposure = 1.1
+      this.renderer.toneMappingExposure = 1.25
       this.mat.auto.envMapIntensity = 0.3
     } else {
       this.cielo.visible = true
@@ -240,6 +240,7 @@ export class Mundo {
       this.sol.color.set('#fff1d6')
       this.renderer.toneMappingExposure = 0.82
     }
+    if (this.vehiculos.auto.luces) this.vehiculos.auto.luces.intensity = noche ? 60 : 0
     this.ponerLluvia(!!c.lluvia)
     this.reflejos()
   }

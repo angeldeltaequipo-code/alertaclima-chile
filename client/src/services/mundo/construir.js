@@ -656,6 +656,8 @@ export function armarTesela(d, mat) {
   }
   instancias(mat.autoGeo, mat.auto, d.autos, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)), ([, , , r]) => COLORES_AUTO[Math.floor(r * COLORES_AUTO.length)])
   instancias(mat.posteGeo, mat.poste, d.postes, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)))
+  instancias(mat.focoGeo, mat.foco, d.postes, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)))
+  instancias(mat.brilloGeo, mat.brillo, d.postes, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)))
   if (d.cables.length) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(d.cables, 3))

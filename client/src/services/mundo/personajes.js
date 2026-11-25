@@ -171,6 +171,11 @@ export function crearAuto() {
     g.add(r)
     ruedas.push(r)
   }
+  // focos que alumbran de noche (el motor les sube la intensidad)
+  const luces = new THREE.SpotLight('#fff2d6', 0, 70, 0.55, 0.5, 1.2)
+  luces.position.set(0, 0.9, -2.2)
+  luces.target.position.set(0, 0, -20)
+  g.add(luces, luces.target)
   // ZUMI al volante (solo la cabeza asoma)
   const zumi = crearZumi()
   zumi.grupo.scale.setScalar(0.62)
@@ -181,6 +186,7 @@ export function crearAuto() {
   let giro = 0
   return {
     grupo: g,
+    luces,
     animar(dt, rapidez, volante = 0) {
       giro += (rapidez * dt) / 0.38
       ruedas.forEach((r, i) => {
