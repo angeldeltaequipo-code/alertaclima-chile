@@ -190,11 +190,7 @@ export default function VistaChat({ cuenta, comuna, enLinea, visible }) {
     return (
       <div className="grid h-full place-items-center overflow-y-auto p-6">
         <div className="w-full max-w-sm text-center">
-          <div className="mx-auto mb-4 grid size-16 place-items-center rounded-full bg-senal text-sobre-senal" aria-hidden="true">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-              <path d="M4 5h16v11H9l-5 4z" />
-            </svg>
-          </div>
+          <img src={`${import.meta.env.BASE_URL}zumi/poses/telefono.webp`} alt="" width="110" height="154" className="mx-auto mb-3 h-[154px] w-auto" />
           <h2 className="text-[22px] leading-tight font-bold">Chat de vecinos de {comuna.nombre}</h2>
           <p className="mt-2 text-[16px] text-texto-2">
             Cuenta lo que pasa en tu calle y entérate en tiempo real de lo que ven tus vecinos. Para participar, entra con tu cuenta de Google.
