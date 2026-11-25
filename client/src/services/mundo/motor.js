@@ -769,6 +769,7 @@ export class Mundo {
             this.alSoloAire?.(true)
           } else {
             this.desactivarFotorreal()
+            this.alSinFoto?.()
             return
           }
         }

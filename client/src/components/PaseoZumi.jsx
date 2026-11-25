@@ -51,13 +51,15 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
   const [soloAire, setSoloAire] = useState(false) // ciudad sin 3D: se recorre desde el aire
   // Mientras llega la maqueta 3D real se muestra una pantalla de carga limpia (sin fichas encima)
   const [esperaFoto, setEsperaFoto] = useState(true)
+  // No llegó la foto real de Google: en vez de mostrar una ciudad inventada, ZUMI lo dice y ofrece otra
+  const [sinFoto, setSinFoto] = useState(false)
   useEffect(() => {
     if (fotorreal || soloAire) setEsperaFoto(false)
   }, [fotorreal, soloAire])
   useEffect(() => {
     const t = setTimeout(() => setEsperaFoto(false), 30000)
     return () => clearTimeout(t)
-  }, [])
+  }, [inicio.id])
   const cargandoMundo = !listo || esperaFoto
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
@@ -95,11 +97,21 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
       .then((r) => r.json())
       .then((c) => {
         tokenFoto.current = c.cesium
-        if (!c.fotorreal) setEsperaFoto(false)
+        if (!c.fotorreal) {
+          setEsperaFoto(false)
+          setSinFoto(true)
+        }
         return c.fotorreal && m.activarFotorreal(c.cesium)
       })
-      .catch(() => setEsperaFoto(false))
+      .catch(() => {
+        setEsperaFoto(false)
+        setSinFoto(true)
+      })
     m.alFotorreal = setFotorreal
+    m.alSinFoto = () => {
+      setEsperaFoto(false)
+      setSinFoto(true)
+    }
     m.alSoloAire = (si) => {
       setSoloAire(si)
       if (si) setModo('dron')
@@ -368,6 +380,8 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
     setClima(null)
     const nuevo = { id: p.id, nombre: p.nombre, lat: p.lat, lng: p.lng, rumbo: p.rumbo ?? 0 }
     setInicio(nuevo)
+    setSinFoto(false)
+    if (m && !m.foto && tokenFoto.current) setEsperaFoto(true)
     m?.jumpTo({ center: [p.lng, p.lat], bearing: nuevo.rumbo })
     // en otra ciudad puede haber maqueta 3D real aunque aquí no hubiera
     if (m && !m.foto && tokenFoto.current) m.activarFotorreal(tokenFoto.current)
@@ -438,6 +452,21 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
         </div>
       )}
       {clima?.lluvia && <div className="paseo-lluvia pointer-events-none absolute inset-0" aria-hidden="true" />}
+      {sinFoto && !cargandoMundo && !buscar && (
+        <div className="absolute inset-0 z-[40] grid place-items-center bg-[radial-gradient(80%_60%_at_50%_40%,#1d4170_0%,#0f1d2e_60%,#000_100%)] px-8 text-center" role="alert">
+          <div className="max-w-xs">
+            <img src={`${import.meta.env.BASE_URL}zumi/poses/explicando.webp`} alt="" width="140" height="182" className="mx-auto h-[182px] w-auto" />
+            <p className="mt-4 text-[21px] leading-tight font-bold">No me llegó la foto real de {inicio.nombre}</p>
+            <p className="mt-2 text-[15px] leading-snug text-white/70">Puede ser la señal. No te voy a mostrar una ciudad inventada: elige una de las ciudades de Chile en 3D o vuelve a intentarlo después.</p>
+            <button type="button" onClick={() => { setSinFoto(false); setBuscar(true) }} className="mt-5 min-h-12 w-full rounded-full bg-white px-5 text-[16px] font-bold text-black">
+              Ver ciudades en 3D
+            </button>
+            <button type="button" onClick={onCerrar} className="mt-2 min-h-12 w-full rounded-full px-5 text-[16px] font-semibold text-white/85">
+              Salir del paseo
+            </button>
+          </div>
+        </div>
+      )}
       {cargandoMundo && (
         <div className="absolute inset-0 z-[40] grid place-items-center bg-[radial-gradient(80%_60%_at_50%_40%,#1d4170_0%,#0f1d2e_60%,#000_100%)] px-8 text-center" role="status">
           <div>
