@@ -17,9 +17,9 @@ const CAMARA = {
 
 // En la maqueta real la cámara va un poco más alta (las fotos se ven mejor desde arriba, como en Google Earth)
 const CAMARA_FOTO = {
-  pie: { dist: 10, alto: 6.5, mira: 2.5 },
-  bici: { dist: 12, alto: 7.5, mira: 2.5 },
-  auto: { dist: 15, alto: 8, mira: 2 },
+  pie: { dist: 15, alto: 10, mira: 2, fov: 55 },
+  bici: { dist: 17, alto: 11, mira: 2, fov: 55 },
+  auto: { dist: 21, alto: 12, mira: 2, fov: 55 },
   dron: { dist: 70, alto: 50 },
 }
 
