@@ -49,6 +49,8 @@ export function escenaDeZumi({ alertas, horas, ahora }, hora = new Date().getHou
 export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreguntar, onPelicula, puedeLlamar = true }) {
   const escena = escenaDeZumi(datos)
   const principal = datos.alertas?.alertas && alertaPrincipal(datos.alertas.alertas)
+  // Solo Amarilla o mayor cambia el ánimo de ZUMI; la Temprana Preventiva (meses de «calor») no lo hace insistir.
+  const urgente = principal && NIVELES[principal.nivel]?.gravedad >= 2 ? principal : null
   const quien = nombrePreferido() || datos.nombre?.split(' ')[0]
 
   // Lo que ZUMI cuenta del día, en frases cortas que van pasando en su globo.
@@ -157,12 +159,12 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   }, [])
   const bajar = () => raiz.current?.closest('#vista-ahora')?.scrollTo({ top: (alto || 600) - 8, behavior: 'smooth' })
 
-  // Charm (ZUMI vivo, dibujado) o Cine (videos). Charm por defecto; se recuerda la elección.
+  // Cine (ZUMI en video, el protagonista) por defecto; también Charm (dibujado) y Looks. Se recuerda la elección.
   const [presencia, setPresencia] = useState(() => {
     try {
-      return localStorage.getItem('ac:presencia-ahora') ?? 'charm'
+      return localStorage.getItem('ac:presencia-ahora') ?? 'cine'
     } catch {
-      return 'charm'
+      return 'cine'
     }
   })
   const charm = presencia === 'charm'
@@ -194,13 +196,13 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
 
   const consejo = consejoDelDia(datos)
   const ahora = datos.ahora
-  const globo = reaccion ?? (principal ? `${NIVELES[principal.nivel].etiqueta}: ${principal.amenaza}. Tócame y te explico qué hacer.` : frases[k % frases.length])
+  const globo = reaccion ?? (urgente ? `${NIVELES[urgente.nivel].etiqueta}: ${urgente.amenaza}. Tócame y te explico qué hacer.` : frases[k % frases.length])
 
   return (
     <section
       ref={raiz}
       aria-label="ZUMI, tu amigo del clima"
-      className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${principal ? 'con-alerta' : ''} ${charm ? 'modo-charm' : ''}`}
+      className={`portada-zumi inmersiva relative -mx-4 -mt-3 overflow-hidden ${urgente ? 'con-alerta' : ''} ${charm ? 'modo-charm' : ''}`}
       // Charm: el alto mínimo es la pantalla; en celulares bajos crece (nunca se superpone nada).
       style={charm ? { minHeight: alto ? `${alto}px` : 'calc(100svh - 9rem)', display: 'flex', flexDirection: 'column' } : { height: alto ? `${alto}px` : 'calc(100svh - 9rem)' }}
     >
@@ -261,10 +263,10 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       {!charm && <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[20%] top-[14%] bottom-[44%] z-[1] rounded-[40%] focus-visible:outline-4" />}
 
       {/* Lo que dice ZUMI */}
-      {!charm && <button
+      {!charm && presencia !== 'looks' && <button
         type="button"
-        onClick={() => (principal ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
-        className="globo-escenario absolute top-3 right-3 left-[30%] z-[2] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug"
+        onClick={() => (urgente ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
+        className="globo-escenario absolute top-[3.7rem] right-3 left-[28%] z-[2] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug"
         aria-live="polite"
       >
         <span key={globo} className="globo-texto block">{globo}</span>

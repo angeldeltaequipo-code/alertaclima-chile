@@ -4,7 +4,7 @@
 // No es Street View: es una maqueta 3D del lugar real, y lo dice.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { PASEOS, CIUDADES_3D, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
+import { PASEOS, CIUDADES_3D, paseoParaComuna, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
 import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
@@ -31,7 +31,8 @@ const leerVoz = () => {
   }
 }
 
-export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
+export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
+  const lugar = lugarPedido ?? paseoParaComuna(comuna)
   const caja = useRef(null)
   const mapa = useRef(null)
   const teclas = useRef({ adelante: 0, atras: 0, izq: 0, der: 0 })

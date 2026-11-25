@@ -577,7 +577,7 @@ export default function App() {
           )}
           {paseo && (
             <Suspense fallback={null}>
-              <PaseoZumi lugar={paseo === true ? undefined : paseo} onCerrar={() => setPaseo(null)} />
+              <PaseoZumi lugar={paseo === true ? undefined : paseo} comuna={comuna} onCerrar={() => setPaseo(null)} />
             </Suspense>
           )}
           {viaje && (
@@ -718,6 +718,8 @@ export default function App() {
             {visitadas.has('riesgos') && (
             <Suspense fallback={<Cargando />}>
             <VistaRiesgos
+              alertas={alertas.estado}
+              onVerAlertas={() => setVerAlertas(true)}
               informes={<InformesClima clima={clima} obs={obs} sismos={riesgos.datos?.sismos} reportesLista={rep.reportes} enLinea={enLinea} comuna={comuna} onVerRios={() => buscarRios()} />}
               riesgos={riesgos}
               comuna={comuna}

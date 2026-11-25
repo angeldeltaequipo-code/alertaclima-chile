@@ -32,6 +32,19 @@ function LineaOficial({ estado, onVerAlertas }) {
     </button>
   )
 
+  // Alerta Temprana Preventiva (la más baja, suele durar meses: p. ej. «calor» hasta marzo): una sola línea
+  // discreta, para que no tape la app todos los días. Amarilla, Roja y Evacuación sí se muestran grandes.
+  if (principal && NIVELES[principal.nivel].gravedad <= 1 && estado.tipo !== 'sin_conexion')
+    return (
+      <button type="button" onClick={onVerAlertas} className="flex w-full items-center gap-2 text-left text-[14.5px] leading-tight">
+        <span className="min-w-0 flex-1 truncate">
+          <strong>Preventiva: {principal.amenaza}</strong>
+          {estado.alertas.length > 1 && ` · ${estado.alertas.length} alertas`}
+        </span>
+        <span className="shrink-0 font-bold underline underline-offset-2">Ver</span>
+      </button>
+    )
+
   if (principal)
     return (
       <div>

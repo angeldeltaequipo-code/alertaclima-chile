@@ -9,14 +9,30 @@ import LoQueSeComenta from './LoQueSeComenta'
 import { picos } from '../services/comunidad'
 import { GUIAS, colorMagnitud, descripcionMagnitud, distanciaKm, volcanesCercanos } from '../services/riesgos'
 import { hace } from '../services/reportes'
+import { NIVELES, alertaPrincipal } from '../services/alertas'
 
 const num = (v, d = 1) => v.toLocaleString('es-CL', { maximumFractionDigits: d })
 
 const ir = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 /** Resumen de un vistazo: cada fila dice si hay algo de qué preocuparse y lleva a su detalle. */
-function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos, consultando = false }) {
+function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos, consultando = false, alertas = null, onVerAlertas }) {
+  // Lo primero: la alerta oficial de SENAPRED vigente en la comuna (o que no hay ninguna)
+  const lista = alertas?.alertas ?? []
+  const oficial = alertaPrincipal(lista)
+  const filaAlerta = alertas && alertas.tipo !== 'sin_servidor'
+    ? [{
+        id: 't-alertas',
+        ok: alertas.tipo === 'sin_conexion' ? null : !oficial || NIVELES[oficial.nivel].gravedad <= 1,
+        titulo: oficial ? `${NIVELES[oficial.nivel].etiqueta}: ${oficial.amenaza}` : 'Alertas de SENAPRED',
+        texto: oficial
+          ? `${lista.length > 1 ? `${lista.length} alertas vigentes. ` : ''}Toca para ver qué significa y qué hacer.`
+          : alertas.tipo === 'sin_conexion' ? 'No se pudo consultar ahora. Revisa senapred.cl' : 'Ninguna alerta oficial vigente en tu comuna',
+        accion: onVerAlertas,
+      }]
+    : []
   const filas0 = [
+    ...filaAlerta,
     {
       id: 't-tsunami',
       ok: !amenaza,
@@ -62,9 +78,9 @@ function Resumen({ datos, comuna, amenaza, cercaUltimo, volcanesNoticia, picos, 
         <ul className="mt-4 divide-y divide-white/10 border-y border-white/10">
           {filas.map((f) => (
             <li key={f.id}>
-              <button type="button" onClick={() => (f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-14 w-full items-center gap-3 py-2.5 text-left active:bg-white/5">
+              <button type="button" onClick={() => (f.accion ? f.accion() : f.enlace ? window.open(f.enlace, '_blank', 'noopener') : ir(f.id))} className="flex min-h-14 w-full items-center gap-3 py-2.5 text-left active:bg-white/5">
                 <span className={`mono w-12 shrink-0 text-[10.5px] font-medium tracking-[0.08em] ${f.ok === null ? 'text-white/50' : f.ok ? 'text-vivo' : 'text-amber-300'}`} aria-hidden="true">
-                  {f.ok === null ? '○ —' : f.ok ? '● OK' : '▲ OJO'}
+                  {f.ok === null ? '○ —' : f.id === 't-alertas' && f.ok && oficial ? '● AVISO' : f.ok ? '● OK' : '▲ OJO'}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15.5px] font-semibold tracking-tight">{f.titulo}</span>
@@ -130,7 +146,7 @@ function Sismo({ s, punto, onAbrir }) {
 }
 
 /** Pestaña Riesgos: sismos de los últimos 7 días, tsunamis y volcanes cercanos. */
-export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerSismo, onVerVolcanes, comunidad, comunidadItems, volcanesNivel, informes = null }) {
+export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerSismo, onVerVolcanes, comunidad, comunidadItems, volcanesNivel, informes = null, alertas = null, onVerAlertas }) {
   const [todos, setTodos] = useState(false)
   const [sismoAbierto, setSismoAbierto] = useState(null)
   const entrada = useEntrada()
@@ -174,6 +190,8 @@ export default function VistaRiesgos({ riesgos, punto, comuna, onVerMapa, onVerS
         volcanesNoticia={(volcanesNivel ?? []).filter((v) => v.noticia || v.origen === 'prensa').map((v) => v.nombre)}
         picos={picosTexto}
         consultando={riesgos.cargando || (!riesgos.error && !datos)}
+        alertas={alertas}
+        onVerAlertas={onVerAlertas}
       />
 
       {informes}

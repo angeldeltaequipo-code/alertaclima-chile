@@ -566,6 +566,7 @@ export default function Mapa({
   }, [camaras, verCamaras])
 
   // ---- Volcanes ----
+  const capasCargadas = useRef(new Set())
   const volcanesAntes = useRef(null)
   useEffect(() => {
     const recien = volcanes && !volcanesAntes.current
@@ -580,7 +581,9 @@ export default function Mapa({
           geometry: { type: 'Point', coordinates: [v.lng, v.lat] },
         })),
       })
-      if (recien && !props.current.viaje) mapa.flyTo({ center: [-70.5, -33], zoom: 3.7 })
+      // La primera carga (capa encendida de fábrica) no mueve el mapa: el mapa abre en TU comuna.
+      if (recien && !props.current.viaje && capasCargadas.current.has('volcanes')) mapa.flyTo({ center: [-70.5, -33], zoom: 3.7 })
+      if (volcanes) capasCargadas.current.add('volcanes')
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [volcanes])
@@ -671,7 +674,8 @@ export default function Mapa({
         })),
       })
       // Al activar la capa se muestra todo Chile; en las actualizaciones no se mueve el mapa.
-      if (recienActivada && !props.current.viaje) mapa.flyTo({ center: [-71, -32], zoom: 3.6 })
+      if (recienActivada && !props.current.viaje && capasCargadas.current.has('sismos')) mapa.flyTo({ center: [-71, -32], zoom: 3.6 })
+      if (sismos) capasCargadas.current.add('sismos')
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sismos])
