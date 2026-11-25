@@ -1,0 +1,20 @@
+# Toma capturas de la app publicada para las fichas de las tiendas y las sube como artefacto.
+name: Capturas para las tiendas
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - run: cd client && node scripts/capturas-tienda.mjs "https://zumichile.com/app/" /tmp/capturas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas-tienda
+          path: /tmp/capturas/*.png
