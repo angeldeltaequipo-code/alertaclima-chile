@@ -124,19 +124,22 @@ await grabar('paseo', async (p, marcar) => {
     if (listo) break
     await espera(1000)
   }
+  const cerrarFicha = () => p.getByRole('button', { name: 'Cerrar', exact: true }).click({ timeout: 800 }).catch(() => {})
+  // En la nube no hay GPU: se da tiempo para que la maqueta cargue nítida antes de grabar lo bueno
+  await espera(20000)
+  await cerrarFicha()
+  await p.getByRole('button', { name: 'Dron' }).click().catch(() => {})
+  await espera(12000)
+  await cerrarFicha()
   marcar()
-  await espera(5000) // la entrada de cine desde el cielo
-  await p.locator('.paseo-cuenta button[aria-label="Cerrar"]').click().catch(() => {})
-  // arrastra hacia adelante con el dedo: ZUMI corre
+  // vuelo de dron: gira lento sobre la plaza
   await p.mouse.move(195, 640)
   await p.mouse.down()
-  await p.mouse.move(195, 540, { steps: 6 })
-  await espera(5000)
-  await p.mouse.move(250, 540, { steps: 6 })
-  await espera(3000)
+  await p.mouse.move(150, 600, { steps: 10 })
+  await espera(7000)
   await p.mouse.up()
-  await p.getByRole('button', { name: 'Dron' }).click().catch(() => {})
-  await espera(6000)
+  await cerrarFicha()
+  await espera(4000)
 })
 
 fs.writeFileSync(path.join(dir, 'recortes.json'), JSON.stringify(recortes, null, 2))
