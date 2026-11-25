@@ -209,10 +209,28 @@ export class Mundo {
   async activarFotorreal(token) {
     if (this.foto || !token) return false
     this.tokenFoto = token
+    // si el token no sirve, se queda el mundo dibujado (mejor que una pantalla negra)
+    try {
+      const r = await fetch(`https://api.cesium.com/v1/assets/2275207/endpoint?access_token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(15000) })
+      if (!r.ok) {
+        console.warn('mundo: token de Cesium inválido', r.status)
+        return false
+      }
+    } catch {
+      return false
+    }
     const { Fotorreal } = await import('./fotorreal')
     if (!this.vivo) return false
     const { lat, lng } = this.proy.aGeo(0, 0)
     this.foto = new Fotorreal({ escena: this.escena, camara: this.camara, renderer: this.renderer, token, lat, lng })
+    // la maqueta real basta para empezar: no hay que esperar el mapa dibujado
+    this.foto.tiles.addEventListener('tiles-load-end', () => {
+      if (!this.listo) {
+        this.listo = true
+        this.alListo?.()
+      }
+    })
+    this.foto.tiles.addEventListener('load-error', (e) => console.warn('mundo: maqueta', e?.error?.message ?? e))
     // lo dibujado a mano se esconde: manda la maqueta real
     this.barrios.visible = false
     this.trafico.visible = false
