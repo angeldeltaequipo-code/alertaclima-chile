@@ -5,6 +5,7 @@
 #
 # Para agregar una película: sube client/zumi-doblaje/<id>.mp4 (y si quieres, <id>.txt con la frase
 # exacta). Si no hay .txt, Whisper la transcribe y la guarda para que puedas corregirla.
+# Si el .txt empieza con «SIN VOZ», el video no tiene diálogo y se deja su audio original.
 name: Doblar películas de ZUMI
 
 on:
@@ -68,6 +69,11 @@ jobs:
             fi
             texto=$(tr '\n' ' ' < zumi-doblaje/$id.txt | sed 's/  */ /g;s/ $//')
             echo "▶ $id: $texto"
+            if echo "$texto" | grep -q '^SIN VOZ'; then
+              ffmpeg -v error -y -i "$v" -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -vf scale=720:-2 -c:a aac -b:a 96k -movflags +faststart "$dest"
+              ffmpeg -v error -y -i "$v" -vf "select=eq(n\,0),scale=360:-2" -frames:v 1 public/zumi/cine/$id.webp
+              hechos="$hechos $id"; continue
+            fi
             ok=""
             for i in 1 2 3 4 5 6; do
               code=$(curl -s -m 60 -o /tmp/d/$id.wav -w '%{http_code}' -G https://alertaclima-api.onrender.com/api/voz --data-urlencode "t=$texto" --data-urlencode "v=zephyr")

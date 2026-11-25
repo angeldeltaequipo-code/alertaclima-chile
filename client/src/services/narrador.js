@@ -168,7 +168,8 @@ export async function hablar(frases, { silencio = vozSilenciada() } = {}) {
       // el audio grabado en las películas era otra voz y sonaba lento.
       pedir(i + 1)
       const linea = paraVoz(textoDe(frases[i]))
-      const f = propia && !silencio ? await pedirFrase(linea).catch(() => null) : null
+      // «audioPropio»: la película no tiene diálogo (ruido real de un temblor): se oye tal cual
+      const f = propia && !silencio && !frases[i].audioPropio ? await pedirFrase(linea).catch(() => null) : null
       if (estado.frases !== frases) return false
       const hecho = await new Promise((ok) => {
         cortarPelicula = () => ok(true)

@@ -10,10 +10,15 @@ export const PELICULAS = {
   calor: { tema: 'Calor', titulo: 'Cómo cuidarte del calor', texto: '¡Qué calor! Toma mucha agua, usa bloqueador y busca la sombra, sobre todo al mediodía.' },
   sismo: { tema: 'Sismos', titulo: 'Qué hacer si tiembla', texto: 'Si tiembla: agáchate, cúbrete y afírmate. Cuando pase, revisa a tu familia y sigue a Senapred.' },
   mochila: { tema: 'Prepárate', titulo: 'Tu mochila de emergencia', texto: '¡Agua, linterna, radio, pilas y tus remedios! Una mochila lista te puede salvar el día.' },
+  pronostico: { tema: 'Clima', titulo: 'ZUMI presenta el clima', texto: 'Hola a todos, bienvenidos al clima. Hoy tendremos un día muy variado. Por la mañana, mucho sol y calor. Pero atención…' },
+  alarma: { tema: 'Alarma', titulo: 'Cuando suena la alarma', texto: '¡Oh, no! ¿Qué está pasando? ¿Adónde voy?' },
+  // Sin diálogo: se oye el temblor de verdad (el grito y el ruido del video)
+  temblor: { tema: 'Sismos', titulo: '¡Está temblando!', texto: '¡Aaah! ¡Está temblando!', audioPropio: true },
+  iglesia: { tema: 'Paseo', titulo: 'ZUMI visita una iglesia', texto: '¡Mira esta iglesia! Las iglesias antiguas de Chile, de adobe y madera, han resistido siglos de terremotos.' },
 }
 
 /** Frase del narrador que ZUMI dice actuando su película. */
-export const frasePelicula = (id) => ({ texto: PELICULAS[id].texto, pelicula: id })
+export const frasePelicula = (id) => ({ texto: PELICULAS[id].texto, pelicula: id, audioPropio: Boolean(PELICULAS[id].audioPropio) })
 
 /** ¿La pregunta es de un tema que ZUMI explica con su película? */
 export function peliculaPara(pregunta) {
@@ -24,6 +29,9 @@ export function peliculaPara(pregunta) {
   if (/bloqueador|insolacion|golpe de calor|(como|que hago).*calor|calor.*(cuid|protej)/.test(q)) return 'calor'
   if (/paraguas|impermeable|que llevo.*lluv|lluvia.*(llevo|que me pongo)/.test(q)) return 'lluvia'
   if (/quien eres|que eres|presentate|como te llamas/.test(q)) return 'hola'
+  if (/alarma|sirena/.test(q) && /(que hago|que hacer|suena|sono)/.test(q)) return 'alarma'
+  if (/(presenta|muestrame|dame).*(clima|pronostico)|reporte del clima/.test(q)) return 'pronostico'
+  if (/iglesia|catedral|templo/.test(q)) return 'iglesia'
   return null
 }
 
