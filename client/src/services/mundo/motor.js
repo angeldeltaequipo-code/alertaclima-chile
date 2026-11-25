@@ -249,6 +249,10 @@ export class Mundo {
           this.cobertura = null
           this.fotoDesde = performance.now()
           this.h0Listo = false
+          if (this.soloAire) {
+            this.soloAire = false
+            this.alSoloAire?.(false)
+          }
           if (this.foto && this.fotoVisible) {
             // vuelve a probar a escondidas en el lugar nuevo
             this.foto.raiz.visible = false
@@ -741,7 +745,14 @@ export class Mundo {
         if (c === true) {
           this.cobertura = true
           this.mostrarFotorreal()
-        } else if (c === false || espera > 16000) {
+        } else if (c === false) {
+          // Sin ciudad 3D: la foto real de Google, vista desde el aire (de cerca sería borrosa)
+          this.cobertura = false
+          this.soloAire = true
+          this.mostrarFotorreal()
+          this.setModo('dron')
+          this.alSoloAire?.(true)
+        } else if (espera > 20000) {
           this.cobertura = false
           this.desactivarFotorreal()
           return

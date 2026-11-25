@@ -47,6 +47,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   const [fotorreal, setFotorreal] = useState(false)
   const creditos = useRef(null)
   const tokenFoto = useRef(null)
+  const [soloAire, setSoloAire] = useState(false) // ciudad sin 3D: se recorre desde el aire
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
   const [modo, setModo] = useState('pie')
@@ -87,6 +88,10 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       })
       .catch(() => {})
     m.alFotorreal = setFotorreal
+    m.alSoloAire = (si) => {
+      setSoloAire(si)
+      if (si) setModo('dron')
+    }
     m.alListo = () => {
       setListo(true)
       // En la naturaleza (sin casas cerca) se parte en Dron: a pie solo se vería pasto.
@@ -523,11 +528,17 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       {/* Modo de recorrido */}
       <div role="group" aria-label="Cómo recorrer" className="vidrio-solido absolute top-[max(4.3rem,calc(env(safe-area-inset-top)+3.8rem))] left-1/2 flex -translate-x-1/2 gap-0.5 rounded-full p-1 whitespace-nowrap">
         {Object.entries(MODOS).map(([id, md]) => (
-          <button key={id} type="button" aria-pressed={modo === id} aria-label={md.nombre} onClick={() => cambiarModo(id)} className={`min-h-10 rounded-full px-3 text-[13px] font-semibold ${modo === id ? 'bg-white text-black' : 'text-white/85'}`}>
+          <button key={id} type="button" aria-pressed={modo === id} aria-label={md.nombre} disabled={soloAire && id !== 'dron'} onClick={() => cambiarModo(id)} className={`min-h-10 rounded-full px-3 text-[13px] font-semibold disabled:opacity-35 ${modo === id ? 'bg-white text-black' : 'text-white/85'}`}>
             {md.icono}<span className="ml-1 max-[380px]:hidden">{md.nombre}</span>
           </button>
         ))}
       </div>
+
+      {soloAire && (
+        <p className="vidrio-solido pointer-events-none absolute top-[max(7.3rem,calc(env(safe-area-inset-top)+6.8rem))] left-1/2 max-w-[88%] -translate-x-1/2 rounded-full px-3 py-1.5 text-center text-[12px] leading-snug">
+          Foto real de Google. Aquí no hay ciudad en 3D, así que se recorre desde el aire.
+        </p>
+      )}
 
       {/* Controles para caminar */}
       <div className="absolute right-0 bottom-0 left-0 flex items-end justify-between gap-3 p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
