@@ -1767,3 +1767,10 @@ body {
   pointer-events: auto;
   will-change: transform;
 }
+
+/* En el teléfono se mueve con el dedo (joystick libre): las flechas sobran */
+@media (pointer: coarse) {
+  .paseo-cruz {
+    display: none;
+  }
+}

@@ -106,13 +106,21 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
       const k = teclas.current
       const md = MODOS[modoRef.current]
       // aceleración y freno suaves (inercia), como un vehículo de verdad
-      const turbo = k.turbo && modoRef.current !== 'pie' ? 1.7 : 1
-      const meta = (k.adelante - k.atras) * md.vmax * turbo * (k.adelante ? 1 : 0.4)
+      const j = joy.current
+      // Con el dedo: arrastra hacia donde quieres ir; más lejos = más rápido, al borde = corre
+      const turbo = (k.turbo || (j.activo && j.fuerza > 1)) ? (modoRef.current === 'pie' ? 2.3 : 1.7) : 1
+      const meta = j.activo ? Math.min(1, j.fuerza) * md.vmax * turbo : (k.adelante - k.atras) * md.vmax * turbo * (k.adelante ? 1 : 0.4)
       const cambio = md.acel * dt * (meta === 0 ? 1.6 : 1)
       vel.current += Math.max(-cambio, Math.min(cambio, meta - vel.current))
       if (Math.abs(vel.current) < 0.05 && meta === 0) vel.current = 0
-      if (m && (vel.current || k.izq || k.der)) {
-        const giro = (k.der - k.izq) * md.giro * dt * (modoRef.current === 'auto' ? Math.min(1, 0.35 + Math.abs(vel.current) / 10) : 1)
+      if (m && (vel.current || k.izq || k.der || j.activo)) {
+        let giro = (k.der - k.izq) * md.giro * dt * (modoRef.current === 'auto' ? Math.min(1, 0.35 + Math.abs(vel.current) / 10) : 1)
+        if (j.activo && j.fuerza > 0.15) {
+          // gira hacia donde apunta el dedo (relativo a como mirabas al tocar)
+          const dif = ((j.ref + j.ang - m.getBearing() + 540) % 360) - 180
+          const max = (modoRef.current === 'pie' ? 260 : modoRef.current === 'bici' ? 150 : 110) * dt
+          giro = Math.max(-max, Math.min(max, dif * Math.min(1, dt * 8)))
+        }
         const rumbo = m.getBearing() + giro
         const c = m.getCenter()
         let n = vel.current ? avanzar({ lat: c.lat, lng: c.lng }, rumbo, vel.current * dt) : { lat: c.lat, lng: c.lng }
@@ -268,7 +276,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   // Bienvenida
   useEffect(() => {
     if (!listo) return
-    const t = `Bienvenido a ${inicio.nombre}. Camina con las flechas o arrastra para mirar alrededor. Te voy contando lo que hay cerca.`
+    const t = `Bienvenido a ${inicio.nombre}. Pon el dedo en cualquier parte y arrastra hacia donde quieres ir; si lo llevas lejos, corres. Te voy contando lo que hay cerca.`
     setCuenta({ id: 'hola', titulo: inicio.nombre, texto: t, fuente: 'ZUMI' })
     setContar(false)
     let vivo = true
@@ -351,6 +359,34 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     }
   }
 
+  // Joystick libre: tocas en cualquier parte del mundo y arrastras
+  const joy = useRef({ activo: false, ang: 0, fuerza: 0, ref: 0 })
+  const [palanca, setPalanca] = useState(null) // { x, y, dx, dy } para dibujarla
+  const tocar = {
+    onPointerDown: (e) => {
+      if (e.target.closest('button, a, input')) return
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+      joy.current = { activo: true, ang: 0, fuerza: 0, ref: mapa.current?.getBearing() ?? 0, x: e.clientX, y: e.clientY, id: e.pointerId }
+      setPalanca({ x: e.clientX, y: e.clientY, dx: 0, dy: 0 })
+    },
+    onPointerMove: (e) => {
+      const j = joy.current
+      if (!j.activo || e.pointerId !== j.id) return
+      const dx = e.clientX - j.x
+      const dy = e.clientY - j.y
+      const d = Math.hypot(dx, dy)
+      j.ang = (Math.atan2(dx, -dy) * 180) / Math.PI
+      j.fuerza = d < 12 ? 0 : d / 70 // >1 (más de 70 px) = correr
+      // si va hacia atrás, retrocede sin darse vuelta de golpe
+      setPalanca({ x: j.x, y: j.y, dx: (dx / Math.max(d, 1)) * Math.min(d, 90), dy: (dy / Math.max(d, 1)) * Math.min(d, 90), corre: j.fuerza > 1 })
+    },
+    onPointerUp: () => {
+      joy.current = { activo: false, ang: 0, fuerza: 0, ref: 0 }
+      setPalanca(null)
+    },
+  }
+  tocar.onPointerCancel = tocar.onPointerUp
+
   const sostener = (k) => ({
     onPointerDown: (e) => {
       e.preventDefault()
@@ -367,9 +403,16 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
 
   return createPortal(
     <div className="paseo fixed inset-0 z-[1200] bg-black text-white" role="dialog" aria-label={`Pasea con ZUMI: ${inicio.nombre}`}>
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 touch-none" {...tocar}>
         <div ref={caja} className="h-full w-full" />
       </div>
+      {palanca && (
+        <div className="pointer-events-none absolute z-[5]" style={{ left: palanca.x, top: palanca.y }} aria-hidden="true">
+          <div className="absolute size-[150px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/40 bg-black/20" />
+          <div className={`absolute size-16 rounded-full shadow-[0_4px_14px_rgba(0,0,0,.4)] ${palanca.corre ? 'bg-[#ffc23d]' : 'bg-white/85'}`} style={{ transform: `translate(calc(-50% + ${palanca.dx}px), calc(-50% + ${palanca.dy}px))` }} />
+          {palanca.corre && <span className="absolute top-[86px] -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-[12px] font-bold whitespace-nowrap text-[#ffc23d]">¡Corriendo!</span>}
+        </div>
+      )}
       {clima?.lluvia && <div className="paseo-lluvia pointer-events-none absolute inset-0" aria-hidden="true" />}
       {!listo && (
         <div className="absolute inset-0 grid place-items-center bg-black">
