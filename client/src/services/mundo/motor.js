@@ -352,6 +352,7 @@ export class Mundo {
     this.camara.updateProjectionMatrix()
     this.sol.castShadow = false
     this.sombraDron.material.opacity = 0.35
+    this.intro = { t0: performance.now(), dur: 4200 }
     this.alFotorreal?.(true)
   }
 
@@ -467,7 +468,8 @@ export class Mundo {
   setFaros(objs, recogidos, modo) {
     for (const f of this.faros.children) f.geometry.dispose()
     this.faros.clear()
-    const tam = { pie: [5, 40], bici: [6, 50], auto: [10, 80], dron: [30, 260] }[modo] ?? [5, 40]
+    const tam0 = { pie: [5, 40], bici: [6, 50], auto: [10, 80], dron: [30, 260] }[modo] ?? [5, 40]
+    const tam = this.fotoVisible ? [tam0[0] * 0.35, tam0[1] * 1.2] : tam0
     for (const o of objs) {
       const hecho = recogidos.has(o.id)
       const color = hecho ? '#3ddc84' : o.tipo === 'lugar' ? '#ffc23d' : '#7cc4ff'
@@ -805,8 +807,21 @@ export class Mundo {
     this.camPos.lerp(deseo, k)
     const mira = new THREE.Vector3(this.x + fx * (this.modo === 'dron' ? 40 : 6), yJ + c.mira, this.z + fz * (this.modo === 'dron' ? 40 : 6))
     this.camMira.lerp(mira, Math.min(1, k * 1.6))
-    this.camara.position.copy(this.camPos)
-    this.camara.lookAt(this.camMira)
+    if (this.intro) {
+      // Entrada de cine: la cámara baja desde el cielo hasta ZUMI (como Google Earth)
+      const k2 = Math.min(1, (performance.now() - this.intro.t0) / this.intro.dur)
+      const e = 1 - Math.pow(1 - k2, 3)
+      const alto = new THREE.Vector3(this.x - fx * 300, yJ + 1800, this.z - fz * 300)
+      this.camara.position.lerpVectors(alto, deseo, e)
+      const objetivo = new THREE.Vector3(this.x, yJ, this.z).lerp(mira, e)
+      this.camara.lookAt(objetivo)
+      this.camPos.copy(this.camara.position)
+      this.camMira.copy(objetivo)
+      if (k2 >= 1) this.intro = null
+    } else {
+      this.camara.position.copy(this.camPos)
+      this.camara.lookAt(this.camMira)
+    }
     const fov = c.fov + Math.min(16, rapidez * (this.modo === 'auto' ? 0.42 : 0.6))
     if (Math.abs(this.camara.fov - fov) > 0.05) {
       this.camara.fov += (fov - this.camara.fov) * 0.08

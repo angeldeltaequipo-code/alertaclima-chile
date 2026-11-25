@@ -18,6 +18,22 @@ export const PASEOS = [
   { id: 'pto-varas', nombre: 'Costanera de Puerto Varas', lat: -41.31768, lng: -72.98348, rumbo: 90 },
 ]
 
+// Ciudades donde Google tiene la ciudad escaneada en 3D (comprobado en la app, nov. 2026):
+// ahí se camina por las calles y casas reales.
+export const CIUDADES_3D = [
+  { id: '3d-santiago', nombre: 'Plaza de Armas de Santiago', sub: 'Santiago · 3D real', lat: -33.43783, lng: -70.65045, rumbo: 0 },
+  { id: '3d-providencia', nombre: 'Costanera Center, Providencia', sub: 'Providencia · 3D real', lat: -33.4176, lng: -70.6065, rumbo: 90 },
+  { id: '3d-lascondes', nombre: 'El Golf, Las Condes', sub: 'Las Condes · 3D real', lat: -33.4153, lng: -70.5996, rumbo: 60 },
+  { id: '3d-valpo', nombre: 'Plaza Sotomayor, Valparaíso', sub: 'Valparaíso · 3D real', lat: -33.0389, lng: -71.6273, rumbo: 0 },
+  { id: '3d-conce', nombre: 'Plaza de la Independencia, Concepción', sub: 'Concepción · 3D real', lat: -36.82698, lng: -73.05024, rumbo: 0 },
+  { id: '3d-antofa', nombre: 'Plaza Colón, Antofagasta', sub: 'Antofagasta · 3D real', lat: -23.6464, lng: -70.3979, rumbo: 270 },
+  { id: '3d-temuco', nombre: 'Plaza Aníbal Pinto, Temuco', sub: 'Temuco · 3D real', lat: -38.7393, lng: -72.5984, rumbo: 0 },
+  { id: '3d-pmontt', nombre: 'Costanera de Puerto Montt', sub: 'Puerto Montt · 3D real', lat: -41.4718, lng: -72.9396, rumbo: 180 },
+  { id: '3d-ptovaras', nombre: 'Costanera de Puerto Varas', sub: 'Puerto Varas · 3D real', lat: -41.31768, lng: -72.98348, rumbo: 90 },
+  { id: '3d-copiapo', nombre: 'Plaza de Armas de Copiapó', sub: 'Copiapó · 3D real', lat: -27.3668, lng: -70.3323, rumbo: 0 },
+  { id: '3d-angeles', nombre: 'Plaza de Armas de Los Ángeles', sub: 'Los Ángeles · 3D real', lat: -37.4697, lng: -72.3537, rumbo: 0 },
+]
+
 // Lo que ZUMI cuenta aunque no haya internet para Wikipedia (datos verificables, sin inventar).
 const CURADOS = {
   'plaza-linares': [

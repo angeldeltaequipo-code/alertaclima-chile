@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ZumiCine from './ZumiCine'
 import ZumiCharm from './ZumiCharm'
+import ZumiLooks from './ZumiLooks'
 import { abrirFuncion } from './Funciones'
 import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
@@ -216,6 +217,8 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             onLlamar={onLlamar}
           />
         </div>
+      ) : presencia === 'looks' ? (
+        <ZumiLooks onTocar={tocarCharm} />
       ) : (
         <>
           {/* ZUMI a pantalla completa, cara a cara: la cámara se acerca y los controles van sobre el video */}
@@ -229,6 +232,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
         {[
           ['charm', 'Charm'],
           ['cine', 'Cine'],
+          ['looks', 'Looks'],
         ].map(([v, t]) => (
           <button key={v} type="button" aria-pressed={presencia === v} onClick={() => cambiarPresencia(v)} className={`min-h-9 rounded-full px-3 ${presencia === v ? 'bg-white text-black' : 'text-white/80'}`}>
             {t}

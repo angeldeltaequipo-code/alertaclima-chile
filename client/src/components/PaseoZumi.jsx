@@ -4,7 +4,7 @@
 // No es Street View: es una maqueta 3D del lugar real, y lo dice.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { PASEOS, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
+import { PASEOS, CIUDADES_3D, PLAZA_LINARES, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
 import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
@@ -229,7 +229,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   objsRef.current = objs
   useEffect(() => {
     if (mapa.current && listo) mapa.current.setFaros(objs, juego.recogidos, modo)
-  }, [objs, juego, modo, listo])
+  }, [objs, juego, modo, listo, fotorreal])
   const revisarObjetivos = useRef(null)
   revisarObjetivos.current = (c) => {
     const alcance = ALCANCE[modoRef.current] ?? 30
@@ -411,7 +411,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     onContextMenu: (e) => e.preventDefault(),
   })
 
-  const resultados = q.trim().length >= 2 ? buscarLugares(q, 6) : PASEOS
+  const resultados = q.trim().length >= 2 ? buscarLugares(q, 6) : [...CIUDADES_3D, ...PASEOS.filter((p) => !CIUDADES_3D.some((c) => c.nombre === p.nombre))]
 
   return createPortal(
     <div className="paseo fixed inset-0 z-[1200] bg-black text-white" role="dialog" aria-label={`Pasea con ZUMI: ${inicio.nombre}`}>
