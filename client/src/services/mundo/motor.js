@@ -742,10 +742,10 @@ export class Mundo {
       const espera = performance.now() - this.fotoDesde
       const st = this.foto.tiles.stats ?? {}
       const quieta = (st.downloading ?? 0) + (st.parsing ?? 0) + (st.queued ?? 0) === 0
-      if (this.cobertura == null && espera > 3500 && this.h0Listo && this.nRayo % 20 === 0) {
+      if (this.cobertura == null && espera > 3500 && (this.h0Listo || espera > 9000) && this.nRayo % 20 === 0) {
         let c = this.revisarCobertura()
         // «sin 3D» solo se decide con la maqueta ya cargada (si no, Santiago parecía plano)
-        if (c === false && !quieta && espera < 35000) c = null
+        if (c === false && !quieta && espera < 12000) c = null
         if (c === true) {
           this.cobertura = true
           this.mostrarFotorreal()
@@ -756,7 +756,7 @@ export class Mundo {
           this.mostrarFotorreal()
           this.setModo('dron')
           this.alSoloAire?.(true)
-        } else if (espera > 40000) {
+        } else if (espera > 25000) {
           this.cobertura = false
           this.desactivarFotorreal()
           return
