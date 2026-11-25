@@ -191,15 +191,6 @@ export default function ControlesMapa({
           Viaja con ZUMI
         </button>
       )}
-      {onViajar && (
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('ac:paseo'))}
-          className={`absolute ${onRuta ? 'top-[11.2rem]' : 'top-[8.15rem]'} left-3 z-[500] flex min-h-11 items-center gap-1.5 rounded-full bg-black/80 px-3.5 text-[14px] font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,.4)] ring-1 ring-white/20 active:scale-[0.97]`}
-        >
-          🚶 Pasea en 3D
-        </button>
-      )}
 
       {modoCalle && (
         <p role="status" className="absolute top-16 right-3 left-3 z-[500] mx-auto max-w-sm rounded-xl bg-senal px-3 py-2 text-center text-[15px] font-bold text-sobre-senal shadow-lg">

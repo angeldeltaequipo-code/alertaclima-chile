@@ -4,8 +4,8 @@
 // No es Street View: es una maqueta 3D del lugar real, y lo dice.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { PASEOS, CIUDADES_3D, paseoParaComuna, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
-import { buscarLugares, resolverDestino } from '../services/ruta'
+import { CIUDADES_3D, paseoParaComuna, lugaresCerca, fotosCerca, climaAqui, avanzar, narracion, ladoDe, rumboHacia } from '../services/paseo'
+import { resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
 import { Mundo } from '../services/mundo/motor'
@@ -63,7 +63,8 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
   const cargandoMundo = !listo || esperaFoto
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
-  const [modo, setModo] = useState('pie')
+  // Solo se vuela: la maqueta real de Google se ve como foto desde el aire; a pie se deforma
+  const [modo, setModo] = useState('dron')
   const [tablero, setTablero] = useState({ kmh: 0, alt: null })
   const vel = useRef(0) // velocidad actual (m/s), con aceleración y freno suaves
   const [juego, setJuego] = useState(() => {
@@ -78,11 +79,13 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
   const [logro, setLogro] = useState(null) // aviso «+150 ¡Descubriste…!»
   const modoElegido = useRef(false) // si la persona eligió un modo, no se cambia solo
   const [buscar, setBuscar] = useState(false)
-  const [q, setQ] = useState('')
   const [contar, setContar] = useState(false) // tras la bienvenida, ZUMI empieza a contar lugares
   const [turno, setTurno] = useState(0) // un lugar a la vez: el siguiente espera a que termine el anterior
   const vozRef = useRef(voz)
   const modoRef = useRef(modo)
+  const ultimaEntrada = useRef(performance.now())
+  const [piloto, setPiloto] = useState(false)
+  const pilotoRef = useRef(false)
   modoRef.current = modo
   vozRef.current = voz
   const inicioRef = useRef(inicio.id)
@@ -141,14 +144,21 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
       const md = MODOS[modoRef.current]
       // aceleración y freno suaves (inercia), como un vehículo de verdad
       const j = joy.current
+      // Piloto automático: 4 s sin tocar en el aire = vuelta lenta de cine sobre la ciudad
+      if (j.activo || k.adelante || k.atras || k.izq || k.der) ultimaEntrada.current = ahora
+      const auto = modoRef.current === 'dron' && ahora - ultimaEntrada.current > 4000
+      if (auto !== pilotoRef.current) {
+        pilotoRef.current = auto
+        setPiloto(auto)
+      }
       // Con el dedo: arrastra hacia donde quieres ir; más lejos = más rápido, al borde = corre
       const turbo = (k.turbo || (j.activo && j.fuerza > 1)) ? (modoRef.current === 'pie' ? 2.3 : 1.7) : 1
-      const meta = j.activo ? Math.min(1, j.fuerza) * md.vmax * turbo : (k.adelante - k.atras) * md.vmax * turbo * (k.adelante ? 1 : 0.4)
+      const meta = auto ? md.vmax * 0.22 : j.activo ? Math.min(1, j.fuerza) * md.vmax * turbo : (k.adelante - k.atras) * md.vmax * turbo * (k.adelante ? 1 : 0.4)
       const cambio = md.acel * dt * (meta === 0 ? 1.6 : 1)
       vel.current += Math.max(-cambio, Math.min(cambio, meta - vel.current))
       if (Math.abs(vel.current) < 0.05 && meta === 0) vel.current = 0
       if (m && (vel.current || k.izq || k.der || j.activo)) {
-        let giro = (k.der - k.izq) * md.giro * dt * (modoRef.current === 'auto' ? Math.min(1, 0.35 + Math.abs(vel.current) / 10) : 1)
+        let giro = auto ? 7 * dt : (k.der - k.izq) * md.giro * dt * (modoRef.current === 'auto' ? Math.min(1, 0.35 + Math.abs(vel.current) / 10) : 1)
         if (j.activo && j.fuerza > 0.15) {
           // gira hacia donde apunta el dedo (relativo a como mirabas al tocar)
           const dif = ((j.ref + j.ang - m.getBearing() + 540) % 360) - 180
@@ -371,7 +381,6 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
     const p = await resolverDestino(p0).catch(() => p0)
     const m = mapa.current
     setBuscar(false)
-    setQ('')
     dichos.current = new Set()
     ocupado.current = false
     ultimoPedido.current = null
@@ -437,7 +446,7 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
     onContextMenu: (e) => e.preventDefault(),
   })
 
-  const resultados = q.trim().length >= 2 ? buscarLugares(q, 6) : [...CIUDADES_3D, ...PASEOS.filter((p) => !CIUDADES_3D.some((c) => c.nombre === p.nombre))]
+  const resultados = CIUDADES_3D
 
   return createPortal(
     <div className="paseo fixed inset-0 z-[1200] bg-black text-white" role="dialog" aria-label={`Pasea con ZUMI: ${inicio.nombre}`}>
@@ -574,14 +583,10 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
         {tablero.alt != null && <p className="mono mt-1 text-[11px] text-white/85 [text-shadow:0_1px_4px_#000]">{tablero.alt.toLocaleString('es-CL')} msnm</p>}
       </div>
 
-      {/* Modo de recorrido */}
-      <div role="group" aria-label="Cómo recorrer" className="vidrio-solido absolute top-[max(4.3rem,calc(env(safe-area-inset-top)+3.8rem))] left-1/2 flex -translate-x-1/2 gap-0.5 rounded-full p-1 whitespace-nowrap">
-        {Object.entries(MODOS).map(([id, md]) => (
-          <button key={id} type="button" aria-pressed={modo === id} aria-label={md.nombre} disabled={soloAire && id !== 'dron'} onClick={() => cambiarModo(id)} className={`min-h-10 rounded-full px-3 text-[13px] font-semibold disabled:opacity-35 ${modo === id ? 'bg-white text-black' : 'text-white/85'}`}>
-            {md.icono}<span className="ml-1 max-[380px]:hidden">{md.nombre}</span>
-          </button>
-        ))}
-      </div>
+      {/* Vuelo de dron: sin tocar, ZUMI da una vuelta de cine sobre la ciudad */}
+      <p className="vidrio-solido pointer-events-none absolute top-[max(4.3rem,calc(env(safe-area-inset-top)+3.8rem))] left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold whitespace-nowrap">
+        {piloto ? '🛸 Vuelo automático · toca para manejar' : '🛸 Arrastra el dedo para volar'}
+      </p>
 
       {soloAire && (
         <p className="vidrio-solido pointer-events-none absolute top-[max(7.3rem,calc(env(safe-area-inset-top)+6.8rem))] left-1/2 max-w-[88%] -translate-x-1/2 rounded-full px-3 py-1.5 text-center text-[12px] leading-snug">
@@ -650,8 +655,8 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
       {buscar && (
         <div className="absolute inset-0 z-10 bg-black/80 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]" onClick={() => setBuscar(false)}>
           <div className="vidrio-solido mx-auto max-w-md rounded-[22px] p-3" onClick={(e) => e.stopPropagation()}>
-            <p className="rotulo mb-2">¿Dónde quieres pasear?</p>
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Escribe una comuna o lugar" className="w-full rounded-xl bg-white/10 px-3 py-2.5 text-[16px] outline-none" />
+            <p className="mb-1 text-[18px] font-bold">¿Sobre qué ciudad volamos?</p>
+            <p className="mb-2 text-[13px] text-white/65">Ciudades escaneadas en 3D por Google.</p>
             <ul className="mt-2 max-h-[55vh] overflow-y-auto">
               {resultados.map((r) => (
                 <li key={r.id}>

@@ -10,7 +10,7 @@ const FUNCIONES = [
   { id: 'aire', icono: '🌫️', titulo: 'Aire', rotulo: 'MP2,5 · en vivo', sub: '¿Se puede respirar hoy?', acento: 'camaras' },
   { id: 'cielo', icono: '🚀', titulo: 'Espacio', rotulo: 'SpaceX · X', sub: 'Starship, Starlink y la Luna', acento: 'espacio' },
   // abre a pantalla completa (no en hoja)
-  { id: 'paseo', icono: '🚶', titulo: 'Chile real en 3D', rotulo: 'Google 3D · nuevo', sub: 'Camina 11 ciudades escaneadas y vuela sobre todo Chile con ZUMI', acento: 'paseo', ancho: true },
+  { id: 'paseo', icono: '🚶', titulo: 'Vuela sobre Chile', rotulo: 'Google 3D · nuevo', sub: 'Un vuelo de dron sobre 11 ciudades escaneadas en 3D, con ZUMI', acento: 'paseo', ancho: true },
 ]
 
 // Íconos de línea, del mismo trazo que la barra inferior.
