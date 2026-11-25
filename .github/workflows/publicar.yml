@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Cada miércoles se vuelve a publicar: así salen solos los artículos del blog que llegaron a su fecha.
+  schedule:
+    - cron: '17 13 * * 3'
 
 permissions:
   contents: read
@@ -49,6 +52,8 @@ jobs:
           cp -r client/dist _sitio/app
           cp client/dist/privacidad.html client/dist/terminos.html _sitio/
           test -f _sitio/index.html && test -f _sitio/app/index.html
+      - name: Blog, sitemap y robots
+        run: node client/scripts/blog.mjs client/blog _sitio
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _sitio

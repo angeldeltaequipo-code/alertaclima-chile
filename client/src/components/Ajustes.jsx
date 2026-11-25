@@ -349,7 +349,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
             <strong className="text-texto">Mapa:</strong> © colaboradores de OpenStreetMap.
           </li>
           <li>
-            <strong className="text-texto">Alertas oficiales:</strong> las publica el equipo de ZUMI desde fuentes oficiales (gob.cl y senapred.cl), con su enlace y hora de confirmación; aún no hay conexión automática con SENAPRED. Ante una emergencia, sigue
+            <strong className="text-texto">Alertas oficiales:</strong> ZUMI lee las alertas publicadas en senapred.cl cada 3 minutos y muestra cada una con su enlace y hora. Si SENAPRED no responde, se muestra lo último confirmado, nunca algo inventado. Ante una emergencia, sigue
             siempre las instrucciones de SENAPRED y de tu municipalidad.
           </li>
         </ul>

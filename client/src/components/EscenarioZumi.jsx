@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ZumiCine from './ZumiCine'
 import ZumiCharm from './ZumiCharm'
 import ZumiLooks from './ZumiLooks'
+import SaludoZumi, { yaSaludo } from './SaludoZumi'
 import { abrirFuncion } from './Funciones'
 import { escenasReporte, nombrePreferido, paraVoz } from '../services/narrador'
 import { precargarFrases } from '../services/vozZumi'
@@ -76,6 +77,8 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
   const tempAhora = datos.ahora?.temperatura
   const [gesto, setGesto] = useState(() => (escena === 'sala' && new Date().getMonth() === 8 && new Date().getDate() <= 20 ? 'cueca:inicio' : escena === 'sala' && tempAhora >= 27 ? 'verano:inicio' : escena === 'sala' && tempAhora <= 8 ? 'invierno:inicio' : 'saludo:inicio'))
   const toques = useRef(0)
+  // Saludo conversado del día (ZUMI pregunta cómo estás): mientras dura, el globo de frases se calla
+  const [conversando, setConversando] = useState(() => !yaSaludo())
 
   // El globo avanza solo; con alerta se queda en lo importante.
   useEffect(() => {
@@ -263,7 +266,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
       {!charm && <button type="button" onClick={tocarZumi} aria-label="Tocar a ZUMI" className="absolute inset-x-[20%] top-[14%] bottom-[44%] z-[1] rounded-[40%] focus-visible:outline-4" />}
 
       {/* Lo que dice ZUMI */}
-      {!charm && presencia !== 'looks' && <button
+      {!charm && presencia !== 'looks' && !conversando && <button
         type="button"
         onClick={() => (urgente ? onLlamar() : reaccion ? setReaccion(null) : setK((x) => (x + 1) % frases.length))}
         className="globo-escenario absolute top-[3.7rem] right-3 left-[28%] z-[2] rounded-3xl rounded-bl-md px-3.5 py-2 text-left text-[15px] leading-snug"
@@ -274,6 +277,16 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
 
       {/* Telemetría y acciones, sobre el video */}
       <div ref={hudRef} className={`portada-acciones hud-zumi ${charm ? 'relative' : 'absolute inset-x-0 bottom-0'} z-[3] px-4 pb-1 text-white`}>
+        {conversando && (
+          <SaludoZumi
+            datos={datos}
+            quien={quien}
+            onPreguntar={onPreguntar}
+            onEscuchar={onEscuchar}
+            onGesto={(paso) => setGesto(`${{ hola: 'saludo', bien: 'celebra', preocupado: 'explica', avisos: 'explica', listo: 'celebra' }[paso] ?? 'saludo'}:${Date.now()}`)}
+            onCerrar={() => setConversando(false)}
+          />
+        )}
         <div className="mb-3 flex items-end justify-between gap-3">
           {ahora?.temperatura != null && (
             <p className="cifra text-[84px]" aria-label={`${Math.round(ahora.temperatura)} grados`}>

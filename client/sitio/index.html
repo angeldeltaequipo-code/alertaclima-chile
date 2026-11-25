@@ -429,6 +429,35 @@ footer a{color:#fff}
 
 .solo-lector{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+
+/* Bolsillo: la alerta que llega al teléfono */
+.fuentes-portada{margin-top:10px;font-size:14px;color:var(--pizarra);letter-spacing:.01em}
+.oscuro .fuentes-portada,.escenario .fuentes-portada{color:#a9bccd}
+.bolsillo{padding:clamp(56px,8vw,110px) 0}
+.bolsillo-grid{display:grid;grid-template-columns:minmax(0,380px) 1fr;gap:clamp(28px,6vw,80px);align-items:center}
+.pantalla-bloqueo{position:relative;border-radius:44px;padding:44px 16px 60px;background:radial-gradient(120% 80% at 30% 0%,#3d6fae 0%,#1b2f4d 55%,#0b1422 100%);box-shadow:0 0 0 10px #05090f,0 30px 70px -20px rgba(0,0,0,.7);color:#fff;min-height:520px}
+.pb-hora{margin:0;text-align:center;font-size:72px;font-weight:300;letter-spacing:-.02em;line-height:1}
+.pb-fecha{margin:6px 0 34px;text-align:center;font-size:16px;color:#d8e3ee}
+.pb-notif{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.16);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:22px;padding:12px 14px;text-align:left}
+.pb-notif img{border-radius:10px;flex:none}
+.pb-notif p{margin:0}.pb-app{font-size:12.5px;color:#d0dbe6}.pb-tit{font-weight:700;font-size:15.5px;line-height:1.25}.pb-txt{font-size:14.5px;line-height:1.3;color:#eef3f8}
+.pb-2{margin-top:10px;opacity:.85}
+.pantalla-bloqueo .pb-notif:first-of-type{animation:llega 4.5s ease-in-out infinite}
+@keyframes llega{0%,8%{transform:translateY(-24px);opacity:0}14%{transform:translateY(0);opacity:1}16%,20%{transform:translateX(-5px)}18%,22%{transform:translateX(5px)}24%,90%{transform:none;opacity:1}100%{opacity:1}}
+.lista-check{list-style:none;padding:0;margin:20px 0 0;font-size:18px}
+.lista-check li{padding:6px 0 6px 32px;position:relative}
+.lista-check li::before{content:'';position:absolute;left:4px;top:13px;width:14px;height:8px;border-left:3px solid #7fd39a;border-bottom:3px solid #7fd39a;transform:rotate(-45deg)}
+.ejemplo-nota{font-size:13px;color:#8fa3b6;margin-top:12px}
+.cta-fija{display:none}
+@media (max-width:820px){
+  .bolsillo-grid{grid-template-columns:1fr}
+  .pantalla-bloqueo{max-width:360px;margin:0 auto;min-height:440px}
+  .cta-fija{display:flex;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:60;align-items:center;gap:12px;padding:10px 16px 10px 10px;border-radius:20px;background:var(--panda);color:#fff;text-decoration:none;box-shadow:0 14px 34px -10px rgba(0,0,0,.5);transform:translateY(140%);transition:transform .3s ease}
+  .cta-fija.visible{transform:none}
+  .cta-fija img{border-radius:10px}
+  .cta-fija b{display:block;font-size:17px}.cta-fija small{display:block;font-size:13px;opacity:.9}
+}
+@media (prefers-reduced-motion:reduce){.pantalla-bloqueo .pb-notif:first-of-type{animation:none}}
 </style>
 </head>
 <body>
@@ -441,6 +470,7 @@ footer a{color:#fff}
       <a href="#familia">Familia</a>
       <a href="#planes">Planes</a>
       <a href="#preguntas">Preguntas</a>
+      <a href="/blog/">Blog</a>
     </nav>
     <a class="btn btn-panda" href="/app/">Abrir ZUMI</a>
   </div>
@@ -452,12 +482,13 @@ footer a{color:#fff}
   <div class="envoltura">
     <div>
       <h1>ZUMI te avisa antes de que llueva, tiemble o se queme el cerro.</h1>
-      <p class="lead">Alertas oficiales, el clima de tu comuna y tu familia en un mapa, contados por un panda rojo que habla claro. Funciona en el navegador de tu teléfono, sin descargar nada.</p>
+      <p class="lead">ZUMI es tu asistente con inteligencia artificial. Lee por ti las alertas oficiales, los sismos y el clima de tu comuna, te los explica en palabras simples y te avisa en el bolsillo. Le hablas como a un amigo.</p>
       <div class="acciones">
         <a class="btn btn-panda" href="/app/">Abrir ZUMI gratis</a>
         <a class="btn btn-borde" href="#instalar">Dejarla en mi pantalla</a>
       </div>
-      <p class="nota-gratis">Sin cuenta para empezar. Lo que protege la vida es gratis, siempre.</p>
+      <p class="nota-gratis">Gratis y sin crear cuenta. Lo que protege la vida es gratis, siempre.</p>
+      <p class="fuentes-portada">Datos oficiales de <b>SENAPRED</b> · <b>SHOA</b> · <b>CSN</b> · <b>SERNAGEOMIN</b> · <b>NASA</b></p>
     </div>
     <div class="escena-col">
       <div class="escena">
@@ -475,6 +506,34 @@ footer a{color:#fff}
         <button type="button" data-escena="calor" aria-pressed="false">🥵 Hace calor</button>
         <button type="button" data-escena="mochila" aria-pressed="false">🎒 Mochila</button>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="bolsillo oscuro" aria-labelledby="t-bolsillo">
+  <div class="envoltura bolsillo-grid">
+    <div class="pantalla-bloqueo" aria-hidden="true">
+      <p class="pb-hora">7:42</p>
+      <p class="pb-fecha">miércoles 25 de noviembre</p>
+      <div class="pb-notif">
+        <img src="/img/zumi-icono-64.png" alt="" width="38" height="38">
+        <div><p class="pb-app">ZUMI · ahora</p><p class="pb-tit">Alerta Roja de SENAPRED: tsunami</p><p class="pb-txt">Evacúa la costa de tu comuna ahora. Sube a la cota 30. Toca para ver la ruta.</p></div>
+      </div>
+      <div class="pb-notif pb-2">
+        <img src="/img/zumi-icono-64.png" alt="" width="38" height="38">
+        <div><p class="pb-app">ZUMI · hace 2 h</p><p class="pb-tit">Tu mamá llegó a la casa</p><p class="pb-txt">Valparaíso · 21° y despejado.</p></div>
+      </div>
+    </div>
+    <div>
+      <h2 id="t-bolsillo">Tu teléfono vibra. Es ZUMI.</h2>
+      <p class="lead">Cuando SENAPRED, el SHOA o el CSN publican algo donde estás tú o tu familia, ZUMI te avisa al instante, aunque tengas el teléfono en el bolsillo. Lo tocas y te explica qué pasa y qué hacer, hablándote.</p>
+      <ul class="lista-check">
+        <li>Solo te avisa cuando importa: nada de spam.</li>
+        <li>Alertas para tu comuna y la de cada persona de tu familia.</li>
+        <li>«Estoy bien» a toda tu familia con un toque.</li>
+      </ul>
+      <div class="acciones"><a class="btn btn-panda" href="/app/">Activar mis avisos gratis</a></div>
+      <p class="ejemplo-nota">Ejemplo ilustrativo de cómo se ve un aviso.</p>
     </div>
   </div>
 </section>
@@ -629,6 +688,7 @@ footer a{color:#fff}
     <figure><img src="/app/zumi/looks/lector.webp" alt="ZUMI con un libro" loading="lazy"><figcaption>Lector</figcaption></figure>
     <figure><img src="/app/zumi/looks/campamento.webp" alt="ZUMI de campamento" loading="lazy"><figcaption>Campamento</figcaption></figure>
   </div>
+  <div class="envoltura"><div class="acciones"><a class="btn btn-panda" href="/app/">Conocer a ZUMI</a></div></div>
 </section>
 
 <section class="seccion" aria-labelledby="t-flujo">
@@ -830,6 +890,7 @@ footer a{color:#fff}
 </section>
 
 </main>
+<a class="cta-fija" href="/app/" id="cta-fija"><img src="/img/zumi-icono-64.png" alt="" width="34" height="34"><span><b>Prueba ZUMI gratis</b><small>Sin cuenta · en 30 segundos</small></span></a>
 
 <footer>
   <div class="envoltura">
@@ -862,5 +923,9 @@ footer a{color:#fff}
 <script src="vivo.js" defer></script>
 <script src="chat.js" defer></script>
 <script src="historia.js" defer></script>
+<script>
+(function(){var c=document.getElementById('cta-fija');if(!c)return;var p=document.querySelector('.portada');
+var io=new IntersectionObserver(function(e){c.classList.toggle('visible',!e[0].isIntersecting)},{threshold:0});if(p)io.observe(p)})()
+</script>
 </body>
 </html>
