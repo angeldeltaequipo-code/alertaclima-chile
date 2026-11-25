@@ -15,6 +15,14 @@ const CAMARA = {
   dron: { dist: 60, alto: 46, mira: 0, fov: 60, radio: 2, niebla: [700, 3600], vuelo: 70 },
 }
 
+// En la maqueta real la cámara va un poco más alta (las fotos se ven mejor desde arriba, como en Google Earth)
+const CAMARA_FOTO = {
+  pie: { dist: 10, alto: 6.5, mira: 2.5 },
+  bici: { dist: 12, alto: 7.5, mira: 2.5 },
+  auto: { dist: 15, alto: 8, mira: 2 },
+  dron: { dist: 70, alto: 50 },
+}
+
 export class Mundo {
   constructor(contenedor, { lat, lng, rumbo = 0, modo = 'pie' }) {
     this.cont = contenedor
@@ -240,6 +248,7 @@ export class Mundo {
     this.camara.far = 30000
     this.camara.updateProjectionMatrix()
     this.sol.castShadow = false
+    if (this.clima) this.foto.setNoche(!this.clima.dia)
     // sombra redonda bajo ZUMI (la maqueta ya trae su luz y sombras reales)
     this.sombraDron.material.opacity = 0.35
     return true
@@ -264,6 +273,7 @@ export class Mundo {
   }
   setClima(c) {
     if (!c) return
+    this.clima = c
     const noche = !c.dia
     const gris = c.lluvia || c.nubes > 75
     nocheMateriales(this.mat, noche)
@@ -291,6 +301,7 @@ export class Mundo {
       this.sol.color.set('#fff1d6')
       this.renderer.toneMappingExposure = 0.82
     }
+    this.foto?.setNoche(noche)
     if (this.vehiculos.auto.luces) this.vehiculos.auto.luces.intensity = noche ? 60 : 0
     this.ponerLluvia(!!c.lluvia)
     this.reflejos()
@@ -329,7 +340,7 @@ export class Mundo {
       const h = hecho ? tam[1] * 0.25 : tam[1]
       const haz = new THREE.Mesh(
         new THREE.CylinderGeometry(tam[0] * 0.55, tam[0], h, 28, 1, true),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: hecho ? 0.25 : 0.42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: (hecho ? 0.25 : 0.42) * (this.foto ? 0.55 : 1), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
       )
       haz.position.set(x, h / 2, z)
       const anillo = new THREE.Mesh(new THREE.RingGeometry(tam[0] * 0.8, tam[0] * 1.1, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }))
@@ -604,7 +615,7 @@ export class Mundo {
       }
     }
     // jugador
-    const c = CAMARA[this.modo]
+    const c = this.foto ? { ...CAMARA[this.modo], ...CAMARA_FOTO[this.modo] } : CAMARA[this.modo]
     const yJ = (c.vuelo ?? 0) + this.h0
     const rad = THREE.MathUtils.degToRad(this.rumbo)
     const fx = Math.sin(rad)
@@ -614,6 +625,7 @@ export class Mundo {
     this.vehiculos[this.modo].animar(dt, Math.abs(this.vel), this.volante)
     this.sombraDron.visible = this.modo === 'dron' || !!this.foto
     this.sombraDron.position.set(this.x, this.h0 + 0.15, this.z)
+    this.sombraDron.scale.setScalar(this.modo === 'dron' ? 1 : this.modo === 'auto' ? 1.6 : 0.42)
 
     // cámara de persecución con un poco de retraso; más ángulo con velocidad (sensación de rapidez)
     const rapidez = Math.abs(this.vel)

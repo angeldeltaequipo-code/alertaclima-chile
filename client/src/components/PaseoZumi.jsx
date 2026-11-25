@@ -85,7 +85,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     m.alListo = () => {
       setListo(true)
       // En la naturaleza (sin casas cerca) se parte en Dron: a pie solo se vería pasto.
-      if (!modoElegido.current && m.edificiosCerca(300) < 4) cambiarModo('dron', false)
+      if (!modoElegido.current && !m.foto && m.edificiosCerca(300) < 4) cambiarModo('dron', false)
     }
     return () => {
       m.remove()

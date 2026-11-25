@@ -22,7 +22,7 @@ export class Fotorreal {
     this.orientar = new ReorientationPlugin({ lat: lat * D2R, lon: lng * D2R, height: 0 })
     tiles.registerPlugin(this.orientar)
     const movil = matchMedia('(pointer: coarse)').matches
-    tiles.errorTarget = movil ? 10 : 6
+    tiles.errorTarget = movil ? 6 : 3
     tiles.lruCache.minSize = 600
     tiles.lruCache.maxSize = movil ? 900 : 1600
     tiles.setCamera(camara)
@@ -39,6 +39,22 @@ export class Fotorreal {
     this.cargando = true
     tiles.addEventListener('load-root-tileset', () => this.alinear())
     tiles.addEventListener('tiles-load-end', () => (this.cargando = false))
+    // La maqueta ya trae la luz real del día (fotos): se muestra tal cual, sin re-iluminarla.
+    // De noche se oscurece con un tinte azulado.
+    this.tinte = new THREE.Color('#ffffff')
+    this.materiales = new Set()
+    tiles.addEventListener('load-model', ({ scene }) => {
+      scene.traverse((o) => {
+        if (!o.isMesh) return
+        const viejo = o.material
+        const m = new THREE.MeshBasicMaterial({ map: viejo.map ?? null, color: this.tinte, fog: true })
+        if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
+        o.material = m
+        this.materiales.add(m)
+        viejo.dispose?.()
+      })
+    })
+    tiles.addEventListener('dispose-model', ({ scene }) => scene.traverse((o) => o.isMesh && this.materiales.delete(o.material)))
   }
 
   /** Gira la maqueta para que coincida con el mapa del juego (este = +x, norte = -z). */
@@ -54,6 +70,12 @@ export class Fotorreal {
     this.raiz.rotation.y = ang
     this.raiz.updateMatrixWorld(true)
     this.alineado = true
+  }
+
+  /** Noche: la ciudad real se oscurece (las fotos son de día). */
+  setNoche(noche) {
+    this.tinte.set(noche ? '#3a4766' : '#ffffff')
+    for (const m of this.materiales) m.color.copy(this.tinte)
   }
 
   actualizar() {
