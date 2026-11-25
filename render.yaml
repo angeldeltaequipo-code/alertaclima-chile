@@ -14,6 +14,8 @@ services:
         value: production
       - key: MAPILLARY_TOKEN # Vista de calle real (Mapillary, gratis). Se pega a mano en Environment.
         sync: false
+      - key: CESIUM_TOKEN # Mundo 3D fotorrealista (maqueta de Google vía Cesium ion, plan gratis). Se pega a mano.
+        sync: false
       - key: DATABASE_URL # Base de datos en Neon (gratis, no vence). Se pega a mano en Environment; no se versiona.
         sync: false
       - key: HASH_SECRET

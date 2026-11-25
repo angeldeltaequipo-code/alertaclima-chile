@@ -9,6 +9,7 @@ import { buscarLugares, resolverDestino } from '../services/ruta'
 import { distanciaKm } from '../services/familiaGPS'
 import { hablar, callar } from '../services/narrador'
 import { Mundo } from '../services/mundo/motor'
+import { API_URL } from '../services/reportes'
 import { ALCANCE, objetivos as armarObjetivos, progreso, guardarProgreso, sonidoLogro, sonidoTurbo } from '../services/paseoJuego'
 import { abrirCalle } from '../services/calle'
 
@@ -43,6 +44,8 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   const [fotos, setFotos] = useState([])
   const [clima, setClima] = useState(null)
   const [cuenta, setCuenta] = useState(null) // lo que ZUMI está contando
+  const [fotorreal, setFotorreal] = useState(false)
+  const creditos = useRef(null)
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
   const [modo, setModo] = useState('pie')
@@ -74,6 +77,11 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   useEffect(() => {
     const m = new Mundo(caja.current, { lat: inicio.lat, lng: inicio.lng, rumbo: inicio.rumbo ?? 0, modo: modoRef.current })
     mapa.current = m
+    // Si está configurada, la maqueta fotorrealista de Google (vía Cesium ion) reemplaza al mundo dibujado
+    fetch(`${API_URL}/api/calle/mundo`, { signal: AbortSignal.timeout(20000) })
+      .then((r) => r.json())
+      .then((c) => c.fotorreal && m.activarFotorreal(c.cesium).then((ok) => ok && setFotorreal(true)))
+      .catch(() => {})
     m.alListo = () => {
       setListo(true)
       // En la naturaleza (sin casas cerca) se parte en Dron: a pie solo se vería pasto.
@@ -275,6 +283,17 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   }, [listo, inicio.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => callar(), [])
+  // Créditos de la maqueta real (Google y fuentes de las imágenes): obligatorios y siempre visibles
+  useEffect(() => {
+    if (!fotorreal) return
+    const t = setInterval(() => {
+      const el = creditos.current
+      const f = mapa.current?.foto
+      if (!el || !f) return
+      el.replaceChildren(f.creditos(), 'Maqueta 3D: Google · Cesium')
+    }, 3000)
+    return () => clearInterval(t)
+  }, [fotorreal])
   // la tarjeta se esconde sola para dejar ver la calle
   useEffect(() => {
     if (!cuenta) return
@@ -500,7 +519,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
         </div>
       </div>
       <p className="pointer-events-none absolute right-2 bottom-[max(0.3rem,calc(env(safe-area-inset-bottom)-0.9rem))] left-2 truncate text-center text-[9.5px] text-white/65 [text-shadow:0_1px_3px_#000]">
-        Mundo 3D hecho con el mapa real, no es Street View · Calles y lugares: OpenFreeMap © OpenStreetMap
+        {fotorreal ? <span ref={creditos} /> : 'Mundo 3D hecho con el mapa real, no es Street View · Calles y lugares: OpenFreeMap © OpenStreetMap'}
       </p>
 
       {/* Ver una foto */}

@@ -33,6 +33,8 @@ export class Mundo {
     this.alCuadro = null
     this.alMover = null
     this.giroSuave = null
+    this.h0 = 0 // altura del suelo bajo ZUMI (en el mundo fotorrealista)
+    this.foto = null
 
     const movil = matchMedia('(pointer: coarse)').matches
     const r = (this.renderer = new THREE.WebGLRenderer({ antialias: !movil, powerPreference: 'high-performance' }))
@@ -184,6 +186,15 @@ export class Mundo {
   libre(lat, lng) {
     if (this.modo === 'dron') return true
     const [x, z] = this.proy.aLocal(lat, lng)
+    if (this.foto) {
+      const dx = x - this.x
+      const dz = z - this.z
+      if (Math.hypot(dx, dz) < 0.001) return true
+      // en la maqueta real: no atravesar paredes y no subir escalones de más de 1,4 m
+      if (this.foto.pared(this.x, this.h0, this.z, dx, dz, this.modo === 'auto' ? 2.6 : 1.1)) return false
+      const h = this.foto.alturaEn(x, z, this.h0 + 60)
+      return h == null || h - this.h0 < 1.4
+    }
     for (const t of this.teselas.values()) if (t.obj?.choca(x, z)) return false
     if (this.modo !== 'pie' && this.chocaTrafico(x, z)) return false
     return true
@@ -192,6 +203,28 @@ export class Mundo {
     let n = 0
     for (const t of this.teselas.values()) for (const h of t.obj?.huellas ?? []) if (Math.hypot((h.x0 + h.x1) / 2 - this.x, (h.z0 + h.z1) / 2 - this.z) < radio) n++
     return n
+  }
+
+  // ---------- mundo fotorrealista (maqueta 3D de Google) ----------
+  async activarFotorreal(token) {
+    if (this.foto || !token) return false
+    this.tokenFoto = token
+    const { Fotorreal } = await import('./fotorreal')
+    if (!this.vivo) return false
+    const { lat, lng } = this.proy.aGeo(0, 0)
+    this.foto = new Fotorreal({ escena: this.escena, camara: this.camara, renderer: this.renderer, token, lat, lng })
+    // lo dibujado a mano se esconde: manda la maqueta real
+    this.barrios.visible = false
+    this.trafico.visible = false
+    this.suelo.visible = false
+    this.niebla.near = 600
+    this.niebla.far = 9000
+    this.camara.far = 30000
+    this.camara.updateProjectionMatrix()
+    this.sol.castShadow = false
+    // sombra redonda bajo ZUMI (la maqueta ya trae su luz y sombras reales)
+    this.sombraDron.material.opacity = 0.35
+    return true
   }
 
   // ---------- cielo y clima ----------
@@ -299,12 +332,19 @@ export class Mundo {
       el.onclick = () => alTocar(l)
       this.capaPines.appendChild(el)
       const [x, z] = this.proy.aLocal(l.lat, l.lng)
-      return { el, v: new THREE.Vector3(x, 14, z) }
+      return { el, v: new THREE.Vector3(x, 14, z), base: 14 }
     })
   }
 
   // ---------- barrios ----------
   reorigen(lat, lng) {
+    // la maqueta real se reorienta al nuevo lugar
+    if (this.foto) {
+      this.foto.liberar()
+      this.foto = null
+      this.h0Listo = false
+      setTimeout(() => this.activarFotorreal(this.tokenFoto), 0)
+    }
     for (const t of this.teselas.values()) if (t.obj) {
       this.barrios.remove(t.obj.grupo)
       t.obj.liberar()
@@ -530,17 +570,32 @@ export class Mundo {
     const t = teselaDe(lat, lng)
     if (`${t.x}/${t.y}` !== this.ultimaTesela) this.actualizarTeselas()
 
+    // en la maqueta real, el suelo sube y baja: se mide con un rayo bajo ZUMI
+    if (this.foto) {
+      this.foto.actualizar()
+      this.nRayo = (this.nRayo ?? 0) + 1
+      if (this.nRayo % 2 === 0) {
+        const h = this.foto.alturaEn(this.x, this.z, this.h0Listo ? this.h0 + (this.modo === 'dron' ? 400 : 40) : 9000)
+        if (h != null) {
+          if (this.h0Listo) this.h0 += (h - this.h0) * Math.min(1, dt * 12)
+          else {
+            this.h0 = h
+            this.h0Listo = true
+          }
+        }
+      }
+    }
     // jugador
     const c = CAMARA[this.modo]
-    const yJ = c.vuelo ?? 0
+    const yJ = (c.vuelo ?? 0) + this.h0
     const rad = THREE.MathUtils.degToRad(this.rumbo)
     const fx = Math.sin(rad)
     const fz = -Math.cos(rad)
     this.jugador.position.set(this.x, yJ, this.z)
     this.jugador.rotation.y = -rad
     this.vehiculos[this.modo].animar(dt, Math.abs(this.vel), this.volante)
-    this.sombraDron.visible = this.modo === 'dron'
-    this.sombraDron.position.set(this.x, 0.2, this.z)
+    this.sombraDron.visible = this.modo === 'dron' || !!this.foto
+    this.sombraDron.position.set(this.x, this.h0 + 0.15, this.z)
 
     // cámara de persecución con un poco de retraso; más ángulo con velocidad (sensación de rapidez)
     const rapidez = Math.abs(this.vel)
@@ -562,6 +617,7 @@ export class Mundo {
     this.sol.position.set(this.x + this.solDir.x * 300, this.solDir.y * 300, this.z + this.solDir.z * 300)
     this.sol.target.position.set(this.x, 0, this.z)
     this.suelo.position.set(Math.round(this.x / 100) * 100, 0, Math.round(this.z / 100) * 100)
+    this.faros.position.y = this.foto ? this.h0 : 0
     if (this.lluvia) {
       this.lluvia.position.set(this.camara.position.x, this.camara.position.y - 20, this.camara.position.z)
       const p = this.lluvia.geometry.attributes.position
@@ -582,6 +638,7 @@ export class Mundo {
     const lejos = this.modo === 'dron' ? 2600 : 650
     const v = new THREE.Vector3()
     for (const p of this.pines) {
+      p.v.y = p.base + (this.foto ? this.h0 : 0)
       const d = Math.hypot(p.v.x - this.x, p.v.z - this.z)
       v.copy(p.v).project(this.camara)
       const ver = v.z < 1 && d < lejos && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1
@@ -599,6 +656,7 @@ export class Mundo {
       t.obj?.liberar()
     }
     for (const w of this.hilos ?? []) w.terminate()
+    this.foto?.liberar()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.capaPines.remove()

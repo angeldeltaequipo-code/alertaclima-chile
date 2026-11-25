@@ -12,6 +12,12 @@ export function calleRouter({ fetchFn = fetch } = {}) {
   r.get('/config', (req, res) => {
     res.set('Cache-Control', 'public, max-age=600').json({ activa: Boolean(token()), token: token() || null })
   })
+  // Mundo fotorrealista (maqueta 3D de Google vía Cesium ion). CESIUM_TOKEN es un token de navegador
+  // de Cesium ion (gratis en el plan Community); se pega a mano en Environment.
+  r.get('/mundo', (req, res) => {
+    const t = (process.env.CESIUM_TOKEN ?? '').trim()
+    res.set('Cache-Control', 'public, max-age=600').json({ fotorreal: Boolean(t), cesium: t || null })
+  })
   // Fotos cercanas a un punto (las más próximas primero).
   r.get('/cerca', async (req, res, next) => {
     try {
