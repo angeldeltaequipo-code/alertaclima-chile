@@ -76,7 +76,8 @@ export async function lugaresCerca({ lat, lng }, { radio = 1200, signal, id } = 
     if (!r.ok) throw new Error(String(r.status))
     const j = await r.json()
     const wiki = Object.values(j?.query?.pages ?? {})
-      .filter((p) => p.coordinates?.[0] && p.extract)
+      // fuera eventos, listas y noticias: solo lugares que se pueden ver desde el aire
+      .filter((p) => p.coordinates?.[0] && p.extract && !/^(Anexo|Editat[oó]n|Elecci[oó]n|Atentado|Incendio|Terremoto|Accidente|Caso|Masacre|Protesta|Marcha|Estallido|Festival|Copa|Campeonato|Temporada)/i.test(p.title))
       .map((p) => ({
         id: `w-${p.pageid}`,
         titulo: p.title,

@@ -469,15 +469,17 @@ export class Mundo {
     for (const f of this.faros.children) f.geometry.dispose()
     this.faros.clear()
     const tam0 = { pie: [5, 40], bici: [6, 50], auto: [10, 80], dron: [30, 260] }[modo] ?? [5, 40]
-    const tam = this.fotoVisible ? [tam0[0] * 0.35, tam0[1] * 1.2] : tam0
+    // Sobre la ciudad real los faros son finos y suaves (señalan sin tapar la foto); los ya visitados no se dibujan
+    const tam = this.fotoVisible ? [tam0[0] * 0.16, tam0[1] * 0.9] : tam0
     for (const o of objs) {
       const hecho = recogidos.has(o.id)
+      if (hecho && this.fotoVisible) continue
       const color = hecho ? '#3ddc84' : o.tipo === 'lugar' ? '#ffc23d' : '#7cc4ff'
       const [x, z] = this.proy.aLocal(o.lat, o.lng)
       const h = hecho ? tam[1] * 0.25 : tam[1]
       const haz = new THREE.Mesh(
         new THREE.CylinderGeometry(tam[0] * 0.55, tam[0], h, 28, 1, true),
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: (hecho ? 0.25 : 0.42) * (this.foto ? 0.55 : 1), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: (hecho ? 0.25 : 0.42) * (this.foto ? 0.38 : 1), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }),
       )
       haz.position.set(x, h / 2, z)
       const anillo = new THREE.Mesh(new THREE.RingGeometry(tam[0] * 0.8, tam[0] * 1.1, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }))
