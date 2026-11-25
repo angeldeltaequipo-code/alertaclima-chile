@@ -34,13 +34,18 @@ export const CIUDADES_3D = [
   { id: '3d-angeles', nombre: 'Plaza de Armas de Los Ángeles', sub: 'Los Ángeles · 3D real', lat: -37.4697, lng: -72.3537, rumbo: 0 },
 ]
 
-/** Dónde parte el paseo: la ciudad en 3D real de tu comuna si la hay (a menos de 25 km); si no, la Plaza de Armas de Santiago. */
+/**
+ * Dónde parte el paseo: la ciudad en 3D real de tu comuna si la hay (a menos de 25 km); si no, tu propia comuna
+ * vista desde el aire con la foto real (sin inventar calles). Sin comuna: la Plaza de Armas de Santiago.
+ */
 export function paseoParaComuna(comuna) {
   const c = comuna?.centro
   if (!c) return CIUDADES_3D[0]
   const km = (x) => Math.hypot((x.lat - c[0]) * 111, (x.lng - c[1]) * 111 * Math.cos((c[0] * Math.PI) / 180))
   const cerca = [...CIUDADES_3D].sort((a, b) => km(a) - km(b))[0]
-  return km(cerca) <= 25 ? cerca : CIUDADES_3D[0]
+  if (km(cerca) <= 25) return cerca
+  if (km(PLAZA_LINARES) <= 8) return PLAZA_LINARES
+  return { id: `comuna-${comuna.codigo ?? comuna.nombre}`, nombre: comuna.nombre, lat: c[0], lng: c[1], rumbo: 0 }
 }
 
 // Lo que ZUMI cuenta aunque no haya internet para Wikipedia (datos verificables, sin inventar).
