@@ -16,7 +16,7 @@ export function calleRouter({ fetchFn = fetch } = {}) {
   // de Cesium ion (gratis en el plan Community); se pega a mano en Environment.
   r.get('/mundo', (req, res) => {
     const t = (process.env.CESIUM_TOKEN ?? '').trim()
-    res.set('Cache-Control', 'public, max-age=600').json({ fotorreal: Boolean(t), cesium: t || null })
+    res.set('Cache-Control', 'no-store').json({ fotorreal: Boolean(t), cesium: t || null })
   })
   // Fotos cercanas a un punto (las más próximas primero).
   r.get('/cerca', async (req, res, next) => {

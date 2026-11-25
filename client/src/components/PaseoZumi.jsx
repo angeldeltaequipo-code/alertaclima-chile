@@ -78,7 +78,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     const m = new Mundo(caja.current, { lat: inicio.lat, lng: inicio.lng, rumbo: inicio.rumbo ?? 0, modo: modoRef.current })
     mapa.current = m
     // Si está configurada, la maqueta fotorrealista de Google (vía Cesium ion) reemplaza al mundo dibujado
-    fetch(`${API_URL}/api/calle/mundo`, { signal: AbortSignal.timeout(20000) })
+    fetch(`${API_URL}/api/calle/mundo`, { cache: 'no-store', signal: AbortSignal.timeout(20000) })
       .then((r) => r.json())
       .then((c) => c.fotorreal && m.activarFotorreal(c.cesium).then((ok) => ok && setFotorreal(true)))
       .catch(() => {})
