@@ -1,4 +1,7 @@
 import { calleRouter } from './routes/calle.js'
+import { soporteRouter } from './routes/soporte.js'
+import { almacenMemoria, almacenPg } from './services/soporte.js'
+import { pool } from './db/pool.js'
 import { familiaRouter } from './routes/familia.js'
 import { zumiRouter } from './routes/zumi.js'
 import express from 'express'
@@ -21,7 +24,7 @@ import { ErrorValidacion } from './services/reportes.js'
 export const ORIGENES_APP = ['https://zumichile.com', 'https://www.zumichile.com', 'https://localhost', 'alertaclima://localhost', 'capacitor://localhost']
 export const origenesPermitidos = () => [...(process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()), ...ORIGENES_APP]
 
-export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verificarGoogle } = {}) {
+export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verificarGoogle, soporte } = {}) {
   const emitirReporte = emitir
   const app = express()
   app.disable('x-powered-by')
@@ -36,6 +39,7 @@ export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verifi
 
   app.use('/api/salud', saludRouter)
   app.use('/api/calle', calleRouter())
+  app.use('/api/soporte', soporteRouter({ almacen: soporte ?? (process.env.DATABASE_URL ? almacenPg(pool) : almacenMemoria()) }))
   app.use('/api/reportes', reportesRouter({ emitir: emitirReporte }))
   app.use('/api/fotos', fotosRouter({ emitir: emitirReporte }))
   app.use('/api/alertas', alertasRouter())
