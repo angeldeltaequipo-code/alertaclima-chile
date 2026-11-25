@@ -3,6 +3,12 @@
 // faros de objetivos y cámara de persecución como en un juego de carreras.
 import * as THREE from 'three'
 import { Sky } from 'three/examples/jsm/objects/Sky.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { cargarTesela, proyector, teselaDe } from './teselas'
 import { armarTesela, generarTesela } from './construir'
 import { crearMateriales, nocheMateriales } from './materiales'
@@ -21,6 +27,52 @@ const CAMARA_FOTO = {
   bici: { dist: 17, alto: 11, mira: 2, fov: 55 },
   auto: { dist: 21, alto: 12, mira: 2, fov: 55 },
   dron: { dist: 70, alto: 50 },
+}
+
+// Corrección de color «de cine»: un poco más de contraste y saturación, sombras frías y luces cálidas,
+// y viñeta suave en los bordes (como en los juegos de mundo abierto).
+function texturaNubes() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 512
+  const g = c.getContext('2d')
+  g.clearRect(0, 0, 512, 512)
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * 512
+    const y = Math.random() * 512
+    const r = 30 + Math.random() * 90
+    for (const [dx, dy] of [[0, 0], [512, 0], [-512, 0], [0, 512], [0, -512]]) {
+      const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r)
+      gr.addColorStop(0, 'rgba(255,255,255,0.55)')
+      gr.addColorStop(1, 'rgba(255,255,255,0)')
+      g.fillStyle = gr
+      g.beginPath()
+      g.arc(x + dx, y + dy, r, 0, Math.PI * 2)
+      g.fill()
+    }
+  }
+  const t = new THREE.CanvasTexture(c)
+  t.wrapS = t.wrapT = THREE.RepeatWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+const GRADO = {
+  uniforms: { tDiffuse: { value: null }, fuerza: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float fuerza; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 col = c.rgb;
+      float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      col = mix(vec3(l), col, 1.0 + 0.16 * fuerza);                 // saturación
+      col = (col - 0.5) * (1.0 + 0.1 * fuerza) + 0.5;               // contraste
+      col += vec3(0.02, 0.006, -0.018) * smoothstep(0.45, 1.0, l) * fuerza;  // luces cálidas
+      col += vec3(-0.012, 0.0, 0.022) * (1.0 - smoothstep(0.0, 0.4, l)) * fuerza; // sombras frías
+      float v = smoothstep(0.95, 0.35, length(vUv - 0.5));          // viñeta
+      col *= mix(1.0, v, 0.32 * fuerza);
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), c.a);
+    }`,
 }
 
 export class Mundo {
@@ -82,7 +134,16 @@ export class Mundo {
     s.add(this.sol, this.sol.target)
     this.niebla = new THREE.Fog('#cfe0ee', 120, 650)
     s.fog = this.niebla
-    this.ponerSol(42, 20)
+    this.ponerSol(32, 35)
+    // nubes: una capa alta que sigue a la cámara y se mueve con el viento
+    this.nubes = new THREE.Mesh(
+      new THREE.PlaneGeometry(9000, 9000).rotateX(Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: texturaNubes(), transparent: true, opacity: 0.85, depthWrite: false, fog: false, side: THREE.DoubleSide }),
+    )
+    this.nubes.material.map.repeat.set(3, 3)
+    this.nubes.position.y = 1100
+    this.nubes.renderOrder = -1
+    s.add(this.nubes)
     // reflejos del cielo en autos, vidrios y zinc
     this.pmrem = new THREE.PMREMGenerator(r)
     this.cieloRefl = new Sky()
@@ -132,10 +193,27 @@ export class Mundo {
     contenedor.appendChild(this.capaPines)
 
     this.setModo(modo)
+    // Post-proceso de cine: sombras de contacto (GTAO), brillo de luces y corrección de color
+    this.movil = movil
+    this.composer = new EffectComposer(r)
+    this.composer.addPass(new RenderPass(s, this.camara))
+    if (!movil) {
+      this.ao = new GTAOPass(s, this.camara, 800, 600)
+      this.ao.output = GTAOPass.OUTPUT.Default
+      this.ao.blendIntensity = 0.85
+      this.ao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.4, thickness: 2.2, scale: 1.1, samples: 12 })
+      this.composer.addPass(this.ao)
+    }
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.55, 0.88)
+    this.composer.addPass(this.bloom)
+    this.composer.addPass(new OutputPass())
+    this.composer.addPass(new ShaderPass(GRADO))
     this.redimensionar = () => {
       const w = contenedor.clientWidth || innerWidth
       const h = contenedor.clientHeight || innerHeight
       r.setSize(w, h)
+      this.composer.setSize(w, h)
+      this.ao?.setSize(w, h)
       this.camara.aspect = w / h
       this.camara.updateProjectionMatrix()
     }
@@ -324,6 +402,7 @@ export class Mundo {
     if (noche) {
       this.ponerSol(-8, 20)
       this.cielo.visible = false
+      this.nubes.visible = false
       this.escena.background = new THREE.Color('#0b1630')
       this.niebla.color.set('#13213d')
       this.hemi.intensity = 0.6
@@ -334,8 +413,10 @@ export class Mundo {
       this.mat.auto.envMapIntensity = 0.3
     } else {
       this.cielo.visible = true
+      this.nubes.visible = true
+      this.nubes.material.opacity = gris ? 1 : 0.7
       this.escena.background = null
-      this.ponerSol(gris ? 30 : 42, 20)
+      this.ponerSol(gris ? 30 : 32, 35)
       u.turbidity.value = gris ? 12 : 3.2
       u.rayleigh.value = gris ? 3 : 1.1
       this.niebla.color.set(gris ? '#b9c2cb' : '#cfe0ee')
@@ -696,6 +777,10 @@ export class Mundo {
     }
     // cielo, sol y suelo siguen al jugador
     this.cielo.position.copy(this.camara.position)
+    this.nubes.position.x = this.camara.position.x
+    this.nubes.position.z = this.camara.position.z
+    this.nubes.material.map.offset.x += dt * 0.0016
+    this.nubes.material.map.offset.y += dt * 0.0006
     this.sol.position.set(this.x + this.solDir.x * 300, this.solDir.y * 300, this.z + this.solDir.z * 300)
     this.sol.target.position.set(this.x, 0, this.z)
     this.suelo.position.set(Math.round(this.x / 100) * 100, 0, Math.round(this.z / 100) * 100)
@@ -712,7 +797,7 @@ export class Mundo {
       p.needsUpdate = true
     }
     for (const f of this.faros.children) if (f.userData.gira) f.rotation.z += dt * 0.8
-    this.renderer.render(this.escena, this.camara)
+    this.composer.render()
 
     // etiquetas
     const w = this.renderer.domElement.clientWidth
@@ -739,6 +824,7 @@ export class Mundo {
     }
     for (const w of this.hilos ?? []) w.terminate()
     this.foto?.liberar()
+    this.composer?.dispose?.()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.capaPines.remove()
