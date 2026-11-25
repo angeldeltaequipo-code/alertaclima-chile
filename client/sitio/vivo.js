@@ -8,11 +8,11 @@
 
   // ---------- Escenas de ZUMI en la portada ----------
   var ESCENAS = {
-    hola: { texto: '¡Hola! Soy ZUMI. Te cuento el clima de tu comuna y te aviso si pasa algo.', tel: 'img/ahora.webp' },
-    lluvia: { texto: 'Viene lluvia a las 15:00. Lleva paraguas y chaqueta.', tel: 'img/ahora.webp' },
-    sismo: { texto: 'Si tiembla: agáchate, cúbrete y afírmate. Cuando pase, avisa a tu familia que estás bien.', tel: 'img/estoybien.webp' },
-    calor: { texto: 'Mañana pasa los 30°. Toma agua, usa bloqueador y evita el sol de 12 a 16.', tel: 'img/riesgos.webp' },
-    mochila: { texto: 'Tu mochila de emergencia: agua, linterna, radio, botiquín y copia de tus documentos.', tel: 'img/alerta.webp' },
+    hola: { texto: '¡Hola! Soy ZUMI. Te cuento el clima de tu comuna y te aviso si pasa algo.', tel: 'video/charm.mp4' },
+    lluvia: { texto: 'Viene lluvia a las 15:00. Lleva paraguas y chaqueta.', tel: 'video/mapa.mp4' },
+    sismo: { texto: 'Si tiembla: agáchate, cúbrete y afírmate. Cuando pase, avisa a tu familia que estás bien.', tel: 'video/riesgos.mp4' },
+    calor: { texto: 'Mañana pasa los 30°. Toma agua, usa bloqueador y evita el sol de 12 a 16.', tel: 'video/looks.mp4' },
+    mochila: { texto: 'Tu mochila de emergencia: agua, linterna, radio, botiquín y copia de tus documentos.', tel: 'video/ruta.mp4' },
   }
   var orden = Object.keys(ESCENAS)
   var video = $('#esc-video'), texto = $('#esc-texto'), tel = $('#esc-tel'), sonido = $('#esc-sonido')
@@ -32,7 +32,11 @@
     video.poster = '/app/zumi/cine/' + n + '.webp'
     video.src = '/app/zumi/cine/' + n + '.mp4'
     if (!calma || !video.muted) video.play().catch(function () {})
-    tel.src = e.tel
+    if (tel.getAttribute('src') !== e.tel) {
+      tel.src = e.tel
+      tel.poster = e.tel.replace('.mp4', '.jpg')
+      tel.play?.().catch(() => {})
+    }
     escribir(e.texto)
   }
   if (video) {

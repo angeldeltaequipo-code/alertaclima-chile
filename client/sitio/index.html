@@ -367,6 +367,66 @@ footer a{color:#fff}
   .soporte-panel{position:fixed;inset:0;width:100%;height:100%;border-radius:0}
 }
 
+/* ===== Escenario oscuro de la portada: ZUMI protagonista ===== */
+.portada.escenario{background:radial-gradient(120% 90% at 70% 40%,#1c3350 0%,#0f1d2e 55%,#09131f 100%);color:#fff;padding:64px 0 72px}
+.portada.escenario .lead{color:#b7c5d3}
+.portada.escenario .nota-gratis{color:#8ea3b8}
+.portada.escenario .btn-borde{color:#fff}
+.portada.escenario .escena-col{width:min(100%,520px)}
+.portada.escenario .escena{aspect-ratio:.78}
+.portada.escenario .zumi-cine{width:62%;left:0;bottom:auto;top:0;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 40px 90px -20px rgba(0,0,0,.7),0 0 120px -10px rgba(243,165,120,.35)}
+.portada.escenario .escena .tel{width:44%;right:0;top:auto;bottom:0;z-index:3}
+.portada.escenario .tel video{width:100%;aspect-ratio:9/19.4;object-fit:cover;object-position:top;border-radius:calc(var(--r-tel) - 8px);display:block;background:#000}
+.portada.escenario .globo-zumi{left:auto;right:2%;top:3%;color:var(--tinta)}
+.portada.escenario .escenas button{background:rgba(255,255,255,.06);color:#e7edf3;border-color:rgba(255,255,255,.16)}
+.portada.escenario .escenas button[aria-pressed="true"]{background:#fff;color:var(--noche)}
+.portada.escenario .nav-claro{color:#fff}
+
+/* ===== Historia: la app funcionando, con ZUMI contando ===== */
+.historia{background:var(--noche);color:#fff;padding:96px 0 40px;border-top:1px solid #1d3047}
+.historia .lead{color:#b7c5d3}
+.historia-cab{margin-bottom:40px}
+.historia-cab h2{max-width:14em}
+.historia-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+.historia-escena{position:sticky;top:92px;height:min(78vh,720px);display:flex;align-items:center;justify-content:center;gap:0}
+.historia-zumi{position:relative;width:46%;align-self:flex-end;margin-right:-14%;z-index:2}
+.historia-zumi img{width:100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.5));transition:opacity .3s}
+.historia-globo{position:absolute;left:-6%;top:-22%;background:#fff;color:var(--tinta);border-radius:20px 20px 20px 6px;padding:12px 14px;font-size:15.5px;line-height:1.35;width:min(240px,120%);box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.historia-globo b{display:block;color:var(--panda);font-size:12.5px}
+.historia-tel{position:relative;width:min(52%,300px);aspect-ratio:9/19.4;padding:9px}
+.historia-tel>*{position:absolute;inset:9px;width:calc(100% - 18px);height:calc(100% - 18px);object-fit:cover;object-position:top;border-radius:calc(var(--r-tel) - 8px);opacity:0;transition:opacity .45s ease;background:#000}
+.historia-tel>.activo{opacity:1}
+.historia-pasos{list-style:none;margin:0;padding:0}
+.paso-h{min-height:72vh;display:flex;flex-direction:column;justify-content:center;padding:24px 0;opacity:.35;transition:opacity .35s}
+.paso-h.activo{opacity:1}
+.paso-h h3{font-size:clamp(30px,3.2vw,44px);color:#fff}
+.paso-h p{margin-top:14px;color:#b7c5d3;font-size:18.5px;max-width:30em}
+.paso-h ul{margin:16px 0 0;padding-left:20px;color:#dbe5ee;display:grid;gap:6px}
+@media (max-width:900px){
+  .historia-grid{grid-template-columns:1fr;gap:0}
+  .historia-escena{top:64px;height:56vh;z-index:3;background:linear-gradient(var(--noche) 85%,transparent);padding-bottom:8px}
+  .historia-tel{width:auto;height:100%;max-width:none}
+  .historia-zumi{width:34%;margin-right:-10%}
+  .historia-globo{top:-12%;left:-30%;font-size:13.5px;width:190px}
+  .paso-h{min-height:60vh;opacity:.5}
+}
+
+/* ===== Ciudades 3D ===== */
+.ciudades3d{padding:96px 0;border-top:1px solid #1d3047}
+.ciudades3d-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:center}
+.chips-3d{list-style:none;padding:0;margin:22px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.chips-3d li{padding:7px 12px;border-radius:999px;background:var(--noche-2);border:1px solid #2b3f55;font-weight:650;font-size:15px}
+.video-ancho{border-radius:28px;overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08);aspect-ratio:9/16;max-height:640px;justify-self:center;width:min(100%,360px)}
+.video-ancho video{width:100%;height:100%;object-fit:cover;display:block}
+@media (max-width:900px){.ciudades3d-grid{grid-template-columns:1fr}}
+
+/* ===== Looks ===== */
+.looks{padding:96px 0;background:#fff;border-top:1px solid var(--linea)}
+.looks-fila{display:flex;gap:16px;overflow-x:auto;padding:36px 24px 12px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.looks-fila figure{margin:0;flex:none;width:min(62vw,240px);scroll-snap-align:center}
+.looks-fila img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:22px;box-shadow:0 20px 40px -18px rgba(15,29,46,.45)}
+.looks-fila figcaption{margin-top:10px;font-weight:750;text-align:center}
+
 .solo-lector{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 </style>
@@ -388,7 +448,7 @@ footer a{color:#fff}
 
 <main id="inicio">
 
-<section class="portada">
+<section class="portada escenario">
   <div class="envoltura">
     <div>
       <h1>ZUMI te avisa antes de que llueva, tiemble o se queme el cerro.</h1>
@@ -401,7 +461,7 @@ footer a{color:#fff}
     </div>
     <div class="escena-col">
       <div class="escena">
-        <div class="tel" aria-hidden="true"><img id="esc-tel" src="img/ahora.webp" alt="" width="390" height="844"></div>
+        <div class="tel" aria-hidden="true"><video id="esc-tel" src="video/charm.mp4" poster="video/charm.jpg" autoplay muted loop playsinline preload="metadata"></video></div>
         <figure class="zumi-cine">
           <video id="esc-video" src="/app/zumi/cine/hola.mp4" poster="/app/zumi/cine/hola.webp" autoplay muted loop playsinline preload="metadata" aria-label="ZUMI, el panda rojo, hablando"></video>
           <button type="button" id="esc-sonido" class="cine-sonido" aria-pressed="false"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" fill="currentColor"/></svg><span>Escuchar a ZUMI</span></button>
@@ -476,6 +536,101 @@ footer a{color:#fff}
   </div>
 </section>
 
+<section class="historia" id="funciones" aria-labelledby="t-historia">
+  <div class="envoltura historia-cab">
+    <h2 id="t-historia">ZUMI te lo muestra. Mira la app funcionando.</h2>
+    <p class="lead">Estos videos son la app real, grabada con datos reales de hoy. Baja y ZUMI te va contando qué hace cada parte.</p>
+  </div>
+  <div class="envoltura historia-grid">
+    <div class="historia-escena" aria-hidden="true">
+      <div class="historia-zumi">
+        <img id="h-pose" src="img/poses/saludo.webp" alt="" width="482" height="560">
+        <p class="historia-globo"><b>ZUMI</b><span id="h-dice">¡Hola! Tócame y te cuento cómo está el día.</span></p>
+      </div>
+      <div class="tel historia-tel" id="h-tel">
+        <video data-demo="charm" src="video/charm.mp4" poster="video/charm.jpg" muted loop playsinline preload="metadata" class="activo"></video>
+        <video data-demo="looks" src="video/looks.mp4" poster="video/looks.jpg" muted loop playsinline preload="none"></video>
+        <video data-demo="riesgos" src="video/riesgos.mp4" poster="video/riesgos.jpg" muted loop playsinline preload="none"></video>
+        <video data-demo="mapa" src="video/mapa.mp4" poster="video/mapa.jpg" muted loop playsinline preload="none"></video>
+        <video data-demo="ruta" src="video/ruta.mp4" poster="video/ruta.jpg" muted loop playsinline preload="none"></video>
+        <img data-demo="familia" src="img/familia.webp" alt="" loading="lazy">
+        <video data-demo="paseo" src="video/paseo.mp4" poster="video/paseo.jpg" muted loop playsinline preload="none"></video>
+        <img data-demo="llamada" src="img/llamada.webp" alt="" loading="lazy">
+      </div>
+    </div>
+    <ol class="historia-pasos">
+      <li class="paso-h" data-demo="charm" data-pose="saludo" data-dice="¡Hola! Tócame y te cuento cómo está el día.">
+        <h3>ZUMI vive en tu teléfono</h3>
+        <p>Un panda rojo que respira, parpadea y reacciona cuando lo tocas. Te cuenta el clima de tu comuna con palabras simples y se viste según el día.</p>
+        <ul><li>Lluvia hora a hora y qué llevar</li><li>Una misión al día para estar preparado</li><li>Cambia con la lluvia, el frío, el calor y la noche</li></ul>
+      </li>
+      <li class="paso-h" data-demo="looks" data-pose="ok" data-dice="Tengo ocho looks. ¿Cuál me queda mejor?">
+        <h3>Con estilo propio</h3>
+        <p>Desliza y cámbiale la ropa a ZUMI: invierno, casual, elegante, urbano, campamento y más. El que elijas te saluda cada mañana.</p>
+      </li>
+      <li class="paso-h" data-demo="riesgos" data-pose="alerta" data-dice="Si hay alerta en tu comuna, te aviso primero y te digo qué hacer.">
+        <h3>Alertas que se entienden</h3>
+        <p>Alertas de SENAPRED, sismos, tsunamis y volcanes cerca de ti, con la fuente y la hora. Si es grave, ZUMI ocupa toda la pantalla y te dice qué hacer.</p>
+        <ul><li>Botón SOS para llamar al 131, 132 o 133</li><li>Avisos con la app cerrada</li></ul>
+      </li>
+      <li class="paso-h" data-demo="mapa" data-pose="explicando" data-dice="Mira cómo se mueve la lluvia en el radar.">
+        <h3>El mapa vivo de Chile</h3>
+        <p>Gira el planeta, baja a tu barrio y mira la lluvia moverse. Sismos, alertas y reportes de vecinos en capas que prendes y apagas.</p>
+      </li>
+      <li class="paso-h" data-demo="ruta" data-pose="paraguas" data-dice="Si sales en dos horas, no te pilla la lluvia.">
+        <h3>Viaja con ZUMI</h3>
+        <p>Dile a dónde vas y revisa el clima de todo el camino, tramo a tramo. Te dice cuándo conviene salir y te guía por voz.</p>
+      </li>
+      <li class="paso-h" data-demo="familia" data-pose="corazon" data-dice="Tu familia en un mapa, y nadie más mirando.">
+        <h3>Tu familia, a salvo</h3>
+        <p>Ubicación cifrada en el teléfono, avisos de llegada al colegio y «Estoy bien» con un toque. Se invita por WhatsApp en tres pasos.</p>
+      </li>
+      <li class="paso-h" data-demo="paseo" data-pose="celebrando" data-dice="¡Vamos! Esta es la Plaza de Armas de verdad, en 3D.">
+        <h3>Chile real en 3D, como un videojuego</h3>
+        <p>Camina, maneja o vuela con ZUMI sobre la maqueta 3D real de Google en 11 ciudades. En el resto de Chile, recórrelo desde el aire con la foto real.</p>
+      </li>
+      <li class="paso-h" data-demo="llamada" data-pose="telefono" data-dice="Llámame cuando quieras. Te contesto con mi voz.">
+        <h3>Llama a ZUMI</h3>
+        <p>Pregúntale por voz si va a llover, qué hacer si tiembla o qué llevar al viaje. Te responde con su propia voz, como una llamada.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="ciudades3d oscuro" aria-labelledby="t-3d">
+  <div class="envoltura ciudades3d-grid">
+    <div>
+      <h2 id="t-3d">11 ciudades de Chile en 3D real.</h2>
+      <p class="lead">Calles, edificios y plazas escaneados desde el aire. ZUMI entra volando desde el cielo y tú lo manejas con el dedo.</p>
+      <ul class="chips-3d">
+        <li>Santiago</li><li>Providencia</li><li>Las Condes</li><li>Valparaíso</li><li>Concepción</li><li>Antofagasta</li><li>Temuco</li><li>Puerto Montt</li><li>Puerto Varas</li><li>Copiapó</li><li>Los Ángeles</li>
+      </ul>
+      <p class="mini">Maqueta 3D: Google, vía Cesium. En las demás ciudades se recorre desde el aire con la foto satelital real.</p>
+      <div class="acciones"><a class="btn btn-panda" href="/app/">Pasear en 3D</a></div>
+    </div>
+    <div class="video-ancho">
+      <video src="video/paseo.mp4" poster="video/paseo.jpg" muted loop playsinline autoplay preload="none" aria-label="ZUMI recorriendo Santiago en 3D"></video>
+    </div>
+  </div>
+</section>
+
+<section class="looks" aria-labelledby="t-looks">
+  <div class="envoltura">
+    <h2 id="t-looks">ZUMI tiene ocho looks.</h2>
+    <p class="lead">Elige el que más te guste en la app. Desliza para verlos todos.</p>
+  </div>
+  <div class="looks-fila" tabindex="0" aria-label="Looks de ZUMI">
+    <figure><img src="/app/zumi/looks/invierno.webp" alt="ZUMI con chaqueta de mezclilla y bufanda" loading="lazy"><figcaption>Invierno</figcaption></figure>
+    <figure><img src="/app/zumi/looks/elegante.webp" alt="ZUMI de terno" loading="lazy"><figcaption>Elegante</figcaption></figure>
+    <figure><img src="/app/zumi/looks/urbano.webp" alt="ZUMI con gorro y cadena" loading="lazy"><figcaption>Urbano</figcaption></figure>
+    <figure><img src="/app/zumi/looks/explorador.webp" alt="ZUMI explorador junto a una fogata" loading="lazy"><figcaption>Explorador</figcaption></figure>
+    <figure><img src="/app/zumi/looks/montana.webp" alt="ZUMI en la montaña de noche" loading="lazy"><figcaption>Montaña</figcaption></figure>
+    <figure><img src="/app/zumi/looks/casual.webp" alt="ZUMI con chaqueta negra" loading="lazy"><figcaption>Casual</figcaption></figure>
+    <figure><img src="/app/zumi/looks/lector.webp" alt="ZUMI con un libro" loading="lazy"><figcaption>Lector</figcaption></figure>
+    <figure><img src="/app/zumi/looks/campamento.webp" alt="ZUMI de campamento" loading="lazy"><figcaption>Campamento</figcaption></figure>
+  </div>
+</section>
+
 <section class="seccion" aria-labelledby="t-flujo">
   <div class="envoltura">
     <div class="cab">
@@ -506,177 +661,6 @@ footer a{color:#fff}
         <p>Con un toque mandas «Estoy bien» o «Necesito ayuda» a los tuyos, con tu ubicación.</p>
       </li>
     </ol>
-  </div>
-</section>
-
-<div id="funciones"></div>
-
-<section class="capitulo" aria-labelledby="t-ahora">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-ahora">Tu comuna, hoy, en una mirada.</h2>
-      <p class="lead">Abres ZUMI y ya sabes si sales con paraguas, con chaqueta o con bloqueador. ZUMI se viste según el clima y te cuenta lo importante.</p>
-      <ul class="detalles">
-        <li><span><b>Lluvia hora a hora.</b> Cuándo empieza, cuánto cae y cuándo para, para tu comuna.</span></li>
-        <li><span><b>Qué llevar.</b> Paraguas, abrigo, agua o bloqueador según temperatura, viento y radiación UV.</span></li>
-        <li><span><b>Pronóstico de 7 días</b> con máximas, mínimas, amanecer y atardecer.</span></li>
-        <li><span><b>Una misión al día.</b> Pequeñas cosas que te dejan más preparado, como revisar tu mochila de emergencia.</span></li>
-        <li><span><b>Calidad del aire</b> y avisos cuando el humo o el polvo suben.</span></li>
-      </ul>
-    </div>
-    <div class="pantallas">
-      <div class="tel"><img src="img/ahora.webp" alt="Pantalla Ahora de ZUMI en Linares: 11 grados, lluvia moderada y ZUMI con paraguas" loading="lazy" width="390" height="844"></div>
-      <div class="tel"><img src="img/alerta.webp" alt="ZUMI con una alerta amarilla por incendio forestal y el botón Estoy bien" loading="lazy" width="390" height="844"></div>
-    </div>
-  </div>
-</section>
-
-<section class="capitulo oscuro inverso" aria-labelledby="t-alertas">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-alertas">Alertas que se entienden a la primera.</h2>
-      <p class="lead">Incendios, tormentas, sismos, tsunamis y volcanes en un solo lugar, con la fuente y la hora de cada aviso.</p>
-      <ul class="detalles">
-        <li><span><b>Alertas de SENAPRED</b> de tu comuna, con su nivel y lo que tienes que hacer.</span></li>
-        <li><span><b>Sismos cerca</b> al minuto, con magnitud, profundidad y distancia a ti.</span></li>
-        <li><span><b>Tsunamis</b> desde los boletines del Pacífico, recordando siempre que en Chile manda el SHOA.</span></li>
-        <li><span><b>Volcanes activos</b> cerca de tu comuna.</span></li>
-        <li><span><b>Botón SOS</b> para llamar al 131, 132 o 133 y compartir tu ubicación.</span></li>
-        <li><span><b>Notificaciones</b> en tu teléfono aunque tengas la app cerrada.</span></li>
-      </ul>
-      <p class="mini">Si una fuente no responde, ZUMI te lo dice. Nunca muestra «todo tranquilo» sin datos.</p>
-    </div>
-    <div class="pantallas una">
-      <div class="tel"><img src="img/riesgos.webp" alt="Pantalla Riesgos para Linares: tsunami, sismos, volcanes y comentarios de vecinos" loading="lazy" width="720" height="1465"></div>
-      <img class="pose" src="img/zumi-alerta.webp" alt="" loading="lazy" width="482" height="560">
-    </div>
-  </div>
-</section>
-
-<section class="capitulo" id="familia" aria-labelledby="t-familia">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-familia">Tu familia en un mapa, y nadie más mirando.</h2>
-      <p class="lead">Sabes dónde está cada uno y si está bien, en tres pasos: invitas por WhatsApp, aceptan, y listo. Hecho para que un abuelo lo use sin ayuda.</p>
-      <ul class="detalles">
-        <li><span><b>Ubicación cifrada en el teléfono.</b> Viaja con una clave que solo tiene tu familia; el servidor no puede leerla.</span></li>
-        <li><span><b>Llegó al colegio.</b> Guarda lugares como la casa o el colegio y te avisamos cuando alguien llega o sale.</span></li>
-        <li><span><b>«Estoy bien» con un toque</b>, o «Necesito ayuda» con tu ubicación exacta.</span></li>
-        <li><span><b>Batería y última actualización</b> de cada familiar, para no preocuparte de más.</span></li>
-        <li><span><b>Ir donde está:</b> ZUMI te lleva con una ruta guiada, sin salir de la app.</span></li>
-      </ul>
-    </div>
-    <div class="pantallas">
-      <div class="tel"><img src="img/familia.webp" alt="Mi familia: Carla y Tomás en el colegio, con batería y hora" loading="lazy" width="390" height="844"></div>
-      <div class="tel"><img src="img/estoybien.webp" alt="Botones Estoy bien y Necesito ayuda, y el aviso Tomás llegó al colegio" loading="lazy" width="390" height="844"></div>
-    </div>
-  </div>
-</section>
-
-<section class="capitulo oscuro inverso" aria-labelledby="t-viaja">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-viaja">Viaja con ZUMI: el clima de todo el camino.</h2>
-      <p class="lead">Escribe a dónde vas y ZUMI revisa la ruta tramo a tramo: lluvia, viento, niebla y alertas por donde vas a pasar, no solo donde llegas.</p>
-      <ul class="detalles">
-        <li><span><b>Cuándo conviene salir:</b> ahora, en 1, 2 o 4 horas, o mañana temprano.</span></li>
-        <li><span><b>Te guía por voz</b> mientras manejas, con los avisos del camino.</span></li>
-        <li><span><b>Avisa que llegaste:</b> comparte tu hora de llegada con tu familia.</span></li>
-      </ul>
-      <figure class="grafico-ruta" style="margin-left:0;margin-right:0">
-        <svg viewBox="0 0 520 170" role="img" aria-label="Ejemplo de lluvia a lo largo de una ruta según la hora de salida">
-          <g font-family="Archivo,sans-serif" font-size="12" fill="#8ea3b8">
-            <text x="0" y="14">Lluvia en el camino (mm), ejemplo de un viaje de 2 horas</text>
-            <text x="34" y="164">Salida</text><text x="236" y="164">Mitad</text><text x="452" y="164">Llegada</text>
-          </g>
-          <line x1="30" y1="140" x2="510" y2="140" stroke="#2b3f55"/>
-          <path d="M30 140 C90 140 110 70 170 60 S260 110 300 120 S420 136 510 138" fill="rgba(227,160,32,.18)" stroke="#e3a020" stroke-width="2.5"/>
-          <path d="M30 140 C120 140 200 132 260 128 S420 112 510 100" fill="none" stroke="#7fd3a5" stroke-width="2.5" stroke-dasharray="6 5"/>
-          <g font-family="Archivo,sans-serif" font-size="13" font-weight="700">
-            <circle cx="178" cy="44" r="5" fill="#e3a020"/><text x="188" y="48" fill="#f6dcc9">Salir ahora: chubasco a mitad de camino</text>
-            <circle cx="300" cy="96" r="5" fill="#7fd3a5"/><text x="310" y="100" fill="#cdeedb">Salir en 2 horas: camino seco</text>
-          </g>
-        </svg>
-        <figcaption>Gráfico ilustrativo. En la app ves los datos reales de tu ruta.</figcaption>
-      </figure>
-    </div>
-    <div class="pantallas una">
-      <div class="tel"><img src="img/ruta.webp" alt="Ruta ZUMI a Talca: 54 km, 41 minutos, camino tranquilo, con opciones de hora de salida" loading="lazy" width="720" height="1465"></div>
-    </div>
-  </div>
-</section>
-
-<section class="capitulo" aria-labelledby="t-mapa">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-mapa">El mapa vivo de Chile.</h2>
-      <p class="lead">Gira el planeta, baja a tu barrio y mira cómo se mueve la lluvia. Todo lo que pasa, en capas que prendes y apagas.</p>
-      <ul class="detalles">
-        <li><span><b>Radar de lluvia animado</b> de las últimas horas.</span></li>
-        <li><span><b>Vista satelital</b> hasta el nivel de la calle, y nubes reales.</span></li>
-        <li><span><b>Sismos, alertas y reportes de vecinos</b> sobre el mapa.</span></li>
-        <li><span><b>Avisar:</b> reporta una calle inundada o un corte de luz para que otros lo sepan.</span></li>
-      </ul>
-    </div>
-    <div class="pantallas una">
-      <div class="tel"><img src="img/mapa.webp" alt="Mapa de ZUMI con el globo terráqueo, lugares de Chile y el radar de lluvia" loading="lazy" width="720" height="1465"></div>
-      <img class="pose" src="img/zumi-explicando.webp" alt="" loading="lazy" width="482" height="560">
-    </div>
-  </div>
-</section>
-
-<section class="capitulo oscuro inverso" aria-labelledby="t-explora">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-explora">Pasea por tu ciudad en 3D, como en un videojuego.</h2>
-      <p class="lead">Camina, pedalea, maneja o vuela en dron sobre calles reales. Alcanza faros en lugares con historia y ZUMI te cuenta qué pasó ahí.</p>
-      <ul class="detalles">
-        <li><span><b>Cuatro formas de moverte:</b> a pie, en bici, en auto o en dron, con turbo.</span></li>
-        <li><span><b>Lugares y fotos reales</b> de Wikipedia y Wikimedia Commons que se transforman en puntos.</span></li>
-        <li><span><b>La calle real en 360°</b> con fotos de Mapillary, para conocer un lugar antes de ir.</span></li>
-        <li><span><b>Mira moviendo el teléfono:</b> el primer paso hacia la realidad virtual.</span></li>
-      </ul>
-    </div>
-    <div class="pantallas">
-      <div class="tel"><img src="img/paseo.webp" alt="Paseo 3D por la Plaza de Armas de Linares con ZUMI contando su historia" loading="lazy" width="720" height="1465"></div>
-      <div class="tel"><img src="img/juego.webp" alt="Modo juego: ZUMI a pie junto a un faro de luz, con puntaje y controles" loading="lazy" width="390" height="844"></div>
-    </div>
-  </div>
-</section>
-
-<section class="capitulo" aria-labelledby="t-habla">
-  <div class="envoltura">
-    <div class="texto">
-      <h2 id="t-habla">Llama a ZUMI y pregúntale lo que quieras.</h2>
-      <p class="lead">ZUMI contesta por voz, como una llamada. Sabe del clima de tu comuna, de sismos, de qué hacer en una emergencia, y lo explica sin palabras difíciles.</p>
-      <ul class="detalles">
-        <li><span><b>«¿Va a llover mañana?»</b> Respuesta con el pronóstico de tu comuna, no uno genérico.</span></li>
-        <li><span><b>«¿Qué hago si tiembla?»</b> Pasos claros, siempre en línea con SENAPRED.</span></li>
-        <li><span><b>Escrito o hablado:</b> tú eliges, y ZUMI también te lee los avisos en voz alta.</span></li>
-        <li><span><b>Pequeñas películas</b> donde ZUMI te muestra qué hacer con calor, lluvia o un sismo.</span></li>
-      </ul>
-      <p class="mini">Las respuestas las genera inteligencia artificial con datos de fuentes públicas. Ante una emergencia, sigue siempre las instrucciones de la autoridad.</p>
-    </div>
-    <div class="pantallas una">
-      <div class="tel"><img src="img/llamada.webp" alt="Llamada en vivo con ZUMI: «¡Hola! ¡Aquí ZUMI, listo y con las orejas paradas!»" loading="lazy" width="390" height="844"></div>
-      <img class="pose" src="img/zumi-telefono.webp" alt="" loading="lazy" width="482" height="560">
-    </div>
-  </div>
-</section>
-
-<section class="seccion" style="background:#fff;border-top:1px solid var(--linea)" aria-labelledby="t-dia">
-  <div class="envoltura">
-    <div class="cab">
-      <h2 id="t-dia">Un martes cualquiera con ZUMI.</h2>
-      <p class="lead">Así acompaña ZUMI a una familia de Linares desde que se levanta hasta que se acuesta. Un ejemplo de lo que hace por ti sin que se lo pidas.</p>
-    </div>
-    <div class="dia">
-      <div class="momento"><time>07:10</time><p>Antes de salir, ZUMI dice qué llevar.</p><div class="q">Hoy llueve desde las 15:00. Paraguas y chaqueta.</div></div>
-      <div class="momento"><time>08:05</time><p>Tomás llega al colegio. Su mamá recibe el aviso.</p><div class="q">Tomás llegó al colegio.</div></div>
-      <div class="momento"><time>13:30</time><p>Viaje a Talca: ZUMI propone salir más tarde.</p><div class="q">Si sales a las 15:30 evitas el chubasco.</div></div>
-      <div class="momento aviso"><time>17:54</time><p>SENAPRED emite una alerta preventiva para la comuna.</p><div class="q">Tormentas eléctricas. Tócame y te explico qué hacer.</div></div>
-      <div class="momento"><time>22:40</time><p>Todos marcaron «Estoy bien». ZUMI se va a dormir.</p><div class="q">Buenas noches. Mañana amanece despejado.</div></div>
-    </div>
   </div>
 </section>
 
@@ -877,5 +861,6 @@ footer a{color:#fff}
 <script src="comunas.js" defer></script>
 <script src="vivo.js" defer></script>
 <script src="chat.js" defer></script>
+<script src="historia.js" defer></script>
 </body>
 </html>
