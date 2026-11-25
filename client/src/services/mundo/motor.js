@@ -204,7 +204,7 @@ export class Mundo {
       this.ao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.4, thickness: 2.2, scale: 1.1, samples: 12 })
       this.composer.addPass(this.ao)
     }
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.55, 0.88)
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.25, 0.5, 0.92)
     this.composer.addPass(this.bloom)
     this.composer.addPass(new OutputPass())
     this.composer.addPass(new ShaderPass(GRADO))

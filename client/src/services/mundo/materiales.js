@@ -266,6 +266,6 @@ export function nocheMateriales(m, noche) {
   m.brillo.opacity = noche ? 0.75 : 0
   for (const k of ['muro', 'muroAlto']) {
     m[k].emissive.set(noche ? '#ffb25a' : '#000000')
-    m[k].emissiveIntensity = noche ? 1.1 : 0
+    m[k].emissiveIntensity = noche ? 0.45 : 0
   }
 }
