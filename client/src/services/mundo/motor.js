@@ -759,9 +759,18 @@ export class Mundo {
           this.setModo('dron')
           this.alSoloAire?.(true)
         } else if (espera > 25000) {
+          // No alcanzó a decidirse (teléfono lento o red lenta). Nunca se muestra una ciudad inventada si
+          // llegó la foto real: se recorre desde el aire. Solo si Google no mandó nada, queda el mundo dibujado.
           this.cobertura = false
-          this.desactivarFotorreal()
-          return
+          if ((this.foto.tiles.visibleTiles?.size ?? 0) > 0) {
+            this.soloAire = true
+            this.mostrarFotorreal()
+            this.setModo('dron')
+            this.alSoloAire?.(true)
+          } else {
+            this.desactivarFotorreal()
+            return
+          }
         }
       }
       if (this.foto && this.nRayo % 2 === 0) {

@@ -55,7 +55,7 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
     if (fotorreal || soloAire) setEsperaFoto(false)
   }, [fotorreal, soloAire])
   useEffect(() => {
-    const t = setTimeout(() => setEsperaFoto(false), 15000)
+    const t = setTimeout(() => setEsperaFoto(false), 30000)
     return () => clearTimeout(t)
   }, [])
   const cargandoMundo = !listo || esperaFoto
