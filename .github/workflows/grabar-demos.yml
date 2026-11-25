@@ -1,0 +1,40 @@
+# Graba la app publicada funcionando (red y datos reales) y deja los videos para el sitio:
+# client/sitio/video/<demo>.mp4 + <demo>.jpg (portada).
+name: Grabar demos para el sitio
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  grabar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Herramientas
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: Grabar
+        run: cd client && node scripts/grabar-demos.mjs "https://zumichile.com/app/" /tmp/demos
+      - name: Convertir a video liviano
+        run: |
+          mkdir -p client/sitio/video
+          cd /tmp/demos
+          for f in *.webm; do
+            n="${f%.webm}"
+            ss=$(python3 -c "import json;print(json.load(open('recortes.json')).get('$n',0))")
+            ffmpeg -v error -y -ss "$ss" -i "$f" -t 14 -vf "fps=24,scale=390:-2" -c:v libx264 -crf 28 -preset slow -pix_fmt yuv420p -an -movflags +faststart "$GITHUB_WORKSPACE/client/sitio/video/$n.mp4"
+            ffmpeg -v error -y -ss "$(python3 -c "print(float('$ss')+1.5)")" -i "$f" -frames:v 1 -vf "scale=390:-2" -q:v 4 "$GITHUB_WORKSPACE/client/sitio/video/$n.jpg"
+          done
+          ls -la "$GITHUB_WORKSPACE/client/sitio/video"
+      - name: Guardar
+        run: |
+          git config user.name "ZUMI demos"
+          git config user.email "actions@github.com"
+          git add client/sitio/video
+          git diff --cached --quiet && exit 0
+          git commit -m "Demos de la app grabadas en vivo para el sitio"
+          git pull --rebase -q origin main && git push
