@@ -1,0 +1,25 @@
+# Revisa qué ciudades tienen maqueta 3D real y deja el resultado en tienda/revision-3d (capturas + JSON).
+name: Revisar ciudades 3D
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - run: cd client && node scripts/revisar-3d.mjs "https://zumichile.com/app/" /tmp/rev
+      - name: Guardar
+        run: |
+          mkdir -p tienda/revision-3d && cp /tmp/rev/* tienda/revision-3d/
+          git config user.name "ZUMI revisión 3D"
+          git config user.email "actions@github.com"
+          git add tienda/revision-3d
+          git diff --cached --quiet && exit 0
+          git commit -m "Revisión de ciudades con 3D real"
+          git pull --rebase -q origin main && git push
