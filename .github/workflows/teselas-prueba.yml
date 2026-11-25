@@ -1,0 +1,35 @@
+# Baja unas teselas vectoriales reales (OpenFreeMap) de Linares y Santiago para probar el mundo 3D
+# de ZUMI sin internet. Las deja en client/test-fixtures/teselas/.
+name: Teselas de prueba
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -e
+          d=client/test-fixtures/teselas; mkdir -p $d
+          curl -sf https://tiles.openfreemap.org/planet > $d/planet.json
+          url=$(python3 -c "import json;print(json.load(open('$d/planet.json'))['tiles'][0])")
+          echo "$url"
+          python3 - "$url" "$d" <<'PY'
+          import math, sys, urllib.request, os
+          url, d = sys.argv[1], sys.argv[2]
+          def t(lat, lng, z):
+              n = 2 ** z; x = int((lng + 180) / 360 * n)
+              y = int((1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n); return x, y
+          for lat, lng in [(-35.8467, -71.5936), (-33.4378, -70.6505)]:
+              cx, cy = t(lat, lng, 14)
+              for dx in (-1, 0, 1):
+                  for dy in (-1, 0, 1):
+                      x, y = cx + dx, cy + dy
+                      u = url.replace('{z}', '14').replace('{x}', str(x)).replace('{y}', str(y))
+                      req = urllib.request.Request(u, headers={'User-Agent': 'ZUMI-Chile/1.0 (+https://zumichile.com)'})
+                      data = urllib.request.urlopen(req).read()
+                      open(f'{d}/14-{x}-{y}.pbf', 'wb').write(data); print(x, y, len(data))
+          PY
+          git config user.name "ZUMI teselas"; git config user.email "actions@github.com"
+          git add $d && git commit -m "Teselas de prueba (Linares y Santiago) para el mundo 3D" && git pull --rebase -q && git push
