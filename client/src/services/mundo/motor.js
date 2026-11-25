@@ -740,8 +740,12 @@ export class Mundo {
       this.nRayo = (this.nRayo ?? 0) + 1
       // ¿hay ciudad 3D aquí? (se revisa a escondidas; si no hay, se queda el mundo dibujado)
       const espera = performance.now() - this.fotoDesde
-      if (this.cobertura == null && espera > 3500 && this.nRayo % 20 === 0) {
-        const c = this.revisarCobertura()
+      const st = this.foto.tiles.stats ?? {}
+      const quieta = (st.downloading ?? 0) + (st.parsing ?? 0) === 0
+      if (this.cobertura == null && espera > 3500 && this.h0Listo && this.nRayo % 20 === 0) {
+        let c = this.revisarCobertura()
+        // «sin 3D» solo se decide con la maqueta ya cargada (si no, Santiago parecía plano)
+        if (c === false && !quieta && espera < 25000) c = null
         if (c === true) {
           this.cobertura = true
           this.mostrarFotorreal()
@@ -760,7 +764,14 @@ export class Mundo {
       }
       if (this.foto && this.nRayo % 2 === 0) {
         const h = this.foto.alturaEn(this.x, this.z, this.h0Listo ? this.h0 + (this.modo === 'dron' ? 400 : 40) : 9000)
-        if (h != null) {
+        if (h != null && !this.h0Listo && !this.fotoVisible) {
+          // la maqueta se baja para que su suelo quede a la altura del juego: así se carga con
+          // detalle de calle (la cámara ya no queda cientos de metros bajo tierra)
+          this.foto.raiz.position.y -= h
+          this.foto.raiz.updateMatrixWorld(true)
+          this.h0 = 0
+          this.h0Listo = true
+        } else if (h != null) {
           if (this.h0Listo) this.h0 += (h - this.h0) * Math.min(1, dt * 12)
           else {
             this.h0 = h
