@@ -88,7 +88,7 @@ export class Fotorreal {
   /** Altura del suelo (o techo) bajo el punto x,z del juego; null si aún no hay maqueta ahí. */
   alturaEn(x, z, desde = 3000) {
     this.rayo.set(new THREE.Vector3(x, desde, z), new THREE.Vector3(0, -1, 0))
-    this.rayo.far = desde + 500
+    this.rayo.far = desde + 9000
     const h = this.rayo.intersectObject(this.tiles.group, true)[0]
     return h ? h.point.y : null
   }

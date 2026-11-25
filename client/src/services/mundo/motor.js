@@ -360,7 +360,7 @@ export class Mundo {
     const alturas = []
     for (let i = -2; i <= 2; i++)
       for (let j = -2; j <= 2; j++) {
-        const h = this.foto.alturaEn(this.x + i * 45, this.z + j * 45, this.h0Listo ? this.h0 + 300 : 9000)
+        const h = this.foto.alturaEn(this.x + i * 45, this.z + j * 45, 600)
         if (h != null) alturas.push(h)
       }
     if (alturas.length < 15) return null // aún cargando
@@ -741,11 +741,11 @@ export class Mundo {
       // ¿hay ciudad 3D aquí? (se revisa a escondidas; si no hay, se queda el mundo dibujado)
       const espera = performance.now() - this.fotoDesde
       const st = this.foto.tiles.stats ?? {}
-      const quieta = (st.downloading ?? 0) + (st.parsing ?? 0) === 0
+      const quieta = (st.downloading ?? 0) + (st.parsing ?? 0) + (st.queued ?? 0) === 0
       if (this.cobertura == null && espera > 3500 && this.h0Listo && this.nRayo % 20 === 0) {
         let c = this.revisarCobertura()
         // «sin 3D» solo se decide con la maqueta ya cargada (si no, Santiago parecía plano)
-        if (c === false && !quieta && espera < 25000) c = null
+        if (c === false && !quieta && espera < 35000) c = null
         if (c === true) {
           this.cobertura = true
           this.mostrarFotorreal()
@@ -756,21 +756,25 @@ export class Mundo {
           this.mostrarFotorreal()
           this.setModo('dron')
           this.alSoloAire?.(true)
-        } else if (espera > 20000) {
+        } else if (espera > 40000) {
           this.cobertura = false
           this.desactivarFotorreal()
           return
         }
       }
       if (this.foto && this.nRayo % 2 === 0) {
-        const h = this.foto.alturaEn(this.x, this.z, this.h0Listo ? this.h0 + (this.modo === 'dron' ? 400 : 40) : 9000)
-        if (h != null && !this.h0Listo && !this.fotoVisible) {
-          // la maqueta se baja para que su suelo quede a la altura del juego: así se carga con
-          // detalle de calle (la cámara ya no queda cientos de metros bajo tierra)
-          this.foto.raiz.position.y -= h
-          this.foto.raiz.updateMatrixWorld(true)
+        const h = this.foto.alturaEn(this.x, this.z, this.fotoVisible ? this.h0 + (this.modo === 'dron' ? 400 : 40) : 9000)
+        if (h != null && !this.fotoVisible) {
+          // Mientras se prueba, la maqueta se baja para que su suelo quede a la altura del juego
+          // (así carga con detalle de calle). Se repite mientras mejora el detalle: las primeras
+          // capas son burdas y su «suelo» puede quedar kilómetros arriba o abajo.
+          if (Math.abs(h) > 1.5) {
+            this.foto.raiz.position.y -= h
+            this.foto.raiz.updateMatrixWorld(true)
+          }
           this.h0 = 0
-          this.h0Listo = true
+          const st = this.foto.tiles.stats ?? {}
+          this.h0Listo = Math.abs(h) <= 1.5 && (st.downloading ?? 0) + (st.parsing ?? 0) + (st.queued ?? 0) === 0
         } else if (h != null) {
           if (this.h0Listo) this.h0 += (h - this.h0) * Math.min(1, dt * 12)
           else {
