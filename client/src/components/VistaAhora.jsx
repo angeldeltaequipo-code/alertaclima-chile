@@ -115,24 +115,44 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
 
   // Sin datos del clima, los reportes vecinales se muestran igual: no dependen de este servicio.
   if (!datos) {
-    let estado
-    if (error)
-      estado = (
-        <div className="py-2">
-          <p className="text-[17px]">
-            <strong>No se pudo cargar el clima.</strong> {error}.
-          </p>
-          <button type="button" onClick={recargar} className="mt-3 min-h-12 rounded-lg bg-senal px-5 font-bold text-sobre-senal">
-            Reintentar
-          </button>
+    // Sin clima, ZUMI sigue ahí: explica qué pasa, deja reintentar y tiene a mano los números de emergencia
+    // (que funcionan sin internet). Los reportes vecinales se muestran igual.
+    const sinSenal = !enLinea
+    if (!error && !sinSenal)
+      return (
+        <div className="space-y-3 px-4 py-4">
+          <Cargando />
+          {resumen}
+          {invitacion}
+          {reportes}
+          {camaras}
         </div>
       )
-    else if (!enLinea)
-      estado = <p className="py-2 text-[17px]">Sin señal. El clima de {comuna.nombre} se carga apenas vuelva la conexión.</p>
-    else estado = <Cargando />
     return (
       <div className="space-y-3 px-4 py-4">
-        {estado}
+        <section className="relative overflow-hidden rounded-[28px] bg-superficie px-4 pt-4 pb-4" role="status">
+          <div className="flex items-end gap-3">
+            <img src={`${import.meta.env.BASE_URL}zumi/poses/${sinSenal ? 'telefono' : 'explicando'}.webp`} alt="" width="96" height="124" className="h-[124px] w-auto shrink-0" />
+            <p className="globo-zumi mb-3 rounded-3xl rounded-bl-md bg-superficie-2 px-3.5 py-2.5 text-[16px] leading-snug">
+              {sinSenal
+                ? `Estás sin señal. Apenas vuelva te cuento el clima de ${comuna.nombre}. Las llamadas de emergencia funcionan igual.`
+                : `No me llegó el clima de ${comuna.nombre}. Puede ser la señal o el servicio del clima. Probemos de nuevo.`}
+            </p>
+          </div>
+          {!sinSenal && (
+            <button type="button" onClick={recargar} className="boton-primario mt-3 w-full">
+              Reintentar
+            </button>
+          )}
+          <div className="mt-3 grid grid-cols-3 gap-2" aria-label="Números de emergencia">
+            {[['131', 'SAMU'], ['132', 'Bomberos'], ['133', 'Carabineros']].map(([n, q]) => (
+              <a key={n} href={`tel:${n}`} className="grid min-h-14 place-items-center rounded-2xl bg-superficie-2 py-2 text-center leading-tight">
+                <span className="text-[20px] font-bold tabular-nums">{n}</span>
+                <span className="text-[12px] text-texto-2">{q}</span>
+              </a>
+            ))}
+          </div>
+        </section>
         {resumen}
         {invitacion}
         {reportes}
