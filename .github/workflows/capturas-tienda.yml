@@ -2,7 +2,7 @@
 name: Capturas para las tiendas
 on: workflow_dispatch
 permissions:
-  contents: read
+  contents: write
 jobs:
   capturas:
     runs-on: ubuntu-latest
@@ -14,7 +14,12 @@ jobs:
           node-version: 22
       - run: cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
       - run: cd client && node scripts/capturas-tienda.mjs "https://zumichile.com/app/" /tmp/capturas
-      - uses: actions/upload-artifact@v4
-        with:
-          name: capturas-tienda
-          path: /tmp/capturas/*.png
+      - name: Guardar en tienda/crudas
+        run: |
+          mkdir -p tienda/crudas && cp /tmp/capturas/*.png tienda/crudas/
+          git config user.name "ZUMI capturas"
+          git config user.email "actions@github.com"
+          git add tienda/crudas
+          git diff --cached --quiet && exit 0
+          git commit -m "Capturas de la app para las tiendas"
+          git pull --rebase -q origin main && git push

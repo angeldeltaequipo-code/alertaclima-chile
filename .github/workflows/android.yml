@@ -59,7 +59,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: AlertaClima-prueba-apk
+          name: ZUMI-prueba-apk
           path: client/android/app/build/outputs/apk/debug/*.apk
       - name: Paquete para Google Play (AAB firmado)
         if: env.ANDROID_KEYSTORE_PATH != ''
@@ -73,5 +73,5 @@ jobs:
       - if: env.ANDROID_KEYSTORE_PATH != ''
         uses: actions/upload-artifact@v4
         with:
-          name: AlertaClima-google-play-aab
+          name: ZUMI-google-play-aab
           path: client/android/app/build/outputs/bundle/release/*.aab
