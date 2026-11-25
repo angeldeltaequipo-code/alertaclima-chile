@@ -46,6 +46,7 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
   const [cuenta, setCuenta] = useState(null) // lo que ZUMI está contando
   const [fotorreal, setFotorreal] = useState(false)
   const creditos = useRef(null)
+  const tokenFoto = useRef(null)
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
   const [modo, setModo] = useState('pie')
@@ -80,8 +81,12 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     // Si está configurada, la maqueta fotorrealista de Google (vía Cesium ion) reemplaza al mundo dibujado
     fetch(`${API_URL}/api/calle/mundo`, { cache: 'no-store', signal: AbortSignal.timeout(20000) })
       .then((r) => r.json())
-      .then((c) => c.fotorreal && m.activarFotorreal(c.cesium).then((ok) => ok && setFotorreal(true)))
+      .then((c) => {
+        tokenFoto.current = c.cesium
+        return c.fotorreal && m.activarFotorreal(c.cesium).then((ok) => ok && setFotorreal(true))
+      })
       .catch(() => {})
+    m.alFotorreal = setFotorreal
     m.alListo = () => {
       setListo(true)
       // En la naturaleza (sin casas cerca) se parte en Dron: a pie solo se vería pasto.
@@ -347,6 +352,8 @@ export default function PaseoZumi({ lugar = PLAZA_LINARES, onCerrar }) {
     const nuevo = { id: p.id, nombre: p.nombre, lat: p.lat, lng: p.lng, rumbo: p.rumbo ?? 0 }
     setInicio(nuevo)
     m?.jumpTo({ center: [p.lng, p.lat], bearing: nuevo.rumbo })
+    // en otra ciudad puede haber maqueta 3D real aunque aquí no hubiera
+    if (m && !m.foto && tokenFoto.current) m.activarFotorreal(tokenFoto.current).then((ok) => ok && setFotorreal(true))
   }
   const cambiarVoz = () => {
     const v = !voz

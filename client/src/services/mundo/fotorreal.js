@@ -74,7 +74,8 @@ export class Fotorreal {
 
   /** Noche: la ciudad real se oscurece (las fotos son de día). */
   setNoche(noche) {
-    this.tinte.set(noche ? '#6a7aa0' : '#ffffff')
+    this.tinte.set('#ffffff') // las fotos son de día: oscurecerlas solo las ensuciaba
+    void noche
     for (const m of this.materiales) m.color.copy(this.tinte)
   }
 

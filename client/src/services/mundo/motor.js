@@ -164,7 +164,17 @@ export class Mundo {
       const [lng, lat] = center
       const d = Math.hypot(...this.proy.aLocal(lat, lng))
       if (d > 12000) this.reorigen(lat, lng)
-      else [this.x, this.z] = this.proy.aLocal(lat, lng)
+      else {
+        const [x, z] = this.proy.aLocal(lat, lng)
+        if (Math.hypot(x - this.x, z - this.z) > 300) {
+          // otro lugar: revisar de nuevo si hay ciudad 3D y medir el suelo desde arriba
+          this.cobertura = null
+          this.fotoDesde = performance.now()
+          this.h0Listo = false
+        }
+        this.x = x
+        this.z = z
+      }
     }
     if (bearing != null) this.rumbo = ((bearing % 360) + 360) % 360
     this.alMover?.()
@@ -249,10 +259,42 @@ export class Mundo {
     this.camara.far = 30000
     this.camara.updateProjectionMatrix()
     this.sol.castShadow = false
-    if (this.clima) this.foto.setNoche(!this.clima.dia)
+    this.fotoDesde = performance.now()
+    this.cobertura = null
     // sombra redonda bajo ZUMI (la maqueta ya trae su luz y sombras reales)
     this.sombraDron.material.opacity = 0.35
     return true
+  }
+
+  /** Sin ciudad 3D de Google en este lugar (solo foto plana): se vuelve al mundo dibujado con casas. */
+  revisarCobertura() {
+    const alturas = []
+    for (let i = -2; i <= 2; i++)
+      for (let j = -2; j <= 2; j++) {
+        const h = this.foto.alturaEn(this.x + i * 45, this.z + j * 45, this.h0 + 300)
+        if (h != null) alturas.push(h)
+      }
+    if (alturas.length < 15) return null // aún cargando
+    const orden = [...alturas].sort((a, b) => a - b)
+    const base = orden[Math.floor(orden.length * 0.25)]
+    const altos = alturas.filter((h) => h - base > 4).length
+    return altos >= 3
+  }
+  desactivarFotorreal() {
+    if (!this.foto) return
+    this.foto.liberar()
+    this.foto = null
+    this.h0 = 0
+    this.h0Listo = false
+    this.barrios.visible = true
+    this.trafico.visible = true
+    this.suelo.visible = true
+    this.sol.castShadow = true
+    this.camara.far = 9000
+    this.camara.updateProjectionMatrix()
+    this.sombraDron.material.opacity = 0.25
+    this.setModo(this.modo)
+    this.alFotorreal?.(false)
   }
 
   // ---------- cielo y clima ----------
@@ -302,7 +344,6 @@ export class Mundo {
       this.sol.color.set('#fff1d6')
       this.renderer.toneMappingExposure = 0.82
     }
-    this.foto?.setNoche(noche)
     if (this.vehiculos.auto.luces) this.vehiculos.auto.luces.intensity = noche ? 60 : 0
     this.ponerLluvia(!!c.lluvia)
     this.reflejos()
@@ -604,7 +645,17 @@ export class Mundo {
     if (this.foto) {
       this.foto.actualizar()
       this.nRayo = (this.nRayo ?? 0) + 1
-      if (this.nRayo % 2 === 0) {
+      // ¿hay ciudad 3D aquí? (se revisa una vez, cuando ya cargó)
+      if (this.cobertura == null && this.h0Listo && performance.now() - this.fotoDesde > 7000 && this.nRayo % 30 === 0) {
+        const c = this.revisarCobertura()
+        if (c === false || (c == null && performance.now() - this.fotoDesde > 30000)) {
+          this.cobertura = false
+          this.desactivarFotorreal()
+          return
+        }
+        if (c) this.cobertura = true
+      }
+      if (this.foto && this.nRayo % 2 === 0) {
         const h = this.foto.alturaEn(this.x, this.z, this.h0Listo ? this.h0 + (this.modo === 'dron' ? 400 : 40) : 9000)
         if (h != null) {
           if (this.h0Listo) this.h0 += (h - this.h0) * Math.min(1, dt * 12)
