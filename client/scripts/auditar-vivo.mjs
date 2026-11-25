@@ -1,10 +1,10 @@
 // Auditoría de la app publicada, como la vería una persona nueva en un celular con red real.
 // Guarda capturas de cada pantalla, errores de consola, peticiones fallidas y tiempos.
-//   node scripts/auditar-vivo.mjs https://angeldeltaequipo-code.github.io/alertaclima-chile/ salida/
+//   node scripts/auditar-vivo.mjs https://zumichile.com/ salida/
 import { chromium, devices } from 'playwright'
 import fs from 'fs'
 
-const [url = 'https://angeldeltaequipo-code.github.io/alertaclima-chile/', dir = 'auditoria'] = process.argv.slice(2)
+const [url = 'https://zumichile.com/', dir = 'auditoria'] = process.argv.slice(2)
 fs.mkdirSync(dir, { recursive: true })
 const informe = { url, pasos: [], errores: [], fallidas: [], tiempos: {} }
 const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })

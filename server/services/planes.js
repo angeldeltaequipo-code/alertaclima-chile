@@ -71,7 +71,7 @@ export async function guardarSuscripcion(db, { usuarioId, origen, externoId, pla
 // Credenciales: FLOW_API_KEY y FLOW_SECRET_KEY (flow.cl → Mis datos → Integración). FLOW_SANDBOX=true para pruebas.
 export const flowActivo = () => Boolean(process.env.FLOW_API_KEY && process.env.FLOW_SECRET_KEY)
 const flowBase = () => (process.env.FLOW_SANDBOX === 'true' ? 'https://sandbox.flow.cl/api' : 'https://www.flow.cl/api')
-const appUrl = () => process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
+const appUrl = () => process.env.APP_URL ?? 'https://zumichile.com/'
 const apiUrl = () => (process.env.API_PUBLICA ?? process.env.RENDER_EXTERNAL_URL ?? 'https://alertaclima-api.onrender.com').replace(/\/$/, '')
 export const PLANES_FLOW = {
   familia: { mensual: () => process.env.FLOW_PLAN_MENSUAL ?? 'alertaclima_familia_mensual', anual: () => process.env.FLOW_PLAN_ANUAL ?? 'alertaclima_familia_anual' },

@@ -4,7 +4,7 @@
 // Privacidad: el correo de la persona NO se guarda. Solo se usa una vez, en el momento en que crea
 // su cuenta, para enviarle la bienvenida.
 
-const APP = 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
+const APP = 'https://zumichile.com/'
 
 export const correosActivos = () => Boolean(process.env.RESEND_API_KEY && process.env.CORREO_DESDE)
 

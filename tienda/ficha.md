@@ -16,7 +16,7 @@ Textos listos para copiar en App Store Connect y Google Play Console. Los límit
 
 **Clasificación por edad:** 4+ (el chat vecinal está moderado; si Apple lo pide, responder "contenido generado por usuarios con moderación y reporte").
 
-**URL de privacidad:** https://angeldeltaequipo-code.github.io/alertaclima-chile/privacidad.html
+**URL de privacidad:** https://zumichile.com/privacidad.html
 
 **URL de soporte:** la página principal de la app (o un correo de contacto).
 

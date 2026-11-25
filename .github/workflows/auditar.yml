@@ -15,9 +15,9 @@ jobs:
       - name: Instalar Playwright
         run: cd client && npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
       - name: Recorrer la app como una persona nueva
-        run: cd client && node scripts/auditar-vivo.mjs "https://angeldeltaequipo-code.github.io/alertaclima-chile/" ../auditoria
+        run: cd client && node scripts/auditar-vivo.mjs "https://zumichile.com/" ../auditoria
       - name: Lighthouse (celular)
-        run: npx -y lighthouse@12.2.1 "https://angeldeltaequipo-code.github.io/alertaclima-chile/" --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile --output=json --output-path=auditoria/lighthouse.json --chrome-flags="--headless=new --no-sandbox" --quiet || true
+        run: npx -y lighthouse@12.2.1 "https://zumichile.com/" --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile --output=json --output-path=auditoria/lighthouse.json --chrome-flags="--headless=new --no-sandbox" --quiet || true
       - name: Guardar resultados en la rama «auditoria»
         run: |
           cd auditoria
