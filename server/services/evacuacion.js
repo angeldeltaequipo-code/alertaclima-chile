@@ -8,7 +8,7 @@ import { ErrorValidacion } from './reportes.js'
 const SERVIDORES = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']
 const CACHE_MS = 24 * 3600e3
 const cache = new Map() // zona -> { hasta, datos }
-const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', 'content-type': 'application/x-www-form-urlencoded' }
+const CABECERAS = { 'User-Agent': 'ZUMI-Chile/1.0 (+https://zumichile.com)', 'content-type': 'application/x-www-form-urlencoded' }
 
 export function consultaOverpass([s, o, n, e]) {
   const caja = `(${s},${o},${n},${e})`

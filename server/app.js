@@ -18,7 +18,7 @@ import { adminPlanesRouter, pagosRouter, planesRouter } from './routes/planes.js
 import { ErrorValidacion } from './services/reportes.js'
 
 // Además de la web, la app de tiendas: Android carga desde https://localhost e iPhone desde alertaclima://localhost.
-export const ORIGENES_APP = ['https://localhost', 'alertaclima://localhost', 'capacitor://localhost']
+export const ORIGENES_APP = ['https://zumichile.com', 'https://www.zumichile.com', 'https://localhost', 'alertaclima://localhost', 'capacitor://localhost']
 export const origenesPermitidos = () => [...(process.env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()), ...ORIGENES_APP]
 
 export function crearApp({ emitir, avisarComunas, enviarPush, emitirChat, verificarGoogle } = {}) {

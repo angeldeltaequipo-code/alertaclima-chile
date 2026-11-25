@@ -11,7 +11,7 @@
 // gente diciendo que tembló) y para dar contexto, pero nunca reemplaza a SENAPRED, SHOA o CSN.
 // No se guardan nombres de usuario ni fotos de perfil: solo el texto, la fuente y el enlace.
 
-const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', Accept: '*/*' }
+const CABECERAS = { 'User-Agent': 'ZUMI-Chile/1.0 (+https://zumichile.com)', Accept: '*/*' }
 const CACHE_MS = 5 * 60 * 1000
 const MAX_EDAD_H = 36
 

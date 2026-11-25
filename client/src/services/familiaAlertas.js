@@ -47,7 +47,7 @@ export async function revisarFamilia() {
     const clave = `estado:${m.id}:${m.estado.t}`
     if (v[clave]) continue
     v[clave] = Date.now()
-    if (m.estado.v === 'ayuda') await avisar(`🆘 ${m.nombre} necesita ayuda`, `${m.nombre} pidió ayuda desde AlertaClima. Abre «Mi familia» para ver dónde está y cómo llegar.`)
+    if (m.estado.v === 'ayuda') await avisar(`🆘 ${m.nombre} necesita ayuda`, `${m.nombre} pidió ayuda desde ZUMI. Abre «Mi familia» para ver dónde está y cómo llegar.`)
     else await avisar(`✓ ${m.nombre} está bien`, `${m.nombre} avisó que está bien.`)
   }
   for (const m of lista.filter((x) => !x.yo && Date.now() - x.t < 6 * 3600e3)) {

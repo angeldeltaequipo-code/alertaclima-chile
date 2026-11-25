@@ -209,7 +209,7 @@ export function responderSinIA(pregunta, { nombre, comuna, ahora, horas, dias, a
   const aprendido = aprenderSolo(pregunta)
   if (aprendido.length && pregunta.length < 90 && !QUIERE.lluvia.test(t) && !QUIERE.temperatura.test(t))
     return `¡Anotado${nombre ? `, ${nombre}` : ''}! Lo voy a recordar para cuidarte mejor. ¿Quieres que te cuente cómo viene el clima?`
-  if (QUIERE.quien.test(t)) return `¡Soy ZUMI, un panda rojo que vive en el estudio del clima de AlertaClima! Te cuento cómo está ${lugar}, te aviso de las alertas y te acompaño cuando el tiempo se pone feo.`
+  if (QUIERE.quien.test(t)) return `¡Soy ZUMI, un panda rojo que vive en su estudio del clima! Te cuento cómo está ${lugar}, te aviso de las alertas y te acompaño cuando el tiempo se pone feo.`
   if (QUIERE.gracias.test(t)) return azar([`¡Gracias a ti${nombre ? `, ${nombre}` : ''}! Me alegra mucho acompañarte.`, '¡Ay, me hiciste mover la cola de felicidad! Aquí estoy cuando me necesites.'])
   if (QUIERE.chiste.test(t))
     return azar([

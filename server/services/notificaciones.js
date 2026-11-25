@@ -203,7 +203,7 @@ export async function enviarPrueba(pool, endpoint, { enviar = enviarUniversal, u
   if (ultimaPrueba.size > 5000) ultimaPrueba.delete(ultimaPrueba.keys().next().value)
   const app = urlApp ?? process.env.APP_URL ?? 'https://angeldeltaequipo-code.github.io/alertaclima-chile/'
   const mensaje = JSON.stringify({
-    titulo: 'Prueba de AlertaClima',
+    titulo: 'Prueba de ZUMI',
     cuerpo: '¡Funciona! Así te llegarán las alertas oficiales de tus comunas.',
     nivel: 'preventiva',
     grave: false,

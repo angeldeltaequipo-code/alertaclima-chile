@@ -1,4 +1,4 @@
-// Mi familia: el GPS familiar de AlertaClima, cifrado de punta a punta (ni AlertaClima puede ver nada).
+// Mi familia: el GPS familiar de ZUMI, cifrado de punta a punta (ni ZUMI puede ver nada).
 //
 // Diseñado como el panel de un auto eléctrico: el mapa vivo es el protagonista, cada integrante tiene
 // su tarjeta con lo esencial (dónde está, desde cuándo, batería, velocidad, clima y alertas), y lo demás
@@ -251,7 +251,7 @@ function AccionRedonda({ etiqueta, icono, onClick, href }) {
 
 /** Primera vez (solo tú): qué es, cómo funciona en 3 pasos y un solo botón grande. */
 function Empezar({ enlace, invitar, copiado }) {
-  const wa = `https://wa.me/?text=${encodeURIComponent(`Hola, te invito a nuestra familia en AlertaClima: así sabemos que estamos bien y dónde estamos si hay una emergencia. Toca aquí: ${enlace}`)}`
+  const wa = `https://wa.me/?text=${encodeURIComponent(`Hola, te invito a nuestra familia en ZUMI: así sabemos que estamos bien y dónde estamos si hay una emergencia. Toca aquí: ${enlace}`)}`
   return (
     <section aria-labelledby="t-empezar" className="rounded-[24px] border border-linea bg-superficie p-5">
       <h3 id="t-empezar" className="titulo-x text-[24px] leading-tight">
@@ -495,8 +495,8 @@ export default function GPSFamiliar({ invitacion = null, onInvitacionUsada = () 
   const enVivo = miembros.filter((m) => ahora - m.t < EN_VIVO_MS).length
   const enlace = enlaceInvitacion(g)
   const invitar = async () => {
-    const texto = `Únete a nuestra familia en AlertaClima para saber dónde estamos y si hay alertas. Es privado y cifrado: ${enlace}`
-    if (navigator.share) return navigator.share({ title: 'GPS familiar · AlertaClima', text: texto }).catch(() => {})
+    const texto = `Únete a nuestra familia en ZUMI para saber dónde estamos y si hay alertas. Es privado y cifrado: ${enlace}`
+    if (navigator.share) return navigator.share({ title: 'GPS familiar · ZUMI', text: texto }).catch(() => {})
     await navigator.clipboard?.writeText(enlace).catch(() => {})
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2500)

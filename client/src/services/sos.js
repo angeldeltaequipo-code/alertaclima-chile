@@ -72,7 +72,7 @@ export function mensajeSOS(p, { nombre } = {}) {
   ]
   const previos = rastro().filter((r) => r.hora < p.hora - 60000).slice(-3)
   if (previos.length) lineas.push(`Antes estuve en: ${previos.map((r) => `${hhmm(r.hora)} ${enlaceMapa(r)}`).join(' · ')}`)
-  lineas.push('Si no respondo, llama al 133. Enviado desde AlertaClima.')
+  lineas.push('Si no respondo, llama al 133. Enviado desde ZUMI.')
   return lineas.join('\n')
 }
 

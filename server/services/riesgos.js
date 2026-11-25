@@ -9,7 +9,7 @@ const CHILE = { minLat: -56.5, maxLat: -17, minLng: -80, maxLng: -66 }
 const cache = new Map() // clave -> { hasta, datos }
 const fallas = new Map() // clave -> último error (para diagnosticar fuentes caídas)
 // Algunas fuentes rechazan pedidos sin identificación: se presenta la app con un contacto.
-const CABECERAS = { 'User-Agent': 'AlertaClima-Chile/1.0 (+https://angeldeltaequipo-code.github.io/alertaclima-chile/)', Accept: '*/*' }
+const CABECERAS = { 'User-Agent': 'ZUMI-Chile/1.0 (+https://zumichile.com)', Accept: '*/*' }
 
 async function conCache(clave, ms, fn) {
   const c = cache.get(clave)

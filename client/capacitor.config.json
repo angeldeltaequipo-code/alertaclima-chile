@@ -1,6 +1,6 @@
 {
   "appId": "cl.alertaclima.app",
-  "appName": "AlertaClima",
+  "appName": "ZUMI",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

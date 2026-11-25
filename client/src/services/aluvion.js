@@ -1,6 +1,6 @@
 // Riesgo de aluviones y desbordes, estimado con el pronóstico de las próximas 24 horas.
 //
-// Es una orientación de AlertaClima, NO una alerta oficial (esas las emite SENAPRED con la DMC y
+// Es una orientación de ZUMI, NO una alerta oficial (esas las emite SENAPRED con la DMC y
 // SERNAGEOMIN). Se basa en tres señales conocidas de los aluviones en Chile:
 // 1. Lluvia acumulada: mucha agua en pocas horas satura el suelo de cerros y quebradas.
 // 2. Intensidad: chubascos fuertes (sobre ~7–10 mm en una hora) arrastran barro y piedras.

@@ -150,7 +150,7 @@ async function suscripcionActual(crear) {
         if (permiso() === 'denied') throw bloqueadas()
         if (entorno().navegador === 'brave')
           throw new ErrorNotificacion(
-            'El navegador Brave no deja recibir avisos si no se cambia un ajuste. Lo más fácil: abre AlertaClima en Chrome.',
+            'El navegador Brave no deja recibir avisos si no se cambia un ajuste. Lo más fácil: abre ZUMI en Chrome.',
             'brave',
           )
         throw new ErrorNotificacion(

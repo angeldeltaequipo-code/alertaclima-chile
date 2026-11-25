@@ -1,4 +1,4 @@
-// ZUMI, el narrador de AlertaClima: arma un reporte hablado con los datos del momento y lo
+// ZUMI, el narrador de la app: arma un reporte hablado con los datos del momento y lo
 // lee con la voz en español del teléfono (funciona incluso sin internet). Pensado para personas
 // ciegas o con baja visión, y para quien prefiere escuchar en vez de leer.
 //

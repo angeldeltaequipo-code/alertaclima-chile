@@ -317,7 +317,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
           <>
             <p className="mb-3 text-[16px]">Queda en tu pantalla de inicio y abre aunque no tengas señal.</p>
             <button type="button" onClick={instalar} className="min-h-12 w-full rounded-lg bg-senal px-4 font-bold text-sobre-senal">
-              Instalar AlertaClima
+              Instalar ZUMI
             </button>
           </>
         ) : esIOS ? (
@@ -349,7 +349,7 @@ export default function Ajustes({ tema, setTema, letra, setLetra, ahorro, notif,
             <strong className="text-texto">Mapa:</strong> © colaboradores de OpenStreetMap.
           </li>
           <li>
-            <strong className="text-texto">Alertas oficiales:</strong> las publica el equipo de AlertaClima desde fuentes oficiales (gob.cl y senapred.cl), con su enlace y hora de confirmación; aún no hay conexión automática con SENAPRED. Ante una emergencia, sigue
+            <strong className="text-texto">Alertas oficiales:</strong> las publica el equipo de ZUMI desde fuentes oficiales (gob.cl y senapred.cl), con su enlace y hora de confirmación; aún no hay conexión automática con SENAPRED. Ante una emergencia, sigue
             siempre las instrucciones de SENAPRED y de tu municipalidad.
           </li>
         </ul>

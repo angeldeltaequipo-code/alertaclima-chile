@@ -76,7 +76,7 @@ export async function tarjetaClima({ escena = 'sala', comuna, temperatura, texto
   }
   g.fillStyle = '#ffc93c'
   g.font = '900 58px system-ui, -apple-system, sans-serif'
-  g.fillText('ZUMI · AlertaClima', 72, H - 170)
+  g.fillText('ZUMI · zumichile.com', 72, H - 170)
   g.fillStyle = 'rgba(255,255,255,.75)'
   g.font = '600 38px system-ui, -apple-system, sans-serif'
   g.fillText('El clima y las alertas de Chile, con tu amigo ZUMI', 72, H - 108)

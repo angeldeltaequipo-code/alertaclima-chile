@@ -120,7 +120,7 @@ const fuenteAeropuertos = {
         try {
           const ids = Object.keys(AEROPUERTOS).join(',')
           const r = await fetchFn(`https://aviationweather.gov/api/data/metar?ids=${ids}&format=json&hours=3`, {
-            headers: { 'User-Agent': 'AlertaClima-Chile/1.0 (alertas climaticas comunitarias)' },
+            headers: { 'User-Agent': 'ZUMI-Chile/1.0 (alertas climaticas comunitarias)' },
             signal: AbortSignal.timeout(10000),
           })
           if (!r.ok) throw new Error(`aviationweather.gov respondió ${r.status}`)

@@ -19,7 +19,7 @@ services:
       - key: HASH_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://angeldeltaequipo-code.github.io
+        value: https://zumichile.com,https://www.zumichile.com,https://angeldeltaequipo-code.github.io
       - key: TRUST_PROXY
         value: 'true'
       - key: ADMIN_TOKEN # Clave del panel de alertas (…/#admin). Render la genera; se ve en Environment.

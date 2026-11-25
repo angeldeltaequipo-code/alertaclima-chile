@@ -43,7 +43,7 @@ function Ingreso({ onEntrar }) {
     <form onSubmit={entrar} className="mx-auto mt-10 max-w-md space-y-4 rounded-2xl border-2 border-borde bg-superficie p-5">
       <h1 className="text-[24px] font-bold">Panel de alertas oficiales</h1>
       <p className="text-[16px] text-texto-2">
-        Solo para el equipo de AlertaClima. Aquí se cargan las alertas copiadas de SENAPRED u otra fuente oficial.
+        Solo para el equipo de ZUMI. Aquí se cargan las alertas copiadas de SENAPRED u otra fuente oficial.
       </p>
       <div>
         <label htmlFor="adm-clave" className="mb-1 block text-[15px] font-bold">

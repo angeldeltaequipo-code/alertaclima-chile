@@ -3,7 +3,7 @@
 // - Una familia = un grupo (identificador al azar) + una clave AES-256 que se crea en el teléfono.
 // - El enlace de invitación lleva ambos DESPUÉS del «#» (esa parte nunca viaja a ningún servidor).
 // - Cada integrante que acepta comparte su ubicación cifrada; el servidor solo guarda lo último
-//   (cifrado) por 48 horas. Nadie más —ni AlertaClima— puede saber dónde está tu familia.
+//   (cifrado) por 48 horas. Nadie más —ni ZUMI— puede saber dónde está tu familia.
 // - Se comparte solo si la persona lo activa, se ve quién ve tu ubicación y se puede salir cuando sea.
 // - En la web la ubicación se actualiza mientras la app está abierta (los navegadores no permiten
 //   rastrear en segundo plano); al abrir la app se envía al tiro.

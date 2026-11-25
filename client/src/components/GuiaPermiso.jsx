@@ -49,7 +49,7 @@ function Recargar() {
   )
 }
 
-/** Ícono de una app (Ajustes del iPhone o AlertaClima) con un dedo. */
+/** Ícono de una app (Ajustes del iPhone o ZUMI) con un dedo. */
 function IconoApp({ ajustes = false }) {
   return (
     <svg viewBox="0 0 200 58" className={DIBUJO} aria-hidden="true">
@@ -72,20 +72,20 @@ function pasos({ navegador, sistema, instalada }) {
   if (sistema === 'ios')
     return [
       [<IconoApp ajustes key="a" />, 'Abre «Ajustes» en tu iPhone.'],
-      [<Interruptor texto="AlertaClima" key="b" />, 'Toca «Notificaciones», busca AlertaClima y enciéndelas.'],
-      [<IconoApp key="c" />, 'Vuelve a AlertaClima.'],
+      [<Interruptor texto="ZUMI" key="b" />, 'Toca «Notificaciones», busca ZUMI y enciéndelas.'],
+      [<IconoApp key="c" />, 'Vuelve a ZUMI.'],
     ]
   if (sistema === 'android' && instalada)
     return [
-      [<IconoApp key="a" />, 'Deja el dedo apretado sobre el ícono de AlertaClima.'],
+      [<IconoApp key="a" />, 'Deja el dedo apretado sobre el ícono de ZUMI.'],
       [<Interruptor key="b" />, 'Toca la «i» y enciende las notificaciones.'],
-      [<IconoApp key="c" />, 'Vuelve a AlertaClima.'],
+      [<IconoApp key="c" />, 'Vuelve a ZUMI.'],
     ]
   if (navegador === 'safari')
     return [
       [<Interruptor texto="Safari › Configuración" key="a" />, 'Arriba, en el menú «Safari», abre «Configuración».'],
       [<Interruptor texto="Sitios web › Notificaciones" key="b" />, 'Entra a «Sitios web» y luego a «Notificaciones».'],
-      [<Interruptor texto="AlertaClima: Permitir" key="c" />, 'Elige «Permitir» para esta página.'],
+      [<Interruptor texto="ZUMI: Permitir" key="c" />, 'Elige «Permitir» para esta página.'],
     ]
   const celular = sistema === 'android'
   return [
@@ -158,7 +158,7 @@ export function AbrirEnNavegador() {
   }
   return (
     <div className="rounded-2xl bg-superficie-2 p-3">
-      <p className="text-[16px] font-bold">Para recibir avisos, abre AlertaClima en tu navegador.</p>
+      <p className="text-[16px] font-bold">Para recibir avisos, abre ZUMI en tu navegador.</p>
       <p className="mt-1 text-[15px] text-texto-2">Dentro de esta app no se pueden recibir. Copia el enlace y pégalo en Chrome o Safari.</p>
       <button type="button" onClick={copiar} className="mt-3 min-h-12 w-full rounded-full bg-senal px-4 text-[16px] font-bold text-sobre-senal">
         {copiado ? '¡Enlace copiado!' : 'Copiar enlace'}

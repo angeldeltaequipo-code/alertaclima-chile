@@ -9,7 +9,7 @@ const PASOS_IPHONE = (
     <li>Abre esta página en Safari.</li>
     <li>Toca el botón para compartir (un cuadrado con una flecha hacia arriba).</li>
     <li>Elige «Agregar a inicio».</li>
-    <li>Abre AlertaClima desde su nuevo ícono y toca «Activar».</li>
+    <li>Abre ZUMI desde su nuevo ícono y toca «Activar».</li>
   </ol>
 )
 
@@ -65,7 +65,7 @@ export function AjustesNotificaciones({ notif, comuna }) {
       </>
     )
   if (notif.soporte === 'no')
-    return <p className="text-[16px]">Este navegador no puede recibir avisos. Prueba abriendo AlertaClima en Chrome o Safari.</p>
+    return <p className="text-[16px]">Este navegador no puede recibir avisos. Prueba abriendo ZUMI en Chrome o Safari.</p>
 
   return (
     <div className="space-y-3">
@@ -143,7 +143,7 @@ export function InvitacionNotificaciones({ notif, comuna }) {
   const integrado = notif.soporte === 'integrado'
   const ios = notif.soporte === 'ios-instalar'
   const texto = integrado
-    ? 'Para recibir avisos, abre AlertaClima en tu navegador'
+    ? 'Para recibir avisos, abre ZUMI en tu navegador'
     : notif.bloqueadas
       ? 'Los avisos están apagados en este navegador'
       : `Recibe avisos de alertas en ${comuna.nombre}, aunque la app esté cerrada`

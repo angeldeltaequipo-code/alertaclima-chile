@@ -64,7 +64,7 @@ export default function DetalleAlertas({ comuna, estado, onCerrar }) {
           )
         })}
         <p className="text-[14px] text-texto-2">
-          AlertaClima muestra alertas copiadas de fuentes oficiales por su equipo. Ante cualquier duda, manda lo que diga{' '}
+          ZUMI muestra alertas copiadas de fuentes oficiales por su equipo. Ante cualquier duda, manda lo que diga{' '}
           <a href={FUENTE_OFICIAL.url} target="_blank" rel="noopener" className="underline">
             SENAPRED
           </a>{' '}

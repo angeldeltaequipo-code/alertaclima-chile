@@ -37,7 +37,7 @@ export default function PuertaCuenta({ cuenta }) {
         <h2 id="t-puerta" className="text-[22px] leading-tight font-bold">
           Entra con tu cuenta de Google
         </h2>
-        <p className="mt-2 text-[16px]">{MOTIVOS[cuenta.puerta] ?? 'Para participar en AlertaClima.'}</p>
+        <p className="mt-2 text-[16px]">{MOTIVOS[cuenta.puerta] ?? 'Para participar en ZUMI.'}</p>
         <ul className="mt-3 space-y-1.5 text-[15px] text-texto-2">
           <li>• Es gratis y toma un toque.</li>
           <li>• Los demás solo ven tu nombre, la inicial de tu apellido y tu foto.</li>

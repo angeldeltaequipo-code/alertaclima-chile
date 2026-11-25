@@ -1,5 +1,5 @@
 // Navegación con ZUMI: indicaciones giro a giro por voz, el mapa te sigue, recalcula si te desvías,
-// te avisa del clima que viene en la ruta y te recuerda descansar. Todo dentro de AlertaClima.
+// te avisa del clima que viene en la ruta y te recuerda descansar. Todo dentro de ZUMI.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { calcularRuta, distanciaCorta, distanciaDicha, flecha, horaCL, prepararNavegacion, ubicarEnRuta } from '../services/ruta'

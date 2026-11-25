@@ -56,7 +56,7 @@ function Demo({ tipo }) {
     return (
       <div className="demo-card space-y-2">
         <div className="demo-noti">
-          <span className="demo-app">AlertaClima · ahora</span>
+          <span className="demo-app">ZUMI · ahora</span>
           <p>
             <b>⚠ Alerta Amarilla · Calor extremo</b>
             <br />
@@ -218,7 +218,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
         <div className="safe-top absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-3">
           <span className="flex items-center gap-2 text-[17px] font-black tracking-tight">
             <img src={`${import.meta.env.BASE_URL}icono-192.png`} alt="" width="28" height="28" className="rounded-lg" />
-            AlertaClima
+            ZUMI
           </span>
           {paso > 0 ? (
             <button type="button" onClick={() => setPaso(paso - 1)} className="min-h-11 rounded-full bg-black/35 px-4 text-[15px] font-bold backdrop-blur" aria-label="Volver al paso anterior">
@@ -278,7 +278,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
               <p className="mono mt-2.5 text-center text-[10.5px] tracking-[0.1em] text-white/65">SIN TARJETA · SIN CREAR CUENTA · 30 SEGUNDOS</p>
               <div className="mt-3 flex items-center justify-between text-[14px] font-bold text-white/65">
                 <button type="button" onClick={() => setConocer(true)} className="min-h-11 underline underline-offset-2">
-                  ¿Qué hace AlertaClima?
+                  ¿Qué hace ZUMI?
                 </button>
                 <span>
                   <a href="./terminos.html" target="_blank" rel="noopener" className="underline underline-offset-2">
@@ -384,7 +384,7 @@ export default function Bienvenida({ onElegir, onBuscar, cuenta }) {
       </div>
 
       {conocer && (
-        <Hoja titulo="¿Qué hace AlertaClima?" onCerrar={() => setConocer(false)}>
+        <Hoja titulo="¿Qué hace ZUMI?" onCerrar={() => setConocer(false)}>
           <div className="px-5 pb-6">
             <ul className="space-y-3">
               {FUNCIONES.map(([i, t, d]) => (

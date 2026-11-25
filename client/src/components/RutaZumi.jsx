@@ -228,7 +228,7 @@ export default function RutaZumi({ origen, onRuta, onCerrar, onSeguir = () => {}
   useEffect(() => () => onRuta(null), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const compartir = async () => {
-    const texto = `Voy camino a ${destino.nombre}: salgo ${diaCL(salida)} a las ${horaCL(salida)} y llego cerca de las ${horaCL(llegada)} (${Math.round(datos.ruta.metros / 1000)} km). Te aviso cuando llegue. — Ruta ZUMI, AlertaClima`
+    const texto = `Voy camino a ${destino.nombre}: salgo ${diaCL(salida)} a las ${horaCL(salida)} y llego cerca de las ${horaCL(llegada)} (${Math.round(datos.ruta.metros / 1000)} km). Te aviso cuando llegue. — Ruta ZUMI (zumichile.com)`
     try {
       if (navigator.share) await navigator.share({ text: texto, title: 'Mi viaje' })
       else window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener')

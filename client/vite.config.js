@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icono.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'AlertaClima Chile',
-        short_name: 'AlertaClima',
+        name: 'ZUMI',
+        short_name: 'ZUMI',
         description: 'Lluvia, radar y alertas de tu comuna en tiempo real.',
         lang: 'es-CL',
         start_url: './',

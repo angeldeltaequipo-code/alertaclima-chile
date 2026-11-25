@@ -1,4 +1,4 @@
-// Service worker de AlertaClima: guarda la app para abrir sin conexión y muestra
+// Service worker de ZUMI: guarda la app para abrir sin conexión y muestra
 // las notificaciones de alertas oficiales aunque la app esté cerrada.
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
@@ -64,7 +64,7 @@ self.addEventListener('push', (evento) => {
   try {
     m = evento.data ? evento.data.json() : {}
   } catch {
-    m = { titulo: 'AlertaClima', cuerpo: evento.data?.text() ?? '' }
+    m = { titulo: 'ZUMI', cuerpo: evento.data?.text() ?? '' }
   }
   const base = self.registration.scope
   evento.waitUntil(

@@ -136,7 +136,7 @@ export default function Planes({ abierto, motivo = 'general', onCerrar, plan, cu
           <TuPlan plan={plan} onCerrar={onCerrar} />
         ) : (
           <>
-            <p className="rotulo">Planes AlertaClima</p>
+            <p className="rotulo">Planes ZUMI</p>
             <h2 id="t-planes" className="titulo-x mt-1.5 text-[30px]">
               Lo que protege tu vida
               <br />
@@ -360,7 +360,7 @@ function TuPlan({ plan, onCerrar }) {
   return (
     <>
       <h2 id="t-planes" className="text-[28px] leading-tight font-bold">Tienes el plan {plan.plan === 'zumi' ? 'ZUMI+' : 'Familia'}</h2>
-      <p className="mt-1 text-[17px]">¡Gracias por cuidar a los tuyos con AlertaClima!</p>
+      <p className="mt-1 text-[17px]">¡Gracias por cuidar a los tuyos con ZUMI!</p>
       <dl className="mt-4 space-y-2 rounded-2xl bg-superficie-2 p-4 text-[16px]">
         <div className="flex justify-between gap-3">
           <dt className="text-texto-2">Estado</dt>
@@ -374,7 +374,7 @@ function TuPlan({ plan, onCerrar }) {
         )}
         <div className="flex justify-between gap-3">
           <dt className="text-texto-2">Pago</dt>
-          <dd className="text-right font-bold">{{ flow: 'Web (Flow)', mercadopago: 'Mercado Pago', apple: 'App Store', google: 'Google Play', cortesia: 'Regalo de AlertaClima' }[m.origen] ?? '—'}</dd>
+          <dd className="text-right font-bold">{{ flow: 'Web (Flow)', mercadopago: 'Mercado Pago', apple: 'App Store', google: 'Google Play', cortesia: 'Regalo de ZUMI' }[m.origen] ?? '—'}</dd>
         </div>
       </dl>
       {msg && <p className="mt-3 text-[15px]">{msg}</p>}

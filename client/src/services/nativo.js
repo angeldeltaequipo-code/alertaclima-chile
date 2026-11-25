@@ -50,7 +50,7 @@ export async function tokenNativo() {
   let p = await FirebaseMessaging.checkPermissions()
   if (p.receive !== 'granted' && p.receive !== 'denied') p = await FirebaseMessaging.requestPermissions()
   if (p.receive !== 'granted') {
-    const e = new Error('Las notificaciones están apagadas para AlertaClima en los ajustes del teléfono.')
+    const e = new Error('Las notificaciones están apagadas para ZUMI en los ajustes del teléfono.')
     e.codigo = 'bloqueadas'
     throw e
   }

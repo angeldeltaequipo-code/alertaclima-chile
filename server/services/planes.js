@@ -3,7 +3,7 @@
 // - Gratis para siempre: alertas oficiales, SOS, evacuación, clima, mapa (lo que protege la vida),
 //   y ZUMI con su reporte y unas preguntas al día.
 // - «ZUMI+» (individual, barato): conversar con ZUMI por voz cuando quieras y avisos de 5 comunas ($3.990 al mes).
-// - «AlertaClima Familia»: todo lo de ZUMI+ para hasta 5 familiares y avisos de 5 comunas.
+// - «ZUMI Familia»: todo lo de ZUMI+ para hasta 5 familiares y avisos de 5 comunas.
 //
 // Cobro:
 // - Web: suscripción de Flow.cl (pesos chilenos, tarjetas, cobro automático). FLOW_API_KEY y FLOW_SECRET_KEY.
@@ -77,7 +77,7 @@ export const PLANES_FLOW = {
   familia: { mensual: () => process.env.FLOW_PLAN_MENSUAL ?? 'alertaclima_familia_mensual', anual: () => process.env.FLOW_PLAN_ANUAL ?? 'alertaclima_familia_anual' },
   zumi: { mensual: () => process.env.FLOW_PLAN_ZUMI_MENSUAL ?? 'alertaclima_zumi_mensual', anual: () => process.env.FLOW_PLAN_ZUMI_ANUAL ?? 'alertaclima_zumi_anual' },
 }
-const NOMBRE_PLAN = { zumi: 'ZUMI+', familia: 'AlertaClima Familia' }
+const NOMBRE_PLAN = { zumi: 'ZUMI+', familia: 'ZUMI Familia' }
 const planValido = (p) => (p === 'zumi' ? 'zumi' : 'familia')
 
 /** Firma de Flow: parámetros ordenados por nombre, «nombre+valor» concatenados, HMAC-SHA256 con la clave secreta. */
@@ -151,7 +151,7 @@ export async function suscribirWeb(db, usuario, { plan = 'familia', periodo, cor
   const { rows } = await db.query('SELECT flow_cliente FROM usuarios WHERE id = $1', [usuario.id])
   let cliente = rows[0]?.flow_cliente
   if (!cliente) {
-    const c = await flow('/customer/create', { name: String(usuario.nombre ?? 'Cliente AlertaClima').slice(0, 80), email: correo, externalId: `u:${usuario.id}` }, { fetchFn })
+    const c = await flow('/customer/create', { name: String(usuario.nombre ?? 'Cliente ZUMI').slice(0, 80), email: correo, externalId: `u:${usuario.id}` }, { fetchFn })
     cliente = c.customerId
   }
   await db.query('UPDATE usuarios SET correo_cobro = $2, flow_cliente = $3 WHERE id = $1', [usuario.id, correo, cliente])

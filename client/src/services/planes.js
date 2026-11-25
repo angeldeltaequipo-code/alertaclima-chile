@@ -1,4 +1,4 @@
-// Planes: Gratis, «ZUMI+» (individual) y «AlertaClima Familia». El servidor decide los límites y si el cobro está activo.
+// Planes: Gratis, «ZUMI+» (individual) y «ZUMI Familia». El servidor decide los límites y si el cobro está activo.
 // Cobro: compras de la tienda en la app de iPhone y Android (RevenueCat). El cobro web (Flow) queda apagado.
 import { API_URL } from './reportes'
 import { sesionActual } from './sesion'
