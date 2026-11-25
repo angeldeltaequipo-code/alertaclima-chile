@@ -43,6 +43,7 @@ export class Mundo {
     this.giroSuave = null
     this.h0 = 0 // altura del suelo bajo ZUMI (en el mundo fotorrealista)
     this.foto = null
+    if (typeof window !== 'undefined') window.__mundoZumi = this // para revisar en vivo
 
     const movil = matchMedia('(pointer: coarse)').matches
     const r = (this.renderer = new THREE.WebGLRenderer({ antialias: !movil, powerPreference: 'high-performance' }))

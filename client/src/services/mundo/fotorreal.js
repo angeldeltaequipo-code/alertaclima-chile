@@ -47,7 +47,7 @@ export class Fotorreal {
       scene.traverse((o) => {
         if (!o.isMesh) return
         const viejo = o.material
-        const m = new THREE.MeshBasicMaterial({ map: viejo.map ?? null, color: this.tinte, fog: true })
+        const m = new THREE.MeshBasicMaterial({ map: viejo.map ?? null, color: this.tinte, fog: true, side: viejo.side ?? THREE.DoubleSide })
         if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
         o.material = m
         this.materiales.add(m)
