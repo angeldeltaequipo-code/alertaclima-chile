@@ -1,88 +1,141 @@
-# Ficha de AlertaClima en las tiendas
+# ZUMI en Google Play (y App Store)
 
-Textos listos para copiar en App Store Connect y Google Play Console. Los límites de caracteres están indicados entre paréntesis.
+Todo lo que pide Google Play Console, listo para copiar. Entre paréntesis va el límite de caracteres.
+
+## Archivos para subir
+
+| Qué | Archivo | Medida |
+|---|---|---|
+| Ícono | `icono-512-google-play.png` | 512 × 512 |
+| Gráfico destacado | `google-play-destacado.jpg` | 1024 × 500 |
+| Capturas de teléfono (de 2 a 8) | `capturas-android/zumi-1.jpg` … `zumi-6.jpg` | 1080 × 1920 |
+| App | `ZUMI-google-play-aab` (GitHub → Actions → App Android → la última ejecución) | .aab |
+| Ícono App Store | `icono-1024.png` | 1024 × 1024 |
+| Capturas iPhone | `capturas-iphone/zumi-1.jpg` … | 1320 × 2868 |
+
+## Ficha principal (Google Play)
+
+**Nombre de la app (30):** ZUMI: alertas y clima Chile
+
+**Descripción breve (80):** Alertas oficiales, el clima de tu comuna y tu familia, con tu amigo ZUMI.
+
+**Categoría:** Clima. **Etiquetas:** Clima, Seguridad, Familia.
+
+**Correo de contacto:** angeldeltaequipo@gmail.com
+**Sitio web:** https://zumichile.com
+**Política de privacidad:** https://zumichile.com/privacidad.html
+
+### Descripción completa (4000)
+
+ZUMI es un panda rojo que te avisa antes de que llueva, tiemble o se queme el cerro. Te cuenta el clima de tu comuna en palabras simples y te avisa cuando hay una alerta oficial donde vives tú o tu familia.
+
+ALERTAS QUE SE ENTIENDEN
+Cuando SENAPRED publica una alerta en tu comuna, ZUMI te avisa al instante, aunque la app esté cerrada, y te explica qué hacer. También sismos, boletines de tsunami del SHOA y el nivel de los volcanes vigilados. Siempre con la fuente oficial.
+
+ZUMI VIVE EN TU TELÉFONO
+Respira, parpadea y reacciona cuando lo tocas. Te cuenta hora a hora qué llevar, cambia con la lluvia, el frío y la noche, y tiene ocho looks para elegir.
+
+LLAMA A ZUMI
+Pregúntale por voz si va a llover, qué hacer si tiembla o qué llevar al viaje. Te responde al tiro, como en una llamada.
+
+EL MAPA VIVO DE CHILE
+Radar de lluvia animado, sismos, alertas, calidad del aire y reportes de tus vecinos en capas que prendes y apagas. Vías de evacuación y zonas seguras para llegar a pie.
+
+VIAJA CON ZUMI
+Dile a dónde vas y mira el clima de cada tramo del camino a la hora en que vas a pasar: lluvia, nieve, viento o niebla. Te dice la mejor hora para salir y dónde descansar.
+
+CHILE REAL EN 3D
+Recorre a pie, en bici, en auto o en dron la maqueta 3D real de Google en 11 ciudades de Chile, y el resto del país desde el aire, con ZUMI contándote lo que hay cerca.
+
+TU FAMILIA, A SALVO
+Mira a tu familia en un mapa, recibe un aviso cuando llegan al colegio o a la casa, y con un toque pueden mandar «Estoy bien» o pedir ayuda. La ubicación viaja cifrada de extremo a extremo: ni nosotros podemos verla.
+
+BOTÓN SOS
+En una emergencia llama al 131, 132 o 133, o manda tu ubicación a tu familia con un toque.
+
+TUS DATOS SON TUYOS
+Sin cuenta para usarla. Sin publicidad. No vendemos tus datos. Borras tu cuenta cuando quieras.
+
+GRATIS PARA CUIDARTE
+Las alertas, el SOS, la familia y los viajes con clima son gratis. ZUMI+ y Familia suman más preguntas a ZUMI, más comunas y más historial.
+
+Importante: ZUMI no es una app del Gobierno de Chile ni está asociada a SENAPRED, SHOA, CSN, SERNAGEOMIN ni a ningún organismo público. Muestra información pública de esas fuentes (senapred.cl, shoa.cl, sismologia.cl, sernageomin.cl) y de Open-Meteo. Sigue siempre las instrucciones de las autoridades.
+
+## Contenido de la app (Play Console → Política → Contenido de la app)
+
+**Política de privacidad:** https://zumichile.com/privacidad.html
+
+**Anuncios:** No, la app no tiene anuncios.
+
+**Acceso a la app:** Todas las funciones están disponibles sin restricciones (no hace falta cuenta para usarla). Si Google pregunta por el inicio de sesión: «Iniciar sesión con Google es opcional y solo se usa para el chat vecinal y el grupo familiar».
+
+**Clasificación del contenido (cuestionario IARC):**
+- Categoría: «Todas las demás apps» (no es juego).
+- Violencia, sexo, lenguaje grosero, drogas, apuestas: No.
+- ¿Los usuarios pueden interactuar o intercambiar contenido? **Sí** (chat vecinal moderado, con botón para denunciar y bloquear).
+- ¿Comparte la ubicación del usuario con otros usuarios? **Sí** (solo con su familia, si la persona lo activa).
+- ¿Permite compras digitales? **Sí** (suscripciones ZUMI+ y Familia).
+
+**Público objetivo:** 18 años o más. (Así la app no entra al programa «Diseñado para familias», que exige revisiones extra. Los menores usan la app dentro del grupo de su familia.)
+
+**App de noticias:** No.
+
+**Apps de salud:** No.
+
+**Apps gubernamentales:** No es una app del gobierno. Si pregunta por fuentes de información oficial, usar el texto «Importante» de la descripción.
+
+**Funciones financieras:** Ninguna.
+
+**Eliminación de cuenta (URL):** https://zumichile.com/privacidad.html#borrar-cuenta
+
+### Seguridad de los datos
+
+¿Recopila o comparte datos? **Sí recopila, no comparte.** ¿Datos cifrados en tránsito? **Sí.** ¿El usuario puede pedir que se borren? **Sí.**
+
+| Tipo de dato (Play) | ¿Recopilado? | Opcional | Para qué |
+|---|---|---|---|
+| Ubicación aproximada | Sí, no se guarda | No | Funcionalidad de la app (clima y alertas de tu comuna) |
+| Ubicación precisa | No (*) | — | — |
+| Nombre | Sí | Sí (solo con cuenta) | Administración de la cuenta |
+| Fotos (de reportes) | Sí | Sí | Funcionalidad de la app |
+| Otro contenido generado por el usuario (reportes y chat) | Sí | Sí | Funcionalidad de la app |
+| Mensajes en la app (chat de soporte) | Sí | Sí | Asistencia |
+| Dirección de correo (solo si la persona la deja en el chat de soporte) | Sí | Sí | Asistencia |
+| ID del dispositivo para notificaciones | Sí | No | Funcionalidad de la app |
+| Compras (estado de la suscripción) | Sí | Sí | Funcionalidad de la app |
+| Audio | No (la voz se convierte en texto en el teléfono) | — | — |
+
+(*) El GPS familiar viaja cifrado de extremo a extremo: el servidor no puede leerlo y lo borra a las 48 horas. Para Google eso no cuenta como dato recopilado.
+
+No se usa ningún dato para publicidad ni para rastrear entre apps.
+
+## Antes de publicar: pruebas cerradas
+
+Las cuentas personales nuevas de Google Play deben hacer una **prueba cerrada con al menos 12 personas durante 14 días seguidos** antes de poder publicar en producción.
+
+1. Play Console → Pruebas → Prueba cerrada → crear pista → subir el .aab.
+2. Agregar los correos Gmail de 12 o más personas (familia, amigos).
+3. Cada una abre el enlace de la prueba, toca «Unirme» e instala ZUMI desde Play. Deben dejarla instalada 14 días.
+4. Pasados los 14 días: Panel → «Solicitar acceso a producción».
+
+## Iniciar sesión con Google en la app de Play
+
+Google Play vuelve a firmar la app con su propia llave. Después de subir el primer .aab:
+Play Console → Configuración → Integridad de la app → Firma de apps → copiar la **huella SHA-1 de la llave de firma de apps** y agregarla al cliente Android de OAuth en Google Cloud y en Firebase. Sin eso el botón de Google no funciona en la versión de Play.
 
 ## App Store (iPhone)
 
-**Nombre (30):** AlertaClima: alertas y clima
+**Nombre (30):** ZUMI: alertas y clima Chile
 
-**Subtítulo (30):** Alertas, GPS familiar y rutas
+**Subtítulo (30):** Alertas, familia y clima
 
-**Texto promocional (170):** ZUMI te cuenta el día en palabras simples y te avisa si hay alertas oficiales en tu comuna o en la de tus seres queridos. Letra grande y fácil de usar.
+**Texto promocional (170):** ZUMI te avisa antes de que llueva, tiemble o se queme el cerro, y te explica el clima de tu comuna en palabras simples. Con tu familia en un mapa.
 
-**Palabras clave (100):** alerta,sismo,temblor,tsunami,lluvia,senapred,gps familiar,ruta,carretera,aire,radar,chile
+**Palabras clave (100):** alerta,sismo,temblor,tsunami,lluvia,senapred,familia,gps,ruta,radar,volcan,incendio,chile
 
 **Categoría principal:** Clima. **Secundaria:** Utilidades.
 
-**Clasificación por edad:** 4+ (el chat vecinal está moderado; si Apple lo pide, responder "contenido generado por usuarios con moderación y reporte").
+**Clasificación por edad:** responder «contenido generado por usuarios con moderación y denuncia».
 
 **URL de privacidad:** https://zumichile.com/privacidad.html
-
-**URL de soporte:** la página principal de la app (o un correo de contacto).
-
-## Google Play (Android)
-
-**Título (30):** AlertaClima: alertas y clima
-
-**Descripción breve (80):** Alertas oficiales, GPS familiar cifrado y rutas con clima. Con tu amigo ZUMI.
-
-**Categoría:** Clima. **Etiquetas:** clima, alertas, seguridad.
-
-## Descripción completa (sirve para ambas tiendas, máx. 4.000)
-
-AlertaClima te avisa a tiempo y te explica el clima en palabras simples, para que tú y tu familia estén preparados.
-
-ZUMI, TU AMIGO DEL CLIMA
-Habla con ZUMI como en una videollamada: te escucha, te responde al tiro y puedes interrumpirlo. Sabe de clima, emergencias, primeros auxilios y de cada una de las 346 comunas de Chile. Te avisa "empieza a llover en 15 minutos" y te resume tu día en 10 segundos.
-
-GPS FAMILIAR CIFRADO: ¿DÓNDE ESTÁ MI HIJO?
-Mira a tu familia en un mapa en vivo, con su batería, el clima y las alertas donde está cada uno. Te avisa cuando llegan al colegio o a la casa, y con un toque pueden avisar "Estoy bien" o pedir ayuda. Todo cifrado de punta a punta: ni nosotros podemos ver dónde están.
-
-RUTA ZUMI: VIAJA SEGURO POR CHILE
-Busca cualquier destino y mira el clima en cada tramo del camino, justo a la hora en que vas a pasar: lluvia, nieve, hielo, viento o niebla. Te dice la mejor hora para salir, dónde descansar y si cruzas un paso de alta montaña. Abre la navegación en Waze o Google Maps.
-
-CALIDAD DEL AIRE
-El material particulado de tu comuna y las próximas 24 horas, con los niveles de alerta, preemergencia y emergencia.
-
-ALERTAS OFICIALES AL INSTANTE
-Te avisamos cuando SENAPRED publica una alerta en tus comunas, cuando sube de nivel y cuando termina, aunque la app esté cerrada. Siempre con la fuente oficial.
-
-SISMOS, TSUNAMIS Y VOLCANES
-Sismos de los últimos siete días en un mapa, boletines de tsunami del Pacífico y los 31 volcanes vigilados de Chile con su nivel de alerta.
-
-MAPA EN VIVO
-Radar de lluvia animado, nubes del satélite de la NASA, cámaras públicas en vivo, ríos y quebradas cercanos, y vías de evacuación y zonas seguras para llegar a pie.
-
-FÁCIL DE USAR
-Letra grande ajustable, botones cómodos, modo claro para el sol y modo oscuro para la noche. Funciona sin conexión con los últimos datos guardados.
-
-BOTÓN SOS
-En una emergencia, llama al 131, 132 o 133, o envía tu ubicación a tu familia con un toque.
-
-ESPACIO
-El próximo lanzamiento de SpaceX con cuenta regresiva, Starship, y cómo ver los trenes de Starlink desde Chile.
-
-TU PRIVACIDAD
-Las ubicaciones de tu familia viajan cifradas y lo que ZUMI recuerda de ti queda en tu teléfono. Entra con Google o Apple, y borra tu cuenta cuando quieras. No vendemos tus datos.
-
-Importante: AlertaClima no reemplaza a los organismos oficiales. Sigue siempre las instrucciones de SENAPRED, SHOA y tu municipio.
-
-## Capturas
-
-- `capturas-iphone/`: 1320 × 2868 px (iPhone de 6,9 pulgadas; App Store las adapta a los demás tamaños).
-- `capturas-android/`: 1080 × 1920 px.
-- `google-play-destacado.jpg`: 1024 × 500 px (gráfico destacado de Google Play).
-- `icono-1024.png` (App Store) e `icono-512-google-play.png` (Google Play).
-
-## Privacidad: qué declarar
-
-| Dato | Para qué | ¿Vinculado a la persona? |
-|---|---|---|
-| Ubicación aproximada y precisa | Clima, ríos, rutas y zonas seguras cerca | No (no se guarda en el servidor) |
-| Ubicación precisa (GPS familiar, opcional) | Que tu familia vea dónde estás | No: viaja cifrada de punta a punta; el servidor no puede leerla y la borra a las 48 h |
-| Correo y nombre (solo si crea cuenta) | Cuenta para reportes y chat | Sí |
-| Contenido del usuario (reportes, fotos, chat) | Reportes vecinales y chat | Sí |
-| Identificador del dispositivo para notificaciones | Enviar alertas | No |
-| Audio (voz para ZUMI) | Se transcribe en el teléfono para entender la pregunta | No |
-
-No se usan datos para publicidad ni rastreo entre apps.
+**URL de soporte:** https://zumichile.com
