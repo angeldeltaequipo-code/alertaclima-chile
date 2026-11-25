@@ -140,6 +140,13 @@ await grabar('paseo', async (p, marcar) => {
   await p.mouse.up()
   await cerrarFicha()
   await espera(4000)
+}, () => {
+  // para el video del sitio se graba la ciudad limpia, sin la ficha de Wikipedia encima
+  addEventListener('DOMContentLoaded', () => {
+    const st = document.createElement('style')
+    st.textContent = '.paseo-cuenta{display:none!important}'
+    document.head.append(st)
+  })
 })
 
 fs.writeFileSync(path.join(dir, 'recortes.json'), JSON.stringify(recortes, null, 2))
