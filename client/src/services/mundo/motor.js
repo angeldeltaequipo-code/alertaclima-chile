@@ -4,7 +4,7 @@
 import * as THREE from 'three'
 import { Sky } from 'three/examples/jsm/objects/Sky.js'
 import { cargarTesela, proyector, teselaDe } from './teselas'
-import { construirTesela } from './construir'
+import { armarTesela, generarTesela } from './construir'
 import { crearMateriales, nocheMateriales } from './materiales'
 import { crearAuto, crearBici, crearDron, crearZumi } from './personajes'
 
@@ -40,7 +40,7 @@ export class Mundo {
     r.shadowMap.enabled = true
     r.shadowMap.type = THREE.PCFSoftShadowMap
     r.toneMapping = THREE.ACESFilmicToneMapping
-    r.toneMappingExposure = 0.95
+    r.toneMappingExposure = 0.82
     r.outputColorSpace = THREE.SRGBColorSpace
     contenedor.appendChild(r.domElement)
     r.domElement.style.display = 'block'
@@ -60,7 +60,7 @@ export class Mundo {
     u.mieCoefficient.value = 0.004
     u.mieDirectionalG.value = 0.82
     this.solDir = new THREE.Vector3()
-    this.hemi = new THREE.HemisphereLight('#d8ecff', '#a9a07e', 1.15)
+    this.hemi = new THREE.HemisphereLight('#d8ecff', '#a9a07e', 0.7)
     s.add(this.hemi)
     this.sol = new THREE.DirectionalLight('#fff1d6', 2.6)
     this.sol.castShadow = true
@@ -72,6 +72,13 @@ export class Mundo {
     this.niebla = new THREE.Fog('#cfe0ee', 120, 650)
     s.fog = this.niebla
     this.ponerSol(42, 20)
+    // reflejos del cielo en autos, vidrios y zinc
+    this.pmrem = new THREE.PMREMGenerator(r)
+    this.cieloRefl = new Sky()
+    this.cieloRefl.scale.setScalar(1000)
+    this.escenaRefl = new THREE.Scene()
+    this.escenaRefl.add(this.cieloRefl)
+    this.reflejos()
 
     // suelo base (campo) que sigue al jugador
     this.mat = crearMateriales()
@@ -97,7 +104,15 @@ export class Mundo {
     this.sombraDron.rotation.x = -Math.PI / 2
     s.add(this.sombraDron)
     this.faros = new THREE.Group()
-    s.add(this.faros)
+    // tráfico: autos que circulan por las calles reales
+    this.trafico = new THREE.InstancedMesh(this.mat.autoGeo, this.mat.auto, 40)
+    this.trafico.castShadow = true
+    this.trafico.frustumCulled = false
+    this.npcs = []
+    const colores = ['#e9e9ea', '#2b2e33', '#b3261e', '#1f4e8c', '#9aa0a8', '#d7c9a6', '#2f6b4f', '#c9ccd1']
+    for (let i = 0; i < 40; i++) this.trafico.setColorAt(i, new THREE.Color(colores[i % colores.length]))
+    this.trafico.count = 0
+    s.add(this.faros, this.trafico)
     this.lluvia = null
 
     // etiquetas de lugares (HTML encima)
@@ -170,6 +185,7 @@ export class Mundo {
     if (this.modo === 'dron') return true
     const [x, z] = this.proy.aLocal(lat, lng)
     for (const t of this.teselas.values()) if (t.obj?.choca(x, z)) return false
+    if (this.modo !== 'pie' && this.chocaTrafico(x, z)) return false
     return true
   }
   edificiosCerca(radio = 250) {
@@ -184,6 +200,16 @@ export class Mundo {
     const theta = THREE.MathUtils.degToRad(azim)
     this.solDir.setFromSphericalCoords(1, phi, theta)
     this.cielo.material.uniforms.sunPosition.value.copy(this.solDir)
+  }
+  reflejos() {
+    const u = this.cielo.material.uniforms
+    const v = this.cieloRefl.material.uniforms
+    for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) v[k].value = u[k].value
+    v.sunPosition.value.copy(u.sunPosition.value)
+    this.envRT?.dispose()
+    this.envRT = this.pmrem.fromScene(this.escenaRefl, 0, 1, 2000)
+    this.escena.environment = this.envRT.texture
+    this.escena.environmentIntensity = this.cielo.visible ? 0.55 : 0.15
   }
   setClima(c) {
     if (!c) return
@@ -201,6 +227,7 @@ export class Mundo {
       this.sol.intensity = 0.35
       this.sol.color.set('#a9c0ff')
       this.renderer.toneMappingExposure = 1.1
+      this.mat.auto.envMapIntensity = 0.3
     } else {
       this.cielo.visible = true
       this.escena.background = null
@@ -208,12 +235,13 @@ export class Mundo {
       u.turbidity.value = gris ? 12 : 3.2
       u.rayleigh.value = gris ? 3 : 1.1
       this.niebla.color.set(gris ? '#b9c2cb' : '#cfe0ee')
-      this.hemi.intensity = gris ? 1.4 : 1.15
-      this.sol.intensity = gris ? 0.9 : 2.6
+      this.hemi.intensity = gris ? 1.0 : 0.7
+      this.sol.intensity = gris ? 0.8 : 2.4
       this.sol.color.set('#fff1d6')
-      this.renderer.toneMappingExposure = 0.95
+      this.renderer.toneMappingExposure = 0.82
     }
     this.ponerLluvia(!!c.lluvia)
+    this.reflejos()
   }
   ponerLluvia(si) {
     if (this.lluvia) {
@@ -315,7 +343,7 @@ export class Mundo {
       const reg = { estado: 'bajando', ctl }
       this.teselas.set(k, reg)
       const proy = this.proy
-      cargarTesela(q.x, q.y, proy, { signal: ctl.signal })
+      this.generar(q.x, q.y, proy, ctl.signal)
         .then((datos) => {
           if (this.teselas.get(k) !== reg || this.proy !== proy) return
           reg.estado = 'en cola'
@@ -330,11 +358,39 @@ export class Mundo {
     if (urgente) this.centroTesela = `${c.x}/${c.y}`
     void claves
   }
+  /** Genera el barrio en un hilo aparte (si el navegador lo permite) para que la pantalla no se trabe. */
+  generar(tx, ty, proy, signal) {
+    if (!this.hilos) {
+      this.hilos = []
+      this.pedidosHilo = new Map()
+      try {
+        for (let i = 0; i < 2; i++) {
+          const w = new Worker(new URL('./trabajador.js', import.meta.url), { type: 'module' })
+          w.onmessage = (e) => {
+            const p = this.pedidosHilo.get(e.data.id)
+            this.pedidosHilo.delete(e.data.id)
+            if (p) e.data.error ? p.no(new Error(e.data.error)) : p.si(e.data.d)
+          }
+          this.hilos.push(w)
+        }
+      } catch {
+        this.hilos = []
+      }
+    }
+    if (!this.hilos.length) return cargarTesela(tx, ty, proy, { signal }).then(generarTesela)
+    const id = (this.sec = (this.sec ?? 0) + 1)
+    const w = this.hilos[id % this.hilos.length]
+    return new Promise((si, no) => {
+      this.pedidosHilo.set(id, { si, no })
+      signal?.addEventListener('abort', () => this.pedidosHilo.delete(id))
+      w.postMessage({ id, tx, ty, lat0: proy.lat0, lng0: proy.lng0 })
+    })
+  }
   construirSiguiente() {
     const it = this.cola.shift()
     if (!it || this.teselas.get(it.k) !== it.reg) return
     try {
-      it.reg.obj = construirTesela(it.datos, this.mat)
+      it.reg.obj = armarTesela(it.datos, this.mat)
       it.reg.estado = 'lista'
       this.barrios.add(it.reg.obj.grupo)
     } catch (e) {
@@ -395,6 +451,67 @@ export class Mundo {
       }
   }
 
+  moverTrafico(dt) {
+    const rutas = []
+    for (const t of this.teselas.values()) for (const r of t.obj?.rutas ?? []) rutas.push(r)
+    if (!rutas.length) {
+      this.trafico.count = 0
+      return
+    }
+    const lejos = this.modo === 'dron' ? 1400 : 450
+    const nuevo = () => {
+      // una ruta cerca del jugador
+      const cerca = rutas.filter((r) => r.linea.some(([x, z]) => Math.hypot(x - this.x, z - this.z) < (this.modo === 'dron' ? 900 : 220)))
+      const r = (cerca.length ? cerca : rutas)[Math.floor(Math.random() * (cerca.length || rutas.length))]
+      return { r, d: Math.random() * r.largo, dir: Math.random() < 0.5 ? 1 : -1, v: 7 + Math.random() * 6 }
+    }
+    while (this.npcs.length < (this.modo === 'dron' ? 40 : 22)) this.npcs.push(nuevo())
+    const o = new THREE.Object3D()
+    let i = 0
+    for (let k = 0; k < this.npcs.length; k++) {
+      let n = this.npcs[k]
+      n.d += n.v * dt * n.dir
+      if (n.d < 0 || n.d > n.r.largo) {
+        n.dir *= -1
+        n.d = Math.max(0, Math.min(n.r.largo, n.d))
+      }
+      // ubicar en la polilínea
+      let acum = 0
+      let pos = null
+      const L = n.r.linea
+      for (let j = 0; j < L.length - 1; j++) {
+        const l = Math.hypot(L[j + 1][0] - L[j][0], L[j + 1][1] - L[j][1])
+        if (acum + l >= n.d || j === L.length - 2) {
+          const t = l ? Math.min(1, (n.d - acum) / l) : 0
+          const ux = (L[j + 1][0] - L[j][0]) / (l || 1)
+          const uz = (L[j + 1][1] - L[j][1]) / (l || 1)
+          const carril = (n.r.w / 4) * n.dir // por la derecha
+          pos = { x: L[j][0] + ux * l * t - uz * carril, z: L[j][1] + uz * l * t + ux * carril, a: Math.atan2(ux * n.dir, -uz * n.dir) }
+          break
+        }
+        acum += l
+      }
+      if (!pos || Math.hypot(pos.x - this.x, pos.z - this.z) > lejos) {
+        this.npcs[k] = nuevo()
+        continue
+      }
+      // frena si el jugador está delante
+      const dj = Math.hypot(pos.x - this.x, pos.z - this.z)
+      n.v = dj < 9 ? Math.max(0, n.v - dt * 12) : Math.min(n.v + dt * 3, 12)
+      o.position.set(pos.x, 0, pos.z)
+      o.rotation.set(0, -pos.a, 0)
+      o.updateMatrix()
+      this.trafico.setMatrixAt(i++, o.matrix)
+      n.pos = pos
+    }
+    this.trafico.count = i
+    this.trafico.instanceMatrix.needsUpdate = true
+  }
+  /** ¿Hay un auto del tráfico en ese punto? */
+  chocaTrafico(x, z) {
+    return this.npcs.some((n) => n.pos && Math.hypot(n.pos.x - x, n.pos.z - z) < 2.3)
+  }
+
   // ---------- cada cuadro ----------
   cuadro() {
     const dt = Math.min(0.1, this.reloj.getDelta())
@@ -407,6 +524,7 @@ export class Mundo {
       if (k >= 1) this.giroSuave = null
     }
     if (this.cola.length) this.construirSiguiente()
+    this.moverTrafico(dt)
     const { lat, lng } = this.getCenter()
     const t = teselaDe(lat, lng)
     if (`${t.x}/${t.y}` !== this.ultimaTesela) this.actualizarTeselas()
@@ -479,6 +597,7 @@ export class Mundo {
       t.ctl?.abort()
       t.obj?.liberar()
     }
+    for (const w of this.hilos ?? []) w.terminate()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.capaPines.remove()

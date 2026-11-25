@@ -119,6 +119,9 @@ const TEJA = [C('#b4553a'), C('#a2462f'), C('#c0643f')]
 const ZINC = [C('#8d969d'), C('#7a8b93'), C('#9aa3a6'), C('#6f8f86')]
 const PLANO = [C('#9b9a96'), C('#a8a49b'), C('#8b8f93')]
 const BLANCO = C('#ffffff')
+const COLORES_AUTO = ['#e9e9ea', '#c9ccd1', '#2b2e33', '#9aa0a8', '#b3261e', '#1f4e8c', '#e2e2dc', '#5b6066', '#1d1f22', '#7b2a2a', '#2f6b4f', '#d7c9a6'].map(C)
+const PUERTAS = ['#5b3a24', '#6e4a2f', '#3e2a1d', '#2f3b46', '#7a2d22'].map(C)
+const lote4 = (lote, a, b, c, d, n, col) => lote.quad(a, b, c, d, n, col, [[0, 0], [1, 0], [1, 1], [0, 1]])
 
 // Ancho (m) de cada tipo de calle
 const ANCHO = { motorway: 16, trunk: 13, primary: 11, secondary: 9.5, tertiary: 8, minor: 6.6, service: 4, track: 3, path: 1.8, rail: 2.6, raceway: 10, busway: 7 }
@@ -137,11 +140,9 @@ const SUELO = {
  * Construye el barrio de una tesela.
  * @returns {{ grupo: THREE.Group, solidos: Rejilla-like, liberar: Function }}
  */
-export function construirTesela(t, mat) {
+export function generarTesela(t) {
   const rnd = azar(t.clave)
-  const grupo = new THREE.Group()
-  grupo.name = t.clave
-  const L = { suelo: new Lote(), agua: new Lote(), calle: new Lote(), callePpal: new Lote(), tierra: new Lote(), vereda: new Lote(), muro: new Lote(), muroAlto: new Lote(), teja: new Lote(), zinc: new Lote(), plano: new Lote() }
+  const L = { puerta: new Lote(), suelo: new Lote(), agua: new Lote(), calle: new Lote(), callePpal: new Lote(), tierra: new Lote(), vereda: new Lote(), muro: new Lote(), muroAlto: new Lote(), teja: new Lote(), zinc: new Lote(), plano: new Lote() }
   const calles = new Rejilla(30)
   const solidos = new Rejilla(20) // huellas de edificios (para chocar y para no encimar casas)
   const huellas = []
@@ -229,10 +230,15 @@ export function construirTesela(t, mat) {
     for (const linea of f.g) {
       lineasCalle.push({ linea, cl, w })
       for (let i = 0; i < linea.length - 1; i++) {
-        const s = { ax: linea[i][0], az: linea[i][1], bx: linea[i + 1][0], bz: linea[i + 1][1], w, cl }
+        const s = { ax: linea[i][0], az: linea[i][1], bx: linea[i + 1][0], bz: linea[i + 1][1], w, cl, linea }
         calles.agregar(s.ax - w, s.az - w, s.bx + w, s.bz + w, s)
       }
     }
+  }
+  // ¿Hay otra calle cruzando cerca? (esquinas: ahí no se estaciona)
+  const esquina = (x, z, propia, margen = 4) => {
+    for (const s of calles.cerca(x, z, 20)) if (s.linea !== propia && s.cl !== 'path' && s.cl !== 'rail' && distSeg(x, z, s.ax, s.az, s.bx, s.bz) < s.w / 2 + margen) return true
+    return false
   }
   const sobreCalle = (x, z, margen, conSenderos = false) => {
     for (const s of calles.cerca(x, z, 20)) {
@@ -299,7 +305,7 @@ export function construirTesela(t, mat) {
   }
 
   // Casa generada: rectángulo con muros con ventanas y techo a cuatro aguas (teja o zinc) o plano.
-  const casa = (cx, cz, ang, ancho, fondo, h, col, techo, alto) => {
+  const casa = (cx, cz, ang, ancho, fondo, h, col, techo, alto, frente = 1) => {
     const ca = Math.cos(ang)
     const sa = Math.sin(ang)
     const P = (u, v) => [cx + u * ca - v * sa, cz + u * sa + v * ca]
@@ -310,6 +316,17 @@ export function construirTesela(t, mat) {
     let u = 0
     const lm = alto ? L.muroAlto : L.muro
     for (let i = 0; i < 4; i++) u = muro(lm, r[i], r[i + 1], 0, h, col, alto ? 3.4 : 3.2, 3.2, u)
+    // puerta de entrada (madera o metal) hacia la calle
+    {
+      const vf = -frente * (f + 0.04)
+      const pu = (rnd() - 0.5) * (ancho - 2.4)
+      const pc = PUERTAS[Math.floor(rnd() * PUERTAS.length)]
+      const nx = -sa * -frente
+      const nz = ca * -frente
+      const A = P(pu - 0.55, vf)
+      const B = P(pu + 0.55, vf)
+      lote4(L.puerta, [A[0], 0.05, A[1]], [B[0], 0.05, B[1]], [B[0], 2.25, B[1]], [A[0], 2.25, A[1]], [nx, 0, nz], pc)
+    }
     if (techo === 'plano') {
       plano(L.plano, [anillo], h, PLANO[Math.floor(rnd() * PLANO.length)], 4)
     } else {
@@ -407,7 +424,7 @@ export function construirTesela(t, mat) {
           const cx0 = ax + ux * (s + ancho / 2)
           const cz0 = az + uz * (s + ancho / 2)
           const prob = urb > 0.5 ? 0.94 : urb > 0.2 ? 0.55 : 0.07
-          if (rnd() < prob && generadas < 2600) {
+          if (rnd() < prob && generadas < 6000) {
             const fondo = centro ? 12 + rnd() * 8 : 8 + rnd() * 5
             const off = w / 2 + (urb > 0.3 ? VEREDA : 1.2) + 0.4 + fondo / 2
             const nx = -uz * lado
@@ -426,7 +443,7 @@ export function construirTesela(t, mat) {
               const alto = pisos >= 4
               const col = (alto ? MUROS_ALTOS : MUROS)[Math.floor(rnd() * (alto ? MUROS_ALTOS : MUROS).length)]
               const techo = alto || (centro && rnd() < 0.45) ? 'plano' : rnd() < 0.3 ? 'zinc' : 'teja'
-              casa(cx, cz, ang, ancho, fondo, h, col, techo, alto)
+              casa(cx, cz, ang, ancho, fondo, h, col, techo, alto, lado)
               generadas++
             }
           }
@@ -495,37 +512,117 @@ export function construirTesela(t, mat) {
         }
     }
   }
+  // ---- calle viva: autos estacionados, postes con cables y rutas para el tráfico ----
+  const autos = []
+  const postes = []
+  const cables = []
+  const rutas = []
+  for (const { linea, cl, w } of lineasCalle) {
+    if (!CON_CASAS.has(cl) && !PRINCIPAL.has(cl)) continue
+    let largo = 0
+    for (let i = 0; i < linea.length - 1; i++) largo += Math.hypot(linea[i + 1][0] - linea[i][0], linea[i + 1][1] - linea[i][1])
+    if (largo > 60 && cl !== 'motorway') rutas.push({ linea, w, largo })
+    if (!CON_CASAS.has(cl)) continue
+    // recorrido continuo a lo largo de la calle (los tramos de OSM pueden ser muy cortos)
+    const puntoEn = (d) => {
+      let acum = 0
+      for (let i = 0; i < linea.length - 1; i++) {
+        const [ax, az] = linea[i]
+        const [bx, bz] = linea[i + 1]
+        const l = Math.hypot(bx - ax, bz - az)
+        if (acum + l >= d) {
+          const t = l ? (d - acum) / l : 0
+          return { x: ax + (bx - ax) * t, z: az + (bz - az) * t, ux: (bx - ax) / (l || 1), uz: (bz - az) / (l || 1) }
+        }
+        acum += l
+      }
+      return null
+    }
+    let ultimoPoste = null
+    let proxAuto = [6 + rnd() * 8, 6 + rnd() * 8]
+    for (let d = 4; d < largo - 4; d += 2) {
+      const p = puntoEn(d)
+      if (!p) break
+      const { x: px, z: pz, ux, uz } = p
+      const ang = Math.atan2(ux, -uz)
+      const urb = urbano(px, pz)
+      if (urb < 0.3) continue
+      ;[1, -1].forEach((lado, k) => {
+        if (d < proxAuto[k]) return
+        proxAuto[k] = d + 5.5 + rnd() * 8
+        if (rnd() > (urb > 1.1 ? 0.55 : 0.35)) return
+        const x = px - uz * lado * (w / 2 - 1.05)
+        const z = pz + ux * lado * (w / 2 - 1.05)
+        if (!enTesela(x, z) || esquina(x, z, linea, 5)) return
+        autos.push([x, z, ang + (lado > 0 ? 0 : Math.PI) + (rnd() - 0.5) * 0.04, rnd()])
+      })
+      if (!ultimoPoste || d - ultimoPoste.d >= 30) {
+        const x = px - uz * (w / 2 + VEREDA - 0.45)
+        const z = pz + ux * (w / 2 + VEREDA - 0.45)
+        if (!enTesela(x, z) || esquina(x, z, linea, 1)) continue
+        postes.push([x, z, ang])
+        if (ultimoPoste && Math.hypot(x - ultimoPoste.x, z - ultimoPoste.z) < 45)
+          for (const [dy, dl] of [[7.6, 0], [7.25, 0.5], [7.25, -0.5]]) {
+            const { x: qx, z: qz } = ultimoPoste
+            const ox = -uz * dl
+            const oz = ux * dl
+            for (let k = 0; k < 8; k++) {
+              const t0 = k / 8
+              const t1 = (k + 1) / 8
+              const sag = (t) => dy - Math.sin(Math.PI * t) * 0.45
+              cables.push(qx + (x - qx) * t0 + ox, sag(t0), qz + (z - qz) * t0 + oz, qx + (x - qx) * t1 + ox, sag(t1), qz + (z - qz) * t1 + oz)
+            }
+          }
+        ultimoPoste = { x, z, d }
+      }
+    }
+  }
   const nArb = Math.min(arboles.length, 2200)
 
-  // ---- mallas ----
-  const malla = (lote, material, { sombra = false, recibe = true, orden = 0 } = {}) => {
-    const g = lote.geometria()
-    if (!g) return
+  const lotes = {}
+  for (const [k, l] of Object.entries(L)) if (l.p.length) lotes[k] = { p: new Float32Array(l.p), n: new Float32Array(l.n), c: new Float32Array(l.c), uv: new Float32Array(l.uv) }
+  return {
+    clave: t.clave,
+    lotes,
+    arboles: arboles.slice(0, nArb),
+    autos,
+    postes,
+    cables: new Float32Array(cables),
+    rutas,
+    huellas,
+    calles: lineasCalle,
+    casas: generadas,
+  }
+}
+
+/** Arma las mallas (en el hilo principal) a partir de lo generado (puede venir de un Worker). */
+export function armarTesela(d, mat) {
+  const grupo = new THREE.Group()
+  grupo.name = d.clave
+  const MAT = { puerta: [mat.puerta, 0, false], suelo: [mat.suelo, 1, false], agua: [mat.agua, 2, false], vereda: [mat.vereda, 3, false], tierra: [mat.tierra, 3, false], calle: [mat.calle, 4, false], callePpal: [mat.callePpal, 5, false], muro: [mat.muro, 0, true], muroAlto: [mat.muroAlto, 0, true], teja: [mat.teja, 0, true], zinc: [mat.zinc, 0, true], plano: [mat.plano, 0, true] }
+  for (const [k, l] of Object.entries(d.lotes)) {
+    const [material, orden, sombra] = MAT[k]
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(l.p, 3))
+    g.setAttribute('normal', new THREE.BufferAttribute(l.n, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(l.c, 3))
+    g.setAttribute('uv', new THREE.BufferAttribute(l.uv, 2))
+    g.computeBoundingSphere()
     const m = new THREE.Mesh(g, material)
     m.castShadow = sombra
-    m.receiveShadow = recibe
+    m.receiveShadow = true
     m.renderOrder = orden
     m.matrixAutoUpdate = false
     grupo.add(m)
   }
-  malla(L.suelo, mat.suelo, { orden: 1 })
-  malla(L.agua, mat.agua, { orden: 2 })
-  malla(L.vereda, mat.vereda, { orden: 3 })
-  malla(L.tierra, mat.tierra, { orden: 3 })
-  malla(L.calle, mat.calle, { orden: 4 })
-  malla(L.callePpal, mat.callePpal, { orden: 5 })
-  malla(L.muro, mat.muro, { sombra: true })
-  malla(L.muroAlto, mat.muroAlto, { sombra: true })
-  malla(L.teja, mat.teja, { sombra: true })
-  malla(L.zinc, mat.zinc, { sombra: true })
-  malla(L.plano, mat.plano, { sombra: true })
+  const nArb = d.arboles.length
   if (nArb) {
     const tronco = new THREE.InstancedMesh(mat.troncoGeo, mat.tronco, nArb)
     const copa = new THREE.InstancedMesh(mat.copaGeo, mat.copa, nArb)
     const o = new THREE.Object3D()
     const verdes = ['#4f8f3a', '#5c9e43', '#3f7d33', '#6aa84a', '#7aa63f'].map(C)
     for (let i = 0; i < nArb; i++) {
-      const [x, z, s, r] = arboles[i]
+      const [x, z, s, r] = d.arboles[i]
       o.position.set(x, 0, z)
       o.rotation.set(0, r * 6.28, 0)
       o.scale.set(s, s * (0.9 + r * 0.4), s)
@@ -541,12 +638,44 @@ export function construirTesela(t, mat) {
       grupo.add(m)
     }
   }
+  const instancias = (geo, material, lista, poner, colores) => {
+    const n = Math.min(lista.length, 9000)
+    if (!n) return
+    const im = new THREE.InstancedMesh(geo, material, n)
+    const o = new THREE.Object3D()
+    for (let i = 0; i < n; i++) {
+      poner(o, lista[i])
+      o.updateMatrix()
+      im.setMatrixAt(i, o.matrix)
+      if (colores) im.setColorAt(i, colores(lista[i]))
+    }
+    im.castShadow = true
+    im.receiveShadow = true
+    im.computeBoundingSphere()
+    grupo.add(im)
+  }
+  instancias(mat.autoGeo, mat.auto, d.autos, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)), ([, , , r]) => COLORES_AUTO[Math.floor(r * COLORES_AUTO.length)])
+  instancias(mat.posteGeo, mat.poste, d.postes, (o, [x, z, a]) => (o.position.set(x, 0, z), o.rotation.set(0, -a, 0)))
+  if (d.cables.length) {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(d.cables, 3))
+    grupo.add(new THREE.LineSegments(g, mat.cable))
+  }
+  const solidos = new Rejilla(20)
+  for (const h of d.huellas) solidos.agregar(h.x0, h.z0, h.x1, h.z1, h)
+  const calles = new Rejilla(30)
+  for (const { linea, cl, w } of d.calles)
+    for (let i = 0; i < linea.length - 1; i++) {
+      const s = { ax: linea[i][0], az: linea[i][1], bx: linea[i + 1][0], bz: linea[i + 1][1], w, cl }
+      calles.agregar(s.ax - w, s.az - w, s.bx + w, s.bz + w, s)
+    }
   return {
+    rutas: d.rutas,
     grupo,
-    huellas,
+    huellas: d.huellas,
     solidos,
     calles,
-    casas: generadas,
+    casas: d.casas,
     liberar() {
       grupo.traverse((o) => o.geometry && !o.isInstancedMesh && o.geometry.dispose())
       grupo.traverse((o) => o.isInstancedMesh && o.dispose?.())
@@ -558,3 +687,5 @@ export function construirTesela(t, mat) {
     },
   }
 }
+
+export const construirTesela = (t, mat) => armarTesela(generarTesela(t), mat)

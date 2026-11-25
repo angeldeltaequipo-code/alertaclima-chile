@@ -29,11 +29,6 @@ const asfalto = (principal) =>
     g.fillStyle = '#62666d'
     g.fillRect(0, 0, w, h)
     grano(g, w, h, 9000, 0.35, ['#757980', '#4f5359', '#83878d'])
-    // parches
-    for (let i = 0; i < 3; i++) {
-      g.fillStyle = 'rgba(30,32,36,.25)'
-      g.fillRect(Math.random() * w, Math.random() * h, 30 + Math.random() * 50, 10 + Math.random() * 30)
-    }
     if (principal) {
       g.fillStyle = '#f3f1ea'
       g.fillRect(0, 10, w, 7)
@@ -161,6 +156,56 @@ const aguaTex = () =>
     }
   })
 
+// Una sola geometría de auto (con colores por vértice: carrocería blanca para teñir, vidrios y ruedas oscuros)
+function pintar(g, hex) {
+  const c = new THREE.Color(hex)
+  const n = g.attributes.position.count
+  const a = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3)
+  g.setAttribute('color', new THREE.BufferAttribute(a, 3))
+  if (g.index) return g.toNonIndexed()
+  return g
+}
+function unir(partes) {
+  const lista = partes.map((g) => (g.index ? g.toNonIndexed() : g))
+  const total = lista.reduce((s, g) => s + g.attributes.position.count, 0)
+  const out = new THREE.BufferGeometry()
+  for (const k of ['position', 'normal', 'color']) {
+    const arr = new Float32Array(total * 3)
+    let o = 0
+    for (const g of lista) {
+      arr.set(g.attributes[k].array, o)
+      o += g.attributes[k].array.length
+    }
+    out.setAttribute(k, new THREE.BufferAttribute(arr, 3))
+  }
+  out.computeBoundingSphere()
+  return out
+}
+function geoAuto() {
+  const p = []
+  const caja = (w, h, d, x, y, z, col) => p.push(pintar(new THREE.BoxGeometry(w, h, d).translate(x, y, z).toNonIndexed(), col))
+  caja(1.78, 0.62, 4.25, 0, 0.62, 0, '#ffffff') // carrocería
+  caja(1.6, 0.52, 2.1, 0, 1.18, 0.15, '#22303c') // vidrios
+  caja(1.5, 0.06, 1.9, 0, 1.46, 0.15, '#ffffff') // techo
+  caja(1.7, 0.16, 0.06, 0, 0.62, -2.13, '#e8e8e8') // parachoques
+  for (const s of [-1, 1]) {
+    caja(0.36, 0.12, 0.04, 0.58 * s, 0.78, -2.14, '#f3efe2') // focos
+    caja(0.4, 0.12, 0.04, 0.58 * s, 0.8, 2.14, '#b8221a') // luces traseras
+  }
+  for (const [x, z] of [[-0.84, -1.32], [0.84, -1.32], [-0.84, 1.32], [0.84, 1.32]])
+    p.push(pintar(new THREE.CylinderGeometry(0.34, 0.34, 0.26, 14).rotateZ(Math.PI / 2).translate(x, 0.34, z).toNonIndexed(), '#141414'))
+  return unir(p)
+}
+function geoPoste() {
+  return unir([
+    pintar(new THREE.CylinderGeometry(0.11, 0.15, 8.2, 8).translate(0, 4.1, 0).toNonIndexed(), '#6d5844'),
+    pintar(new THREE.BoxGeometry(1.4, 0.12, 0.12).translate(0, 7.3, 0).toNonIndexed(), '#5b4a39'),
+    pintar(new THREE.BoxGeometry(0.1, 0.1, 1.6).translate(0, 6.6, -0.75).toNonIndexed(), '#444a50'), // brazo de la luminaria
+    pintar(new THREE.BoxGeometry(0.34, 0.14, 0.55).translate(0, 6.52, -1.5).toNonIndexed(), '#d9d6cc'), // luminaria
+  ])
+}
+
 export function crearMateriales() {
   const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, ...o })
   const fachadaBaja = fachada(false)
@@ -179,6 +224,12 @@ export function crearMateriales() {
     plano: std({ vertexColors: true, map: tierra(), side: THREE.DoubleSide }),
     tronco: std({ color: '#6b4a32' }),
     copa: std({ color: '#ffffff', flatShading: true, roughness: 0.95 }),
+    puerta: std({ vertexColors: true, roughness: 0.6 }),
+    auto: new THREE.MeshPhysicalMaterial({ vertexColors: true, metalness: 0.35, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
+    autoGeo: geoAuto(),
+    poste: std({ vertexColors: true, roughness: 0.95 }),
+    posteGeo: geoPoste(),
+    cable: new THREE.LineBasicMaterial({ color: '#1b1b1b', transparent: true, opacity: 0.85 }),
     troncoGeo: new THREE.CylinderGeometry(0.16, 0.24, 2.6, 6).translate(0, 1.3, 0),
     copaGeo: (() => {
       const g = new THREE.IcosahedronGeometry(2.3, 0)
