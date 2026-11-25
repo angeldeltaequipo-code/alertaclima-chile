@@ -49,6 +49,16 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
   const creditos = useRef(null)
   const tokenFoto = useRef(null)
   const [soloAire, setSoloAire] = useState(false) // ciudad sin 3D: se recorre desde el aire
+  // Mientras llega la maqueta 3D real se muestra una pantalla de carga limpia (sin fichas encima)
+  const [esperaFoto, setEsperaFoto] = useState(true)
+  useEffect(() => {
+    if (fotorreal || soloAire) setEsperaFoto(false)
+  }, [fotorreal, soloAire])
+  useEffect(() => {
+    const t = setTimeout(() => setEsperaFoto(false), 15000)
+    return () => clearTimeout(t)
+  }, [])
+  const cargandoMundo = !listo || esperaFoto
   const [foto, setFoto] = useState(null)
   const [voz, setVoz] = useState(leerVoz)
   const [modo, setModo] = useState('pie')
@@ -85,9 +95,10 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
       .then((r) => r.json())
       .then((c) => {
         tokenFoto.current = c.cesium
+        if (!c.fotorreal) setEsperaFoto(false)
         return c.fotorreal && m.activarFotorreal(c.cesium)
       })
-      .catch(() => {})
+      .catch(() => setEsperaFoto(false))
     m.alFotorreal = setFotorreal
     m.alSoloAire = (si) => {
       setSoloAire(si)
@@ -265,7 +276,7 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
   // ZUMI cuenta el lugar más cercano que aún no contó (de a uno; el siguiente cuando termina)
   const ocupado = useRef(false)
   useEffect(() => {
-    if (!listo || !contar || ocupado.current) return
+    if (cargandoMundo || !contar || ocupado.current) return
     const l = cerca.find((x) => x.m <= RADIO_CONTAR && !dichos.current.has(x.id))
     if (!l) return
     dichos.current.add(l.id)
@@ -286,7 +297,7 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
 
   // Bienvenida
   useEffect(() => {
-    if (!listo) return
+    if (cargandoMundo) return
     const t = `Bienvenido a ${inicio.nombre}. Pon el dedo en cualquier parte y arrastra hacia donde quieres ir; si lo llevas lejos, corres. Te voy contando lo que hay cerca.`
     setCuenta({ id: 'hola', titulo: inicio.nombre, texto: t, fuente: 'ZUMI' })
     setContar(false)
@@ -299,7 +310,7 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
       vivo = false
       clearTimeout(reloj)
     }
-  }, [listo, inicio.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cargandoMundo, inicio.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => callar(), [])
   // Créditos de la maqueta real (Google y fuentes de las imágenes): obligatorios y siempre visibles
@@ -427,9 +438,17 @@ export default function PaseoZumi({ lugar: lugarPedido, comuna, onCerrar }) {
         </div>
       )}
       {clima?.lluvia && <div className="paseo-lluvia pointer-events-none absolute inset-0" aria-hidden="true" />}
-      {!listo && (
-        <div className="absolute inset-0 grid place-items-center bg-black">
-          <p className="rotulo">Armando {inicio.nombre} como videojuego…</p>
+      {cargandoMundo && (
+        <div className="absolute inset-0 z-[40] grid place-items-center bg-[radial-gradient(80%_60%_at_50%_40%,#1d4170_0%,#0f1d2e_60%,#000_100%)] px-8 text-center" role="status">
+          <div>
+            <img src={`${import.meta.env.BASE_URL}zumi/poses/celebrando.webp`} alt="" width="150" height="196" className="paseo-carga-zumi mx-auto h-[196px] w-auto" />
+            <p className="mt-4 text-[22px] leading-tight font-bold">{inicio.nombre}</p>
+            <p className="mt-2 text-[15px] leading-snug text-white/70">Estoy bajando las calles reales escaneadas en 3D. Toma unos segundos.</p>
+            <div className="mx-auto mt-5 h-1 w-40 overflow-hidden rounded-full bg-white/15"><div className="paseo-carga-barra h-full w-1/3 rounded-full bg-white/80" /></div>
+          </div>
+          <button type="button" onClick={onCerrar} aria-label="Salir del paseo" className="vidrio-solido absolute top-[max(.75rem,env(safe-area-inset-top))] left-3 grid size-11 place-items-center rounded-full text-[20px]">
+            ×
+          </button>
         </div>
       )}
 
