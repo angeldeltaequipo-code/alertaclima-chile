@@ -1,15 +1,15 @@
 {
   "coquimbo": "sin respuesta",
-  "la-serena": "sin respuesta",
+  "la-serena": "error page.screenshot: Timeout 30000ms exceeded.",
   "arica": "sin respuesta",
   "iquique": "solo aire",
-  "vina": "sin respuesta",
-  "rancagua": "solo aire",
-  "talca": "sin respuesta",
-  "chillan": "sin respuesta",
-  "valdivia": "sin respuesta",
-  "osorno": "sin respuesta",
-  "punta-arenas": "3D",
+  "vina": "3D",
+  "rancagua": "sin respuesta",
+  "talca": "solo aire",
+  "chillan": "error page.screenshot: Timeout 30000ms exceeded.",
+  "valdivia": "solo aire",
+  "osorno": "solo aire",
+  "punta-arenas": "solo aire",
   "calama": "3D",
   "linares": "solo aire"
 }
