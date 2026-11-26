@@ -102,6 +102,8 @@ Importante: ZUMI no es una app del Gobierno de Chile ni está asociada a SENAPRE
 | Mensajes en la app (chat de soporte) | Sí | Sí | Asistencia |
 | Dirección de correo (solo si la persona la deja en el chat de soporte) | Sí | Sí | Asistencia |
 | ID del dispositivo para notificaciones | Sí | No | Funcionalidad de la app |
+| Otros ID (número al azar de la instalación, guardado como huella) | Sí | No | Estadísticas (Analytics) |
+| Interacciones con la app (cuántas veces se usan funciones, sin saber quién) | Sí | No | Estadísticas (Analytics) |
 | Compras (estado de la suscripción) | Sí | Sí | Funcionalidad de la app |
 | Audio | No (la voz se convierte en texto en el teléfono) | — | — |
 
