@@ -680,7 +680,7 @@ export default function App() {
               type="button"
               onClick={abrirFormulario}
               aria-label="Reportar un problema en el mapa"
-              className="absolute top-[4.1rem] right-3 z-[500] flex size-12 flex-col items-center justify-center rounded-full bg-senal text-sobre-senal shadow-[0_10px_30px_rgba(0,0,0,.35)] active:scale-95"
+              className="absolute right-3 bottom-[9.75rem] z-[500] flex size-14 flex-col items-center justify-center rounded-full bg-senal text-sobre-senal shadow-[0_10px_30px_rgba(0,0,0,.35)] active:scale-95"
             >
               <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
@@ -717,7 +717,7 @@ export default function App() {
                 <FichaCamara camara={camaraSel} onCerrar={() => setCamaraSel(null)} onAbrir={setCamaraVisor} />
               ) : fichaActual ? (
                 <DetalleReporte key={fichaActual.id} reporte={fichaActual} onVotar={(id, voto) => (cuenta.activa && !cuenta.token ? (cuenta.pedir('votar'), Promise.resolve(null)) : rep.votar(id, voto))} onCerrar={() => setSeleccionado(null)} />
-              ) : (
+              ) : viaje ? null : (
                 <ControlRadar radar={radar} ahorro={ahorro.activo} enLinea={enLinea} />
               )}
               </Suspense>

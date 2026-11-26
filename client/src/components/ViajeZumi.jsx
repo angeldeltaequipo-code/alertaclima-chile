@@ -34,6 +34,10 @@ export default function ViajeZumi({ lugar, onCambiar, onCerrar }) {
   const [hablando, setHablando] = useState(false)
   const [respuesta, setRespuesta] = useState(null) // índice elegido
   const [grande, setGrande] = useState(false)
+  useEffect(() => {
+    document.documentElement.classList.add('viajando')
+    return () => document.documentElement.classList.remove('viajando')
+  }, [])
   const [sellos, setSellos] = useState(leerPasaporte)
   const [texto, setTexto] = useState('')
   const quien = nombrePreferido()

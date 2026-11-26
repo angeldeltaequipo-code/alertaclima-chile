@@ -149,7 +149,7 @@ export default function ControlesMapa({
           <span className="mono rounded-full bg-black px-2 py-0.5 text-[10px] tracking-[0.1em] text-white">RUTA</span>
         </button>
       )}
-      <div className={`absolute ${onRuta ? 'top-[4.1rem]' : 'top-3'} right-[4.25rem] left-3 z-[500] flex items-center gap-2`}>
+      <div className={`absolute ${onRuta ? 'top-[4.1rem] right-3' : 'top-3 right-[4.25rem]'} left-3 z-[500] flex items-center gap-2`}>
         {onViajar && (
           <button
             type="button"
