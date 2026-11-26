@@ -153,6 +153,20 @@ export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = n
     return true
   }
 
+  // ZUMI no se queda congelado: en reposo, cada 8–14 s hace solo un gesto filmado al azar (sin sonido),
+  // así los videos de Google Flow van circulando. Se pausa fuera de pantalla y con ahorro de datos.
+  useEffect(() => {
+    if (!listo || activo || estado === 'hablando' || ahorroDatos()) return
+    const gestos = lista.filter((n) => n !== 'reposo' && !n.startsWith('habla') && !ESPECIALES.includes(n))
+    if (!gestos.length) return
+    const t = setTimeout(() => {
+      if (!visible.current || document.hidden) return
+      reproducir(gestos[Math.floor(Math.random() * gestos.length)])
+    }, 8000 + Math.random() * 6000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo, activo, estado, escena])
+
   // Gestos pedidos desde afuera («saludo:123»). Si esta escena no tiene ese gesto filmado, hace otro.
   useEffect(() => {
     if (!gesto || estado === 'hablando') return

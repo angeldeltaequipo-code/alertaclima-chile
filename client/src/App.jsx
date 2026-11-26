@@ -168,6 +168,8 @@ export default function App() {
       import('./services/metricas').then((m) => m.evento('paseo')).catch(() => {})
     }
     window.addEventListener('ac:paseo', f)
+    const pel = (e) => e.detail && setZumi(e.detail)
+    window.addEventListener('ac:pelicula', pel)
     const z = (e) => setZumi(e.detail ?? true)
     window.addEventListener('ac:zumi', z)
     const c = (e) => e.detail && setCalle(e.detail)
@@ -182,6 +184,7 @@ export default function App() {
     window.addEventListener('ac:ruta', ru)
     return () => {
       window.removeEventListener('ac:paseo', f)
+      window.removeEventListener('ac:pelicula', pel)
       window.removeEventListener('ac:zumi', z)
       window.removeEventListener('ac:calle', c)
       window.removeEventListener('ac:ruta', ru)

@@ -1,3 +1,4 @@
+import VideosZumi from './VideosZumi'
 import Desplegable from './Desplegable'
 import { useEntrada } from '../hooks/useEntrada'
 import GraficoLluvia from './GraficoLluvia'
@@ -193,6 +194,8 @@ export default function VistaAhora({ clima, comuna, enLinea, nombre = null, resu
         </p>
       )}
       {urgenteAluvion && aluvion}
+
+      <VideosZumi />
 
       {/* Las 4 funciones de ZUMI (el pronóstico, el detalle y los riesgos viven en la pestaña Riesgos) */}
       <Funciones
