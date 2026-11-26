@@ -108,7 +108,7 @@ export default function ViajeZumi({ lugar, onCambiar, onCerrar }) {
   return (
     <div className="viaje-zumi pointer-events-none absolute inset-0 z-[600]" role="region" aria-label={`ZUMI en ${lugar.nombre}`}>
       {/* Título del lugar, como en un documental */}
-      <div key={lugar.id} className="viaje-titulo pointer-events-none absolute top-16 right-0 left-0 px-4 text-center text-white">
+      <div key={lugar.id} className="viaje-titulo pointer-events-none absolute top-4 right-0 left-0 px-16 text-center text-white">
         <p className="text-[13px] font-black tracking-[0.22em] text-[#ffc93c] uppercase">ZUMI viaja a</p>
         <h2 className="text-[30px] leading-tight font-black drop-shadow-[0_2px_10px_rgba(0,0,0,.7)]">{lugar.nombre}</h2>
         <p className="text-[14px] font-semibold text-white/85 drop-shadow">{lugar.sub}</p>
@@ -134,7 +134,7 @@ export default function ViajeZumi({ lugar, onCambiar, onCerrar }) {
       )}
 
       {/* Tarjeta de ZUMI: lo que cuenta, la pregunta y los destinos */}
-      <div className="safe-bottom pointer-events-auto absolute right-0 bottom-0 left-0 px-3 pb-3">
+      <div className={`safe-bottom absolute right-0 bottom-0 left-0 px-3 pb-3 transition-all duration-500 ${grande && lugar.video ? 'pointer-events-none translate-y-8 opacity-0' : 'pointer-events-auto'}`}>
         <div className="tarjeta-viaje mx-auto max-w-xl rounded-[26px] p-3.5 text-white">
           <div className="flex items-start gap-3">
             <Burbuja hablando={hablando} />

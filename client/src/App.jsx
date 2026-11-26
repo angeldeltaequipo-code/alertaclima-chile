@@ -612,7 +612,7 @@ export default function App() {
               />
             </Suspense>
           )}
-          {!navPos && <Suspense fallback={null}>
+          {!navPos && !viaje && <Suspense fallback={null}>
             <ControlesMapa
             relieve3d={relieve3d}
             onRelieve3d={(v) => {
@@ -661,11 +661,11 @@ export default function App() {
             }}
           />
           </Suspense>}
-          <button
+          {!viaje && <button
             type="button"
             onClick={ubicarme}
             aria-label="Centrar el mapa en mi ubicación"
-            className="absolute top-3 right-3 z-[500] grid size-12 place-items-center rounded-xl border-2 border-borde bg-superficie text-texto"
+            className="absolute top-3 right-3 z-[500] grid size-12 place-items-center rounded-full bg-white text-black shadow-[0_10px_30px_rgba(0,0,0,.35)] active:scale-95"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
               <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -674,18 +674,18 @@ export default function App() {
               </g>
               <circle cx="12" cy="12" r="2.4" fill="currentColor" />
             </svg>
-          </button>
-          {rep.disponible && (
+          </button>}
+          {rep.disponible && !viaje && (
             <button
               type="button"
               onClick={abrirFormulario}
               aria-label="Reportar un problema en el mapa"
-              className="absolute top-[4.25rem] right-3 z-[500] flex w-12 flex-col items-center rounded-xl border-2 border-sobre-senal bg-senal pt-1 pb-0.5 text-sobre-senal shadow-lg"
+              className="absolute top-[4.1rem] right-3 z-[500] flex size-12 flex-col items-center justify-center rounded-full bg-senal text-sobre-senal shadow-[0_10px_30px_rgba(0,0,0,.35)] active:scale-95"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+              <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 3v14M3 10h14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
               </svg>
-              <span className="text-[10px] leading-tight font-black" aria-hidden="true">Avisar</span>
+              <span className="text-[9.5px] leading-none font-black" aria-hidden="true">Avisar</span>
             </button>
           )}
           <div className="panel-mapa-inferior pointer-events-none absolute inset-x-0 bottom-0 z-[500] p-3">

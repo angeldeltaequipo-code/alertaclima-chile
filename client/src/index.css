@@ -1194,9 +1194,10 @@ body {
 @keyframes viaje-sube {
   from { opacity: 0; transform: translateY(40px); }
 }
-.postal-zumi { top: 8.5rem; right: 0.75rem; }
-.postal-zumi.chica { width: 92px; height: 164px; }
-.postal-zumi.grande { width: min(62vw, 300px); height: min(110vw, 533px, 56dvh); right: 50%; transform: translateX(50%); }
+.postal-zumi { top: 7.2rem; right: 0.75rem; }
+.postal-zumi.chica { width: 84px; height: 150px; }
+/* Grande: ocupa el centro mientras la tarjeta espera abajo (se esconde hasta que termina o lo tocas) */
+.postal-zumi.grande { width: min(70vw, 320px); height: min(124vw, 570px, calc(100% - 9.5rem)); right: 50%; transform: translateX(50%); }
 .onda-voz {
   box-shadow: 0 0 0 0 rgb(255 201 60 / 0.7);
   animation: onda-voz 1.1s ease-out infinite;

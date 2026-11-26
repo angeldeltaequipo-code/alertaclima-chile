@@ -149,7 +149,18 @@ export default function ControlesMapa({
           <span className="mono rounded-full bg-black px-2 py-0.5 text-[10px] tracking-[0.1em] text-white">RUTA</span>
         </button>
       )}
-      <div className={`absolute ${onRuta ? 'top-[4.1rem]' : 'top-3'} right-[4.25rem] left-3 z-[500] flex items-center gap-1.5`}>
+      <div className={`absolute ${onRuta ? 'top-[4.1rem]' : 'top-3'} right-[4.25rem] left-3 z-[500] flex items-center gap-2`}>
+        {onViajar && (
+          <button
+            type="button"
+            onClick={onViajar}
+            aria-label="Viaja con ZUMI por Chile"
+            className="boton-viajar flex min-h-10 shrink-0 items-center gap-1.5 rounded-full py-1 pr-3 pl-1 text-[14px] font-black shadow-lg active:scale-[0.97]"
+          >
+            <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className="size-8 rounded-full" />
+            Viaja
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setHoja(true)}
@@ -181,16 +192,6 @@ export default function ControlesMapa({
         </div>
       </div>
 
-      {onViajar && (
-        <button
-          type="button"
-          onClick={onViajar}
-          className={`boton-viajar absolute ${onRuta ? 'top-[7.3rem]' : 'top-[4.25rem]'} left-3 z-[500] flex min-h-14 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-[16px] font-black shadow-[0_10px_30px_rgba(0,0,0,.4)] active:scale-[0.97]`}
-        >
-          <img src={`${import.meta.env.BASE_URL}zumi/viajes/avatar.png`} alt="" className="size-11 rounded-full ring-2 ring-white" />
-          Viaja con ZUMI
-        </button>
-      )}
 
       {modoCalle && (
         <p role="status" className="absolute top-16 right-3 left-3 z-[500] mx-auto max-w-sm rounded-xl bg-senal px-3 py-2 text-center text-[15px] font-bold text-sobre-senal shadow-lg">

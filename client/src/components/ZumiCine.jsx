@@ -8,6 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ESCENA, ESPECIALES, POSTER, RUTA_VIDEOS, VIDEOS, ahorroDatos } from '../services/zumiVideos'
 import { alDetenerPelicula, registrarPelicula } from '../services/narrador'
 import { RUTA_CINE, marcarVista } from '../services/cine'
+import { energiaVoz } from '../services/labios'
 
 // Pantalla del estudio (donde aparecen los datos), en fracciones de la escena.
 const PANTALLA = { estudio: [0.46, 0.235, 0.52, 0.26], alerta: [0.46, 0.235, 0.52, 0.26] }
@@ -190,6 +191,32 @@ export default function ZumiCine({ escena = 'sala', estado = 'reposo', gesto = n
     } else if (!hablando && activo?.startsWith('habla')) setActivo(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hablando])
+
+  // La boca sigue a la voz: la toma hablando avanza solo mientras suena la voz (energía del audio de
+  // ZUMI, cuadro a cuadro). En cada pausa entre palabras o frases el video se detiene, y sigue al
+  // volver a sonar. Así nunca mueve la boca en silencio ni antes de hablar.
+  useEffect(() => {
+    if (!hablando || !activo?.startsWith('habla')) return
+    const v = capas.current[activo]
+    if (!v) return
+    let raf = 0
+    let ultimoSonido = performance.now()
+    const paso = (t) => {
+      const e = energiaVoz()
+      if (e > 0.06) ultimoSonido = t
+      const callado = t - ultimoSonido > 140
+      if (callado && !v.paused) v.pause()
+      else if (!callado && v.paused) v.play().catch(() => {})
+      v.playbackRate = e > 0.5 ? 1.12 : e > 0.25 ? 1 : 0.9
+      raf = requestAnimationFrame(paso)
+    }
+    raf = requestAnimationFrame(paso)
+    return () => {
+      cancelAnimationFrame(raf)
+      v.playbackRate = 1
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hablando, activo])
 
   // Pensando: se toca la barbilla (al instante, mientras llega la respuesta).
   const piensa = estado === 'pensando'
