@@ -99,6 +99,16 @@ footer{color:var(--pizarra);font-size:13px;margin-top:14px}
       '<div class="kpi"><b>' + pct + '%</b><span>Con avisos activados (' + fmt(d.notificaciones) + ' teléfonos)</span></div>' +
       '<div class="kpi"><b>$' + fmt(plata) + '</b><span>Ingreso mensual (' + fmt(subs) + ' suscripciones)</span></div>' +
       '</div>' +
+      (function () {
+        var r = d.retencion || {}, pctr = function (n, b) { return b ? Math.round((n / b) * 100) + '%' : '—' }
+        return '<div class="kpis" style="margin-top:12px">' +
+          '<div class="kpi"><b>' + pctr(r.d1, r.d1_base) + '</b><span>Vuelven al día siguiente (de ' + fmt(r.d1_base) + ' nuevos)</span></div>' +
+          '<div class="kpi"><b>' + pctr(r.d7, r.d7_base) + '</b><span>Siguen en su 2ª semana (de ' + fmt(r.d7_base) + ')</span></div>' +
+          '<div class="kpi"><b>' + pct + '%</b><span>Activan los avisos (la meta: 70%)</span></div></div>'
+      })() +
+      '<section><h2>Avisos automáticos de SENAPRED</h2>' + ((d.avisos || []).length ? '<table>' + d.avisos.map(function (a) {
+        return '<tr><td><b>' + esc(a.nivel) + '</b> · ' + esc(a.amenaza) + '<div style="color:var(--pizarra);font-size:13px">' + new Date(a.avisada).toLocaleString('es-CL') + '</div></td><td class="n">' + fmt(a.enviadas) + ' teléfonos<br><span style="font-weight:400;color:var(--pizarra)">' + (a.latencia_s != null ? 'en ' + (a.latencia_s < 120 ? a.latencia_s + ' s' : Math.round(a.latencia_s / 60) + ' min') : '') + '</span></td></tr>'
+      }).join('') + '</table>' : '<p class="vacio">Aún no hay alertas nuevas de SENAPRED desde que se activaron los avisos automáticos. Aquí verás cada aviso, a cuántos teléfonos llegó y cuánto tardó desde que SENAPRED lo publicó.</p>') + '</section>' +
       '<section><h2>Usuarios por día (últimos 30 días)</h2>' + grafico(d.dias || []) + '</section>' +
       '<div class="dos"><section><h2>Comunas con más usuarios</h2>' + lista(d.comunas || [], function (f) { return f.nombre || f.cut }, function (f) { return f.n }) + '</section>' +
       '<section><h2>Qué usan (últimos 30 días)</h2>' + lista(d.eventos || [], function (f) { return NOMBRES[f.tipo] || f.tipo }, function (f) { return f.n }) + '</section></div>' +

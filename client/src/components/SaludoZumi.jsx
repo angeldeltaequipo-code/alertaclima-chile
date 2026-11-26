@@ -38,7 +38,7 @@ function informe({ quien, datos }) {
   return `¡${hola}${quien ? `, ${quien}` : ''}! ${clima} ${alerta}`.replace(/\s+/g, ' ').trim()
 }
 
-export default function SaludoZumi({ datos, quien, onPreguntar, onEscuchar, onGesto, onCerrar }) {
+export default function SaludoZumi({ datos, quien, onPreguntar, onEscuchar, onGesto, onCerrar, onFamilia }) {
   const [paso, setPaso] = useState(() => (yaSaludo() ? null : 'hola'))
   const [error, setError] = useState(null)
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function SaludoZumi({ datos, quien, onPreguntar, onEscuchar, onGe
 
   const TEXTO = {
     hola: `${informe({ quien, datos })} ¿Cómo estás hoy?`,
-    bien: '¡Me alegra mucho! ¿Te digo qué ponerte hoy o cómo estará el fin de semana?',
+    bien: '¡Me alegra mucho! ¿Te digo qué ponerte hoy? También puedo cuidar a tu familia: te aviso si hay alerta donde están ellos.',
     preocupado: 'Te entiendo. Estoy aquí contigo. ¿Qué te preocupa?',
     avisos: '¿Me dejas avisarte aunque tengas el teléfono en el bolsillo? Solo cuando sea importante: alertas de SENAPRED, sismos fuertes o tsunami.',
     listo: '¡Listo! Desde ahora te aviso al tiro si pasa algo en tu comuna.',
@@ -86,13 +86,13 @@ export default function SaludoZumi({ datos, quien, onPreguntar, onEscuchar, onGe
     ],
     bien: [
       ['¿Qué me pongo?', () => preguntar('¿Qué me pongo hoy?')],
-      ['¿Y el fin de semana?', () => preguntar('¿Cómo estará el fin de semana?')],
+      ['Cuidar a mi familia', () => (marcar(), setPaso(null), onCerrar?.(), onFamilia?.())],
       ['Gracias, ZUMI', despues],
     ],
     preocupado: [
       ['Un temblor', () => preguntar('¿Qué hago si tiembla?')],
       ['La lluvia', () => preguntar('¿Va a llover mañana?')],
-      ['Una alerta', () => preguntar('¿Hay alguna alerta?')],
+      ['Mi familia', () => (marcar(), setPaso(null), onCerrar?.(), onFamilia?.())],
     ],
     avisos: [
       ['Sí, avísame', activarAvisos],

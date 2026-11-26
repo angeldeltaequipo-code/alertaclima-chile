@@ -532,7 +532,11 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
               <span key={subtitulo} className="subtitulo-texto">
                 {subtitulo}
               </span>
-              {ultima?.fuente === 'ia' && subtitulo === ultima.texto && <span className="mt-1 block text-[11px] text-white/55">Respuesta creada con IA a partir de los datos de tu comuna.</span>}
+              {ultima?.pregunta && subtitulo === ultima.texto && (
+                <span className="mt-1 block text-[11.5px] text-white/60">
+                  {ultima.fuente === 'ia' ? 'Respuesta con IA usando solo ' : 'Con '}datos de SENAPRED, SHOA, CSN y Open-Meteo · {new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
           )}
 

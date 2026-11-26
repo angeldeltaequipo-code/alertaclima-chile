@@ -285,6 +285,7 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
             onEscuchar={onEscuchar}
             onGesto={(paso) => setGesto(`${{ hola: 'saludo', bien: 'celebra', preocupado: 'explica', avisos: 'explica', listo: 'celebra' }[paso] ?? 'saludo'}:${Date.now()}`)}
             onCerrar={() => setConversando(false)}
+            onFamilia={() => abrirFuncion('familia')}
           />
         )}
         <div className="mb-3 flex items-end justify-between gap-3">
@@ -319,11 +320,6 @@ export default function EscenarioZumi({ datos, hoy, onLlamar, onEscuchar, onPreg
           >
             Compartir
           </button>
-          {escena === 'sala' && (
-            <button type="button" onClick={() => (setReaccion('¡Pa\' la plaza! ¡A bailar cueca!'), setGesto(`cueca:${Date.now()}`))} className="chip-escenario shrink-0">
-              Baila cueca
-            </button>
-          )}
           {consejo && onPelicula && (
             <button type="button" onClick={() => onPelicula(consejo)} className="chip-escenario shrink-0">
               ▶ {PELICULAS[consejo].titulo}

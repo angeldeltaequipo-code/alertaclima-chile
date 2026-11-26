@@ -51,7 +51,17 @@ export function metricasPg(pool) {
       const subs = await uno(`SELECT plan, COUNT(*)::int AS n, COALESCE(SUM(CASE WHEN periodo = 'anual' THEN monto_clp / 12 ELSE monto_clp END), 0)::int AS mensual_clp
           FROM suscripciones WHERE estado IN ('activa', 'prueba') GROUP BY 1`).catch(() => [])
       const [push] = await uno('SELECT COUNT(*)::int AS n FROM push_subscriptions').catch(() => [{ n: 0 }])
-      return { activos: act, ...tot, dias, comunas, plataformas, eventos, suscripciones: subs, notificaciones: push?.n ?? 0, generado: new Date().toISOString() }
+      // Retención: de quienes llegaron, cuántos volvieron al día siguiente (D1) y en su segunda semana (D7)
+      const [ret] = await uno(`SELECT
+          COUNT(*) FILTER (WHERE i.primera_vez BETWEEN CURRENT_DATE - 8 AND CURRENT_DATE - 1)::int AS d1_base,
+          COUNT(*) FILTER (WHERE i.primera_vez BETWEEN CURRENT_DATE - 8 AND CURRENT_DATE - 1
+            AND EXISTS (SELECT 1 FROM metricas_dias m WHERE m.huella = i.huella AND m.dia = i.primera_vez + 1))::int AS d1,
+          COUNT(*) FILTER (WHERE i.primera_vez BETWEEN CURRENT_DATE - 37 AND CURRENT_DATE - 14)::int AS d7_base,
+          COUNT(*) FILTER (WHERE i.primera_vez BETWEEN CURRENT_DATE - 37 AND CURRENT_DATE - 14
+            AND EXISTS (SELECT 1 FROM metricas_dias m WHERE m.huella = i.huella AND m.dia BETWEEN i.primera_vez + 7 AND i.primera_vez + 13))::int AS d7
+        FROM metricas_instalaciones i`).catch(() => [{}])
+      const avisos = await uno(`SELECT amenaza, nivel, enviadas, latencia_s, avisada FROM senapred_avisados ORDER BY avisada DESC LIMIT 8`).catch(() => [])
+      return { activos: act, ...tot, dias, comunas, plataformas, eventos, suscripciones: subs, notificaciones: push?.n ?? 0, retencion: ret, avisos, generado: new Date().toISOString() }
     },
   }
 }

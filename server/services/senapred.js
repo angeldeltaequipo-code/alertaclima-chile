@@ -209,6 +209,9 @@ export async function descargarAlertas({ fetchFn = fetch } = {}) {
 
 // ---------- caché: lo último bueno ----------
 const estado = { alertas: null, revisado: null, ok: null, error: null, cargando: null }
+let alCambiar = null
+/** Se llama con las alertas vigentes después de cada lectura buena (para los avisos automáticos). */
+export const alActualizar = (fn) => (alCambiar = fn)
 
 export async function actualizar({ fetchFn = fetch } = {}) {
   if (estado.cargando) return estado.cargando
@@ -219,6 +222,7 @@ export async function actualizar({ fetchFn = fetch } = {}) {
       estado.alertas = vigentes(filas)
       estado.ok = new Date()
       estado.error = null
+      if (alCambiar) Promise.resolve(alCambiar(estado.alertas)).catch((e) => console.error('Avisos SENAPRED:', e.message))
     } catch (e) {
       estado.error = e.message
       console.error('SENAPRED:', e.message)
