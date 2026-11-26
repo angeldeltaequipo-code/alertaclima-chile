@@ -96,10 +96,38 @@ function conSaber(ctx, saber) {
   return s.length ? { ...ctx, saber: s } : ctx
 }
 
-export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta = false } = {}) {
+/** Pregunta a ZUMI. Si la persona además cuenta que tiene miedo o está preocupada, ZUMI lo acoge antes del dato. */
+export async function preguntarZumi(pregunta, datos, historial = [], opciones = {}) {
+  const r = await preguntarZumiBase(pregunta, datos, historial, opciones)
+  if (r?.fuente === 'zumi' && sentimientoDe(pregunta) && PIDE_ALGO.test(pregunta) && !/^uy, te entiendo/i.test(r.texto)) {
+    return { ...r, texto: `Tranquilo, te entiendo. ${r.texto}` }
+  }
+  return r
+}
+const PIDE_ALGO = /qu[eé] hago|qu[eé] hacer|c[oó]mo|d[oó]nde|cu[aá]ndo|tiembl|sismo|terremoto|tsunami|evacu|llov|alerta|incendio|volc[aá]n|\?/i
+
+async function preguntarZumiBase(pregunta, datos, historial = [], { conCuenta = false } = {}) {
   import('./metricas').then((m) => m.evento('pregunta')).catch(() => {})
   anotarPregunta(pregunta) // ZUMI recuerda el tema y aprende de frases claras («me llamo…», «tengo un perro…»)
   const S = (memoria ??= await cargarSaber())
+  // 0. Si la persona cuenta cómo se siente, ZUMI responde primero a eso (como un amigo), no a una palabra suelta.
+  const sentir = sentimientoDe(pregunta)
+  if (sentir && !PIDE_ALGO.test(pregunta)) {
+    const otra = S?.comunaPedida(pregunta)
+    let dato = ''
+    if (otra) {
+      try {
+        dato = ' ' + (await S.climaDeComuna(otra, '¿cómo está el clima?'))
+      } catch {
+        /* sin red */
+      }
+    }
+    const quien = sentir.quien ? `por ${sentir.quien}` : ''
+    const texto = otra
+      ? `Uy, te entiendo… es normal preocuparse ${quien}.${dato} Si la agregas a Mi familia, te aviso al tiro si hay cualquier alerta en ${otra.nombre}. ¿Quieres que lo hagamos?`
+      : `Uy, te entiendo… ${quien ? `es normal preocuparse ${quien}.` : 'aquí estoy contigo.'} Cuéntame un poquito más: ¿te preocupa un temblor, la lluvia o alguna alerta?`
+    return { texto: texto.replace(/\s+/g, ' ').trim(), fuente: 'zumi', rapida: true }
+  }
   // 1. El clima de cualquier otra comuna de Chile, al momento.
   const otra = S?.comunaPedida(pregunta)
   if (otra && otra.cut !== datos.comuna?.cut) {
@@ -143,6 +171,16 @@ export async function preguntarZumi(pregunta, datos, historial = [], { conCuenta
   // 4. Algo parecido en su memoria (o pedir que lo diga de otra forma), o sus propias reglas; nunca «no sé».
   if (m.tipo === 'quizas' || m.tipo === 'aclarar') return { texto: m.texto, fuente: 'zumi' }
   return { texto: responderSinIA(pregunta, datos), fuente: 'zumi' }
+}
+
+// Lo que siente la persona («estoy preocupado por mi mamá…»), para responder con cariño antes que con datos
+const SENTIMIENTOS = /(^|[^a-záéíóúñ])(preocupad[oa]s?|me preocupa|miedo|asustad[oa]|susto|nervios[oa]?|angusti|triste|ansios|intranquil|inquiet)/i
+const PERSONAS = [['mi mam[aá]', 'tu mamá'], ['mi pap[aá]', 'tu papá'], ['mis? hij[oa]s?', 'tu familia'], ['mi abuel[oa]', 'tu abuelita'], ['mi herman[oa]', 'tu hermano'], ['mi pareja|mi señora|mi esposa?|mi marido|mi pololo|mi polola', 'tu pareja'], ['mi familia', 'tu familia']]
+export function sentimientoDe(texto) {
+  const t = String(texto ?? '')
+  if (!SENTIMIENTOS.test(t)) return null
+  const p = PERSONAS.find(([re]) => new RegExp(`(^|[^a-záéíóúñ])(${re})(?![a-záéíóúñ])`, 'i').test(t))
+  return { quien: p ? p[1] : null }
 }
 
 // ---- Respuestas propias (sin IA) ----

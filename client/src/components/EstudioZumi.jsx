@@ -190,8 +190,9 @@ function conPreguntaDeVuelta(texto, pregunta) {
   const t = String(texto ?? '').trim()
   if (!t || /\?\s*$/.test(t) || URGENTE.test(t) || URGENTE.test(pregunta)) return t
   const q = pregunta.toLowerCase()
+  const cuando = /mañana/.test(q) ? 'mañana' : /fin de semana/.test(q) ? 'el fin de semana' : 'hoy'
   const sigue = /llov|lluvia|paragua/.test(q)
-    ? ['¿Vas a salir hoy?', '¿Quieres que te avise si se larga a llover?']
+    ? [`¿Tienes que salir ${cuando}?`, '¿Quieres que te avise si se larga a llover?']
     : /pong|ropa|abrig|frío|frio|calor/.test(q)
       ? ['¿Para dónde vas?', '¿Sales temprano?']
       : /fin de semana|mañana|semana/.test(q)
