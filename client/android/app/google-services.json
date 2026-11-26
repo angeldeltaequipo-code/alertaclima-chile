@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "753481305986",
+    "project_id": "zumi-chile",
+    "storage_bucket": "zumi-chile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:753481305986:android:9c3df2fe48ff897555899b",
+        "android_client_info": {
+          "package_name": "cl.alertaclima.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrfP72X-TzNo4dCQkKrwxG9dHvLaGsKAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
