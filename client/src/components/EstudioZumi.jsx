@@ -182,6 +182,24 @@ function Holograma({ t }) {
   )
 }
 
+const MULETILLAS = ['Mmm… a ver…', 'Emm… déjame ver…', 'A ver, a ver…', 'Mmm, buena pregunta…', 'Ya, déjame revisar…']
+const azar = (l) => l[Math.floor(Math.random() * l.length)]
+const URGENTE = /evacu|tsunami|alerta roja|incendio|sismo fuerte|terremoto|emergencia|herid|socorro|ayuda|133|132|131/i
+/** Si ZUMI no terminó con una pregunta, agrega una corta (nunca en emergencias), para que la charla siga. */
+function conPreguntaDeVuelta(texto, pregunta) {
+  const t = String(texto ?? '').trim()
+  if (!t || /\?\s*$/.test(t) || URGENTE.test(t) || URGENTE.test(pregunta)) return t
+  const q = pregunta.toLowerCase()
+  const sigue = /llov|lluvia|paragua/.test(q)
+    ? ['¿Vas a salir hoy?', '¿Quieres que te avise si se larga a llover?']
+    : /pong|ropa|abrig|frío|frio|calor/.test(q)
+      ? ['¿Para dónde vas?', '¿Sales temprano?']
+      : /fin de semana|mañana|semana/.test(q)
+        ? ['¿Tienes algún plan?', '¿Quieres que te recuerde el pronóstico ese día?']
+        : ['¿Algo más que quieras saber?', '¿Y tú cómo estás?', '¿Te ayudo con otra cosa?']
+  return `${t} ${azar(sigue)}`
+}
+
 export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'presentador', escenasIniciales, peliculaInicial = null, inicio = null, onCerrar }) {
   const e = useNarrador()
   const ref = useRef(null)
@@ -293,11 +311,16 @@ export default function EstudioZumi({ datos, nombreCuenta, conCuenta, traje = 'p
       hablar([f], { silencio })
       return
     }
+    // Si la respuesta tarda, ZUMI piensa en voz alta («Mmm… a ver…») en vez de quedarse mudo
+    const muletilla = setTimeout(() => hablar([MULETILLAS[Math.floor(Math.random() * MULETILLAS.length)]], { silencio }), 650)
     const r = await preguntarZumi(q, { ...datos, nombre: quien }, historial.current, { conCuenta })
-    historial.current = [...historial.current, { rol: 'persona', texto: q }, { rol: 'zumi', texto: r.texto }].slice(-6)
+    clearTimeout(muletilla)
+    // Las respuestas rápidas también siguen la conversación con una pregunta de vuelta
+    const dicho = conPreguntaDeVuelta(r.texto, q)
+    historial.current = [...historial.current, { rol: 'persona', texto: q }, { rol: 'zumi', texto: dicho }].slice(-6)
     setPensando(false)
-    setUltima({ pregunta: q, ...r, texto: enTrozos(r.texto).join(' ') })
-    hablar(enTrozos(r.texto), { silencio })
+    setUltima({ pregunta: q, ...r, texto: enTrozos(dicho).join(' ') })
+    hablar(enTrozos(dicho), { silencio })
   }
 
   const SR = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
